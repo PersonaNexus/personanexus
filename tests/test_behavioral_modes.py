@@ -70,7 +70,7 @@ def test_compiler_renders_empty_modes():
 def test_example_yaml_loads():
     identity = parse_identity_file(
         "examples/identities/ada-modes.yaml",
-        base_dir="/home/node/.openclaw/workspace/personanexus"
+        base_dir="/home/node/.openclaw/workspace/PersonaNexus"
     )
     assert identity.behavioral_modes is not None
     assert len(identity.behavioral_modes.modes) >= 3

@@ -102,7 +102,7 @@ def test_compiler_renders_mood():
 def test_example_yaml_loads():
     parser = IdentityParser()
     identity = parser.load_identity(
-        "/home/node/.openclaw/workspace/personanexus/examples/identities/ada-mood.yaml"
+        "/home/node/.openclaw/workspace/PersonaNexus/examples/identities/ada-mood.yaml"
     )
     assert identity.personality.mood is not None
     assert len(identity.personality.mood.states) >= 2
