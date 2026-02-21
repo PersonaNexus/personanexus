@@ -1,0 +1,138 @@
+"""Inheritance and mixin resolution for PersonaNexus specs."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any
+
+from personanexus.conflict import ConflictResolver
+from personanexus.parser import IdentityParser, ParseError
+from personanexus.types import AgentIdentity, CompositionConfig, ConflictResolution
+
+
+class ResolutionError(Exception):
+    """Raised when identity resolution fails."""
+
+
+class IdentityResolver:
+    """Resolves identity inheritance (extends), mixins, and overrides into a single spec."""
+
+    def __init__(self, search_paths: list[str | Path] | None = None, max_depth: int = 10):
+        self.search_paths = [Path(p) for p in (search_paths or [])]
+        self.max_depth = max_depth
+        self._parser = IdentityParser()
+
+    def resolve_file(self, path: str | Path) -> AgentIdentity:
+        """Load and fully resolve an identity file."""
+        path = Path(path)
+        data = self._parser.parse_file(path)
+        resolved = self._resolve(data, path, depth=0, stack=[])
+        return AgentIdentity.model_validate(resolved)
+
+    def resolve_dict(
+        self, data: dict[str, Any], base_path: str | Path | None = None
+    ) -> AgentIdentity:
+        """Resolve an already-parsed identity dict."""
+        bp = Path(base_path) if base_path else Path.cwd() / "identity.yaml"
+        resolved = self._resolve(data, bp, depth=0, stack=[])
+        return AgentIdentity.model_validate(resolved)
+
+    # ------------------------------------------------------------------
+    # Internal resolution pipeline
+    # ------------------------------------------------------------------
+
+    def _resolve(
+        self,
+        data: dict[str, Any],
+        source_path: Path,
+        depth: int,
+        stack: list[str],
+    ) -> dict[str, Any]:
+        if depth > self.max_depth:
+            raise ResolutionError(
+                f"Max inheritance depth ({self.max_depth}) exceeded. "
+                f"Resolution stack: {' -> '.join(stack)}"
+            )
+
+        source_key = str(source_path.resolve())
+        if source_key in stack:
+            raise ResolutionError(
+                f"Circular dependency detected: {' -> '.join(stack)} -> {source_key}"
+            )
+
+        new_stack = [*stack, source_key]
+
+        # Separate inheritance directives from the identity's own fields
+        own_data = dict(data)
+        extends = own_data.pop("extends", None)
+        mixin_paths = own_data.pop("mixins", [])
+        overrides = own_data.pop("overrides", None)
+
+        # Build conflict resolver from composition config
+        comp_data = own_data.get("composition", {})
+        conflict_config = comp_data.get("conflict_resolution", {})
+        try:
+            cr = ConflictResolution.model_validate(conflict_config)
+        except Exception:
+            cr = ConflictResolution()
+        merger = ConflictResolver(cr)
+
+        # Resolution order per spec: archetype → mixin1 → mixin2 → own fields → overrides
+        # Each step layers on top, with later values winning.
+
+        # Step 1: Start with archetype as base
+        base: dict[str, Any] = {}
+        if extends:
+            archetype_path = self._find_file(extends, source_path)
+            archetype_data = self._parser.parse_file(archetype_path)
+            base = self._resolve(
+                archetype_data, archetype_path, depth + 1, new_stack
+            )
+            base.pop("archetype", None)
+
+        # Step 2: Apply mixins in order (each layers on top)
+        for mixin_ref in mixin_paths:
+            mixin_path = self._find_file(mixin_ref, source_path)
+            mixin_data = self._parser.parse_file(mixin_path)
+            mixin_resolved = self._resolve(
+                mixin_data, mixin_path, depth + 1, new_stack
+            )
+            mixin_resolved.pop("mixin", None)
+            base = merger.merge(base, mixin_resolved)
+
+        # Step 3: Apply the identity's own fields (override inherited + mixin values)
+        result = merger.merge(base, own_data) if base else own_data
+
+        # Step 4: Apply explicit overrides block (highest priority)
+        if overrides:
+            result = merger.merge(result, overrides)
+
+        return result
+
+    def _find_file(self, ref: str, source_path: Path) -> Path:
+        """Resolve a reference (extends/mixin path) to an actual file path."""
+        candidates: list[Path] = []
+
+        # Relative to source file's directory
+        base_dir = source_path.parent
+        candidates.append(base_dir / ref)
+        if not ref.endswith(".yaml") and not ref.endswith(".yml"):
+            candidates.append(base_dir / f"{ref}.yaml")
+            candidates.append(base_dir / f"{ref}.yml")
+
+        # Search paths
+        for sp in self.search_paths:
+            candidates.append(sp / ref)
+            if not ref.endswith(".yaml") and not ref.endswith(".yml"):
+                candidates.append(sp / f"{ref}.yaml")
+                candidates.append(sp / f"{ref}.yml")
+
+        for candidate in candidates:
+            if candidate.is_file():
+                return candidate
+
+        searched = [str(c) for c in candidates]
+        raise ParseError(
+            f"Cannot resolve reference '{ref}'. Searched:\n  " + "\n  ".join(searched),
+            source=str(source_path),
+        )

@@ -1,0 +1,421 @@
+# Example Multi-Agent Team Configuration
+# This is a FICTIONAL example demonstrating agent-identity team orchestration
+# 
+# For real usage:
+#   1. Run the migration script on your actual OpenClaw data
+#   2. Customize the generated team configuration
+#   3. Test with: agent-identity validate your-team.yaml
+
+schema_version: '2.0'
+team:
+  metadata:
+    id: team_example_research_001
+    name: Example Research & Development Team
+    description: Fictional team demonstrating multi-agent orchestration capabilities
+    version: 1.0.0
+    created_at: '2026-02-18T00:00:00Z'
+    author: Agent Identity Framework
+    source: Example configuration for demonstration purposes
+  composition:
+    agents:
+      researcher:
+        agent_id: agt_researcher_001
+        role: research_coordinator
+        authority_level: 4
+        expertise_domains:
+        - research_methodology
+        - data_gathering  
+        - source_validation
+        - competitive_analysis
+        personality_summary:
+          thoroughness: 0.90
+          curiosity: 0.85
+          analytical_rigor: 0.88
+      analyst:
+        agent_id: agt_analyst_001
+        role: senior_data_analyst
+        authority_level: 3
+        expertise_domains:
+        - statistical_analysis
+        - data_visualization
+        - business_intelligence
+        - trend_analysis
+        personality_summary:
+          analytical_precision: 0.92
+          attention_to_detail: 0.89
+          skeptical_thinking: 0.75
+      developer:
+        agent_id: agt_developer_001
+        role: technical_lead
+        authority_level: 3
+        expertise_domains:
+        - software_development
+        - system_architecture
+        - code_review
+        - deployment
+        personality_summary:
+          technical_rigor: 0.93
+          pragmatic_approach: 0.85
+          problem_solving: 0.90
+        # Example personality traits (fictional values)
+        personality_traits:
+          warmth: 0.65
+          verbosity: 0.55
+          assertiveness: 0.70
+          humor: 0.60
+          empathy: 0.68
+          directness: 0.75
+          rigor: 0.85
+          creativity: 0.72
+          epistemic_humility: 0.78
+          patience: 0.80
+        personality_profile:
+          mode: ocean
+          ocean:
+            openness: 0.78
+            conscientiousness: 0.88
+            extraversion: 0.55
+            agreeableness: 0.65
+            neuroticism: 0.25
+        behavioral_settings:
+          prefers_structured_approach: true
+          values_code_quality: true
+          emphasizes_testing: true
+      communicator:
+        agent_id: agt_communicator_001
+        role: content_strategist
+        authority_level: 2
+        expertise_domains:
+        - technical_writing
+        - stakeholder_communication
+        - documentation
+        - presentation_design
+        personality_summary:
+          clarity_focus: 0.90
+          creativity: 0.82
+          empathy: 0.85
+  workflow_patterns:
+    research_to_implementation:
+      description: Standard workflow from research question to deployed solution
+      estimated_duration: 4-6 hours
+      success_rate: 0.85
+      stages:
+      - stage: research_phase
+        primary_agent: researcher
+        objective: Gather comprehensive data with source validation
+        deliverables:
+        - research_brief
+        - source_inventory
+        - methodology_notes
+        success_criteria:
+        - source_count >= 5
+        - source_reliability_avg > 0.75
+        - methodology_documented == true
+        max_duration: 2 hours
+      - stage: analysis_phase
+        primary_agent: analyst
+        trigger_conditions:
+        - research_phase.source_count >= 5
+        input_context:
+        - research_brief
+        - raw_data
+        - methodology_notes
+        objective: Statistical analysis and insight extraction
+        deliverables:
+        - analysis_report
+        - statistical_summary
+        - actionable_insights
+        success_criteria:
+        - insights_count >= 3
+        - statistical_confidence > 0.80
+        - recommendations_concrete == true
+        max_duration: 2 hours
+      - stage: implementation_phase
+        primary_agent: developer
+        trigger_conditions:
+        - analysis_phase.insights_count >= 3
+        input_context:
+        - analysis_report
+        - technical_requirements
+        - constraints
+        objective: Build solution based on research and analysis
+        deliverables:
+        - technical_solution
+        - deployment_artifacts
+        - test_results
+        success_criteria:
+        - tests_passing == true
+        - deployment_successful == true
+        - performance_acceptable == true
+        max_duration: 3 hours
+      - stage: communication_phase
+        primary_agent: communicator
+        trigger_conditions:
+        - implementation_phase.deployment_successful == true
+        input_context:
+        - all_previous_deliverables
+        - stakeholder_requirements
+        - key_messages
+        objective: Create documentation and stakeholder communication
+        deliverables:
+        - final_report
+        - documentation
+        - stakeholder_summary
+        success_criteria:
+        - clarity_score > 0.85
+        - completeness_score > 0.90
+        - stakeholder_feedback_positive == true
+        max_duration: 1.5 hours
+    rapid_response:
+      description: Fast-track analysis for urgent decisions
+      estimated_duration: 1-2 hours
+      success_rate: 0.78
+      stages:
+      - stage: quick_research
+        primary_agent: researcher
+        objective: Focused research on specific question
+        success_criteria:
+        - core_question_answered
+        - key_sources_identified
+        max_duration: 30 minutes
+      - stage: rapid_analysis
+        primary_agent: analyst
+        trigger_conditions:
+        - quick_research.core_question_answered == true
+        objective: High-level analysis with clear recommendation
+        success_criteria:
+        - recommendation_clear
+        - confidence_level_stated
+        max_duration: 45 minutes
+      - stage: executive_summary
+        primary_agent: communicator
+        trigger_conditions:
+        - rapid_analysis.recommendation_clear == true
+        objective: Concise summary with action items
+        success_criteria:
+        - summary_length < 500_words
+        - action_items_clear
+        max_duration: 15 minutes
+  governance:
+    decision_frameworks:
+      research_methodology:
+        authority: researcher
+        description: Researcher leads research approaches and source validation
+        consultation_required: []
+        escalation_criteria:
+        - ethical_concerns_raised
+        - budget_constraints_exceeded
+      technical_architecture:
+        authority: developer
+        description: Developer leads all technical decisions
+        consultation_required:
+        - researcher
+        veto_rights:
+        - researcher
+        escalation_criteria:
+        - security_implications
+        - major_architectural_changes
+      data_analysis_methodology:
+        authority: analyst
+        description: Analyst owns statistical rigor and analysis approach
+        consultation_required:
+        - researcher
+        escalation_criteria:
+        - statistical_significance < 0.05
+        - data_quality_concerns
+      external_communications:
+        authority: communicator
+        description: Communicator approves all external-facing content
+        consultation_required:
+        - researcher
+        - analyst
+        - developer
+        escalation_criteria:
+        - legal_implications
+        - reputational_risk
+      resource_prioritization:
+        authority: consensus
+        voting_weights:
+          researcher: 0.35
+          analyst: 0.25
+          developer: 0.25
+          communicator: 0.15
+        fallback_authority: researcher
+        timeout: 1_hour
+    conflict_resolution:
+      expertise_boundary_disputes:
+        description: When agents disagree about task ownership
+        strategy: capability_matrix_lookup
+        process:
+        - Check agent expertise_domains for relevant capabilities
+        - Assign to agent with highest domain expertise score
+        - Secondary agent provides consultation if requested
+        fallback: defer_to_higher_authority_level
+      quality_standard_conflicts:
+        description: Disagreements about acceptance criteria
+        strategy: evidence_based_decision
+        process:
+        - Each agent provides evidence for their quality standard
+        - Compare against historical success metrics
+        - Select standard with best outcome correlation
+        escalation: human_review_required
+      timeline_vs_quality_tradeoffs:
+        description: When speed and quality requirements conflict
+        strategy: risk_assessment_matrix
+        criteria:
+        - impact_of_delay
+        - cost_of_quality_reduction
+        - stakeholder_priorities
+        - reversibility_of_decision
+        fallback_authority: researcher
+  collaboration_protocols:
+    handoff_standards:
+      context_transfer:
+        required_fields:
+        - objective_achieved
+        - deliverables_location
+        - success_criteria_met
+        - assumptions_made
+        - limitations_discovered
+        - context_for_next_agent
+        optional_fields:
+        - alternative_approaches_considered
+        - unexpected_findings
+        - confidence_level
+        - time_invested
+        validation: receiving_agent_acknowledges_understanding
+        timeout: 15_minutes
+      quality_gates:
+      - gate: research_completeness
+        enforced_by: researcher
+        criteria:
+        - primary_sources >= 3
+        - methodology_documented == true
+        - source_reliability_assessed == true
+        auto_check: true
+      - gate: analysis_statistical_rigor
+        enforced_by: analyst
+        criteria:
+        - sample_size_adequate == true
+        - statistical_tests_appropriate == true
+        - confidence_intervals_calculated == true
+        - limitations_documented == true
+        auto_check: false
+      - gate: implementation_quality
+        enforced_by: developer
+        criteria:
+        - tests_written == true
+        - tests_passing == true
+        - code_reviewed == true
+        - documentation_updated == true
+        auto_check: true
+      - gate: communication_clarity
+        enforced_by: communicator
+        criteria:
+        - target_audience_appropriate == true
+        - key_messages_clear == true
+        - actionable_next_steps == true
+        auto_check: false
+    status_updates:
+      frequency: every_30_minutes_during_active_work
+      required_fields:
+      - current_stage
+      - progress_percentage
+      - blockers_identified
+      - estimated_completion
+      broadcast_to: all_team_members
+      escalation_triggers:
+      - no_progress_for_60_minutes
+      - critical_blocker_identified
+      - estimated_completion_exceeded_by_50_percent
+  performance_metrics:
+    team_effectiveness:
+    - metric: workflow_completion_rate
+      target: '> 0.85'
+      measurement: successful_workflows / total_attempted_workflows
+      review_frequency: weekly
+    - metric: handoff_success_rate
+      target: '> 0.90'
+      measurement: acknowledged_handoffs / total_handoff_attempts
+      review_frequency: daily
+    - metric: average_workflow_duration
+      target: '< estimated_duration * 1.2'
+      measurement: actual_completion_time vs estimated_time
+    - metric: quality_gate_pass_rate
+      target: '> 0.80'
+      measurement: passed_gates / total_gate_checks
+    - metric: stakeholder_satisfaction
+      target: '> 4.0/5.0'
+      measurement: post_workflow_feedback_surveys
+      review_frequency: monthly
+    individual_contributions:
+      researcher:
+      - metric: research_depth_score
+        measurement: source_count * avg_source_reliability * methodology_completeness
+        target: '> 75th_percentile_historical'
+      - metric: handoff_context_quality
+        measurement: receiving_agent_understanding_score
+        target: '> 0.85'
+      analyst:
+      - metric: analysis_actionability
+        measurement: actionable_insights_per_analysis
+        target: '> 3'
+      - metric: statistical_rigor_score
+        measurement: methodology_appropriateness * confidence_accuracy
+        target: '> 0.85'
+      developer:
+      - metric: implementation_reliability
+        measurement: deployed_solutions_with_zero_critical_bugs / total_deployments
+        target: '> 0.90'
+      - metric: code_maintainability_score
+        measurement: future_modification_ease_rating
+        target: '> 0.75'
+      communicator:
+      - metric: content_clarity_score
+        measurement: stakeholder_comprehension_rating
+        target: '> 0.80'
+      - metric: documentation_completeness
+        measurement: questions_answered_by_docs / total_questions_asked
+        target: '> 0.75'
+  adaptation_rules:
+    workflow_optimization:
+      enabled: true
+      learning_rate: 0.05
+      adaptation_triggers:
+      - condition: avg_workflow_duration > target * 1.4
+        action: analyze_bottlenecks_and_suggest_parallel_stages
+      - condition: handoff_failure_rate > 0.15
+        action: enhance_context_transfer_requirements
+      - condition: quality_gate_failure_rate > 0.25
+        action: add_intermediate_validation_checkpoints
+    team_composition_insights:
+      track_patterns: true
+      analyze_frequency: weekly
+      optimization_suggestions:
+      - pattern: developer_bottleneck_during_implementation
+        suggestion: consider_parallel_implementation_tracks
+      - pattern: researcher_over_researching_simple_questions
+        suggestion: define_research_scope_limits_by_complexity
+      - pattern: analyst_blocked_by_data_quality
+        suggestion: add_data_validation_stage_before_analysis
+
+# Example operational parameters
+operations:
+  working_hours:
+    timezone: UTC
+    core_hours: '09:00-17:00'
+    after_hours_urgency_threshold: P0_incidents_only
+  resource_limits:
+    max_concurrent_workflows: 3
+    max_workflow_duration: 6_hours
+    escalation_after: 3_hours_no_progress
+  monitoring:
+    health_checks: every_15_minutes
+    performance_snapshots: hourly
+    detailed_analytics: daily
+    team_retrospectives: weekly
+  integration:
+    task_tracking: task_management_system
+    file_sharing: shared_workspace
+    code_repository: version_control_system
+    monitoring_dashboard: analytics_platform

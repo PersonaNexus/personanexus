@@ -1,0 +1,3099 @@
+{
+  "$defs": {
+    "AgentRelationship": {
+      "properties": {
+        "agent_id": {
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "relationship": {
+          "title": "Relationship",
+          "type": "string"
+        },
+        "handoff_protocol": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Handoff Protocol"
+        },
+        "shared_context": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Shared Context",
+          "type": "array"
+        }
+      },
+      "required": [
+        "agent_id",
+        "relationship"
+      ],
+      "title": "AgentRelationship",
+      "type": "object"
+    },
+    "ArchetypeHeader": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "abstract": {
+          "default": true,
+          "title": "Abstract",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "ArchetypeHeader",
+      "type": "object"
+    },
+    "AssumedKnowledge": {
+      "enum": [
+        "novice",
+        "intermediate",
+        "expert"
+      ],
+      "title": "AssumedKnowledge",
+      "type": "string"
+    },
+    "Audience": {
+      "properties": {
+        "primary": {
+          "title": "Primary",
+          "type": "string"
+        },
+        "secondary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Secondary"
+        },
+        "assumed_knowledge": {
+          "$ref": "#/$defs/AssumedKnowledge",
+          "default": "intermediate"
+        }
+      },
+      "required": [
+        "primary"
+      ],
+      "title": "Audience",
+      "type": "object"
+    },
+    "Avatar": {
+      "properties": {
+        "type": {
+          "$ref": "#/$defs/AvatarType",
+          "default": "none"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "fallback_emoji": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Emoji"
+        },
+        "theme_color": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Theme Color"
+        }
+      },
+      "title": "Avatar",
+      "type": "object"
+    },
+    "AvatarType": {
+      "enum": [
+        "photo",
+        "illustrated",
+        "3d",
+        "icon",
+        "none"
+      ],
+      "title": "AvatarType",
+      "type": "string"
+    },
+    "Behavior": {
+      "properties": {
+        "strategies": {
+          "additionalProperties": {
+            "$ref": "#/$defs/BehaviorStrategy"
+          },
+          "title": "Strategies",
+          "type": "object"
+        },
+        "proactive": {
+          "$ref": "#/$defs/ProactiveConfig"
+        },
+        "conversation": {
+          "$ref": "#/$defs/ConversationConfig"
+        },
+        "decision_making": {
+          "$ref": "#/$defs/DecisionMaking"
+        }
+      },
+      "title": "Behavior",
+      "type": "object"
+    },
+    "BehaviorRule": {
+      "properties": {
+        "condition": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Condition"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Template"
+        },
+        "adjustments": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Adjustments",
+          "type": "object"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "BehaviorRule",
+      "type": "object"
+    },
+    "BehaviorStrategy": {
+      "properties": {
+        "approach": {
+          "title": "Approach",
+          "type": "string"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/BehaviorRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "max_pushback_rounds": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Pushback Rounds"
+        },
+        "final_fallback": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Final Fallback"
+        },
+        "near_scope_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Near Scope Threshold"
+        },
+        "near_scope_action": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Near Scope Action"
+        },
+        "bias": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClarificationBias"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "approach"
+      ],
+      "title": "BehaviorStrategy",
+      "type": "object"
+    },
+    "ClarificationBias": {
+      "enum": [
+        "toward_action",
+        "toward_precision"
+      ],
+      "title": "ClarificationBias",
+      "type": "string"
+    },
+    "ClarificationPolicy": {
+      "properties": {
+        "default": {
+          "type": "string",
+          "default": "ask_when_ambiguous",
+          "title": "Default"
+        },
+        "bias": {
+          "$ref": "#/$defs/ClarificationBias",
+          "default": "toward_action"
+        }
+      },
+      "title": "ClarificationPolicy",
+      "type": "object"
+    },
+    "Communication": {
+      "properties": {
+        "tone": {
+          "$ref": "#/$defs/ToneConfig"
+        },
+        "style": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/StyleConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageConfig"
+        },
+        "vocabulary": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VocabularyConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "tone"
+      ],
+      "title": "Communication",
+      "type": "object"
+    },
+    "CompositionConfig": {
+      "properties": {
+        "conflict_resolution": {
+          "$ref": "#/$defs/ConflictResolution"
+        },
+        "contradiction_detection": {
+          "$ref": "#/$defs/ContradictionDetection"
+        }
+      },
+      "title": "CompositionConfig",
+      "type": "object"
+    },
+    "ConfirmableAction": {
+      "properties": {
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "confirmation_prompt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmation Prompt"
+        }
+      },
+      "required": [
+        "action"
+      ],
+      "title": "ConfirmableAction",
+      "type": "object"
+    },
+    "ConflictResolution": {
+      "properties": {
+        "numeric_traits": {
+          "$ref": "#/$defs/NumericConflictStrategy",
+          "default": "last_wins"
+        },
+        "string_fields": {
+          "$ref": "#/$defs/NumericConflictStrategy",
+          "default": "last_wins"
+        },
+        "list_fields": {
+          "$ref": "#/$defs/ListConflictStrategy",
+          "default": "append"
+        },
+        "object_fields": {
+          "$ref": "#/$defs/ObjectConflictStrategy",
+          "default": "deep_merge"
+        },
+        "explicit_resolutions": {
+          "items": {
+            "$ref": "#/$defs/ExplicitResolution"
+          },
+          "title": "Explicit Resolutions",
+          "type": "array"
+        }
+      },
+      "title": "ConflictResolution",
+      "type": "object"
+    },
+    "ContradictionDetection": {
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "threshold": {
+          "default": 0.7,
+          "title": "Threshold",
+          "type": "number"
+        },
+        "related_trait_pairs": {
+          "items": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "title": "Related Trait Pairs",
+          "type": "array"
+        }
+      },
+      "title": "ContradictionDetection",
+      "type": "object"
+    },
+    "ConversationConfig": {
+      "properties": {
+        "length_calibration": {
+          "$ref": "#/$defs/LengthCalibrationConfig"
+        },
+        "clarification_policy": {
+          "$ref": "#/$defs/ClarificationPolicy"
+        },
+        "reference_prior_context": {
+          "default": true,
+          "title": "Reference Prior Context",
+          "type": "boolean"
+        },
+        "summarize_long_threads": {
+          "default": true,
+          "title": "Summarize Long Threads",
+          "type": "boolean"
+        },
+        "thread_summary_threshold": {
+          "default": 15,
+          "title": "Thread Summary Threshold",
+          "type": "integer"
+        }
+      },
+      "title": "ConversationConfig",
+      "type": "object"
+    },
+    "DecisionHeuristic": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "weight": {
+          "default": 0.5,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "title": "DecisionHeuristic",
+      "type": "object"
+    },
+    "DecisionMaking": {
+      "properties": {
+        "heuristics": {
+          "items": {
+            "$ref": "#/$defs/DecisionHeuristic"
+          },
+          "title": "Heuristics",
+          "type": "array"
+        },
+        "autonomy_threshold": {
+          "additionalProperties": {
+            "type": "string"
+          },
+          "title": "Autonomy Threshold",
+          "type": "object"
+        }
+      },
+      "title": "DecisionMaking",
+      "type": "object"
+    },
+    "DriftDetection": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "check_interval": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Check Interval"
+        },
+        "metrics": {
+          "items": {
+            "$ref": "#/$defs/DriftMetric"
+          },
+          "title": "Metrics",
+          "type": "array"
+        },
+        "correction": {
+          "additionalProperties": true,
+          "title": "Correction",
+          "type": "object"
+        }
+      },
+      "title": "DriftDetection",
+      "type": "object"
+    },
+    "DriftMetric": {
+      "properties": {
+        "trait": {
+          "title": "Trait",
+          "type": "string"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "alert_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Alert Threshold"
+        },
+        "correct_threshold": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Correct Threshold"
+        }
+      },
+      "required": [
+        "trait",
+        "method"
+      ],
+      "title": "DriftMetric",
+      "type": "object"
+    },
+    "EmojiUsage": {
+      "enum": [
+        "never",
+        "sparingly",
+        "frequently"
+      ],
+      "title": "EmojiUsage",
+      "type": "string"
+    },
+    "Emphasis": {
+      "enum": [
+        "none",
+        "key_terms",
+        "emotional"
+      ],
+      "title": "Emphasis",
+      "type": "string"
+    },
+    "Enforcement": {
+      "enum": [
+        "output_filter",
+        "runtime_sandbox",
+        "prompt_instruction",
+        "language_detection",
+        "output_truncation"
+      ],
+      "title": "Enforcement",
+      "type": "string"
+    },
+    "Escalation": {
+      "properties": {
+        "triggers": {
+          "items": {
+            "$ref": "#/$defs/EscalationTrigger"
+          },
+          "title": "Triggers",
+          "type": "array"
+        },
+        "channels": {
+          "additionalProperties": {
+            "$ref": "#/$defs/EscalationChannel"
+          },
+          "title": "Channels",
+          "type": "object"
+        }
+      },
+      "title": "Escalation",
+      "type": "object"
+    },
+    "EscalationChannel": {
+      "properties": {
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Url"
+        },
+        "service_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Service Id"
+        },
+        "channel": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Channel"
+        }
+      },
+      "required": [
+        "method"
+      ],
+      "title": "EscalationChannel",
+      "type": "object"
+    },
+    "EscalationTrigger": {
+      "properties": {
+        "condition": {
+          "title": "Condition",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "notify": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notify"
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Priority"
+        },
+        "message": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Message"
+        },
+        "threshold": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Threshold"
+        },
+        "window": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Window"
+        },
+        "resources": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resources",
+          "type": "array"
+        }
+      },
+      "required": [
+        "condition",
+        "action"
+      ],
+      "title": "EscalationTrigger",
+      "type": "object"
+    },
+    "Evaluation": {
+      "properties": {
+        "test_generation": {
+          "$ref": "#/$defs/TestGenerationConfig"
+        },
+        "rubrics": {
+          "additionalProperties": {
+            "$ref": "#/$defs/Rubric"
+          },
+          "title": "Rubrics",
+          "type": "object"
+        },
+        "regression": {
+          "$ref": "#/$defs/RegressionConfig"
+        }
+      },
+      "title": "Evaluation",
+      "type": "object"
+    },
+    "Evolution": {
+      "properties": {
+        "immutable_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Immutable Fields",
+          "type": "array"
+        },
+        "admin_mutable_fields": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Admin Mutable Fields",
+          "type": "array"
+        },
+        "runtime_mutable_fields": {
+          "items": {
+            "$ref": "#/$defs/RuntimeMutableField"
+          },
+          "title": "Runtime Mutable Fields",
+          "type": "array"
+        },
+        "drift_detection": {
+          "$ref": "#/$defs/DriftDetection"
+        },
+        "versioning": {
+          "$ref": "#/$defs/Versioning"
+        }
+      },
+      "title": "Evolution",
+      "type": "object"
+    },
+    "Expertise": {
+      "properties": {
+        "domains": {
+          "items": {
+            "$ref": "#/$defs/ExpertiseDomain"
+          },
+          "title": "Domains",
+          "type": "array"
+        },
+        "out_of_expertise_strategy": {
+          "$ref": "#/$defs/OutOfExpertiseStrategy",
+          "default": "acknowledge_and_redirect"
+        }
+      },
+      "title": "Expertise",
+      "type": "object"
+    },
+    "ExpertiseCategory": {
+      "enum": [
+        "primary",
+        "secondary",
+        "tertiary"
+      ],
+      "title": "ExpertiseCategory",
+      "type": "string"
+    },
+    "ExpertiseDomain": {
+      "properties": {
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "level": {
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Level",
+          "type": "number"
+        },
+        "category": {
+          "$ref": "#/$defs/ExpertiseCategory"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "can_teach": {
+          "default": false,
+          "title": "Can Teach",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "name",
+        "level",
+        "category"
+      ],
+      "title": "ExpertiseDomain",
+      "type": "object"
+    },
+    "ExplicitResolution": {
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "strategy": {
+          "title": "Strategy",
+          "type": "string"
+        }
+      },
+      "required": [
+        "field",
+        "strategy"
+      ],
+      "title": "ExplicitResolution",
+      "type": "object"
+    },
+    "GoldenTestConfig": {
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "format": {
+          "default": "conversation_yaml",
+          "title": "Format",
+          "type": "string"
+        }
+      },
+      "title": "GoldenTestConfig",
+      "type": "object"
+    },
+    "Guardrails": {
+      "properties": {
+        "hard": {
+          "items": {
+            "$ref": "#/$defs/HardGuardrail"
+          },
+          "minItems": 1,
+          "title": "Hard",
+          "type": "array"
+        },
+        "soft": {
+          "items": {
+            "$ref": "#/$defs/SoftGuardrail"
+          },
+          "title": "Soft",
+          "type": "array"
+        },
+        "topics": {
+          "$ref": "#/$defs/Topics"
+        },
+        "permissions": {
+          "$ref": "#/$defs/Permissions"
+        },
+        "escalation": {
+          "$ref": "#/$defs/Escalation"
+        }
+      },
+      "required": [
+        "hard"
+      ],
+      "title": "Guardrails",
+      "type": "object"
+    },
+    "HardGuardrail": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "enforcement": {
+          "$ref": "#/$defs/Enforcement"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        }
+      },
+      "required": [
+        "id",
+        "rule",
+        "enforcement",
+        "severity"
+      ],
+      "title": "HardGuardrail",
+      "type": "object"
+    },
+    "IdentityContext": {
+      "properties": {
+        "always_loaded": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Always Loaded",
+          "type": "array"
+        },
+        "conditional": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Conditional",
+          "type": "array"
+        },
+        "token_budget": {
+          "default": 3000,
+          "title": "Token Budget",
+          "type": "integer"
+        },
+        "compression_strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Compression Strategy"
+        }
+      },
+      "title": "IdentityContext",
+      "type": "object"
+    },
+    "JargonPolicy": {
+      "enum": [
+        "avoid",
+        "define_on_first_use",
+        "assume_known"
+      ],
+      "title": "JargonPolicy",
+      "type": "string"
+    },
+    "LanguageConfig": {
+      "properties": {
+        "primary": {
+          "default": "en",
+          "title": "Primary",
+          "type": "string"
+        },
+        "supported": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supported",
+          "type": "array"
+        },
+        "reading_level": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ReadingLevel"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "jargon_policy": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/JargonPolicy"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "LanguageConfig",
+      "type": "object"
+    },
+    "LengthCalibration": {
+      "enum": [
+        "brief",
+        "moderate",
+        "thorough",
+        "adaptive"
+      ],
+      "title": "LengthCalibration",
+      "type": "string"
+    },
+    "LengthCalibrationConfig": {
+      "properties": {
+        "default": {
+          "$ref": "#/$defs/LengthCalibration",
+          "default": "adaptive"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/LengthRule"
+          },
+          "title": "Rules",
+          "type": "array"
+        }
+      },
+      "title": "LengthCalibrationConfig",
+      "type": "object"
+    },
+    "LengthRule": {
+      "properties": {
+        "condition": {
+          "title": "Condition",
+          "type": "string"
+        },
+        "length": {
+          "$ref": "#/$defs/LengthCalibration"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "condition",
+        "length"
+      ],
+      "title": "LengthRule",
+      "type": "object"
+    },
+    "ListConflictStrategy": {
+      "enum": [
+        "append",
+        "replace",
+        "unique_append"
+      ],
+      "title": "ListConflictStrategy",
+      "type": "string"
+    },
+    "LongTermMemory": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "backend": {
+          "$ref": "#/$defs/MemoryBackend",
+          "default": "none"
+        },
+        "remember": {
+          "items": {
+            "$ref": "#/$defs/MemoryCategory"
+          },
+          "title": "Remember",
+          "type": "array"
+        },
+        "forget": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Forget",
+          "type": "array"
+        },
+        "lifecycle": {
+          "$ref": "#/$defs/MemoryLifecycle"
+        }
+      },
+      "title": "LongTermMemory",
+      "type": "object"
+    },
+    "Memory": {
+      "properties": {
+        "identity_context": {
+          "$ref": "#/$defs/IdentityContext"
+        },
+        "session": {
+          "$ref": "#/$defs/SessionConfig"
+        },
+        "long_term": {
+          "$ref": "#/$defs/LongTermMemory"
+        },
+        "relationships": {
+          "$ref": "#/$defs/Relationships"
+        }
+      },
+      "title": "Memory",
+      "type": "object"
+    },
+    "MemoryBackend": {
+      "enum": [
+        "vector_store",
+        "key_value",
+        "graph",
+        "none"
+      ],
+      "title": "MemoryBackend",
+      "type": "string"
+    },
+    "MemoryCategory": {
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "examples": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Examples",
+          "type": "array"
+        },
+        "retention": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Retention"
+        },
+        "privacy_level": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Privacy Level"
+        }
+      },
+      "required": [
+        "category"
+      ],
+      "title": "MemoryCategory",
+      "type": "object"
+    },
+    "MemoryLifecycle": {
+      "properties": {
+        "review_interval": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Review Interval"
+        },
+        "decay_strategy": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decay Strategy"
+        },
+        "max_memories_per_user": {
+          "default": 500,
+          "title": "Max Memories Per User",
+          "type": "integer"
+        },
+        "user_can_view": {
+          "default": true,
+          "title": "User Can View",
+          "type": "boolean"
+        },
+        "user_can_delete": {
+          "default": true,
+          "title": "User Can Delete",
+          "type": "boolean"
+        },
+        "user_can_export": {
+          "default": true,
+          "title": "User Can Export",
+          "type": "boolean"
+        }
+      },
+      "title": "MemoryLifecycle",
+      "type": "object"
+    },
+    "Metadata": {
+      "properties": {
+        "id": {
+          "pattern": "^agt_[a-zA-Z0-9_]+$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 100,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "version": {
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "description": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "format": "date-time",
+          "title": "Updated At",
+          "type": "string"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/Status",
+          "default": "draft"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "version",
+        "description",
+        "created_at",
+        "updated_at"
+      ],
+      "title": "Metadata",
+      "type": "object"
+    },
+    "MixinHeader": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "MixinHeader",
+      "type": "object"
+    },
+    "NumericConflictStrategy": {
+      "enum": [
+        "last_wins",
+        "highest",
+        "lowest",
+        "average"
+      ],
+      "title": "NumericConflictStrategy",
+      "type": "string"
+    },
+    "ObjectConflictStrategy": {
+      "enum": [
+        "deep_merge",
+        "replace"
+      ],
+      "title": "ObjectConflictStrategy",
+      "type": "string"
+    },
+    "OutOfExpertiseStrategy": {
+      "enum": [
+        "attempt_anyway",
+        "acknowledge_and_redirect",
+        "hard_decline"
+      ],
+      "title": "OutOfExpertiseStrategy",
+      "type": "string"
+    },
+    "OverrideLevel": {
+      "enum": [
+        "admin",
+        "supervisor",
+        "none"
+      ],
+      "title": "OverrideLevel",
+      "type": "string"
+    },
+    "Pacing": {
+      "enum": [
+        "rapid",
+        "measured",
+        "deliberate"
+      ],
+      "title": "Pacing",
+      "type": "string"
+    },
+    "ParagraphLength": {
+      "enum": [
+        "short",
+        "medium",
+        "long"
+      ],
+      "title": "ParagraphLength",
+      "type": "string"
+    },
+    "Permissions": {
+      "properties": {
+        "autonomous": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Autonomous",
+          "type": "array"
+        },
+        "requires_confirmation": {
+          "items": {
+            "$ref": "#/$defs/ConfirmableAction"
+          },
+          "title": "Requires Confirmation",
+          "type": "array"
+        },
+        "forbidden": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Forbidden",
+          "type": "array"
+        }
+      },
+      "title": "Permissions",
+      "type": "object"
+    },
+    "Personality": {
+      "properties": {
+        "traits": {
+          "$ref": "#/$defs/PersonalityTraits"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        }
+      },
+      "required": [
+        "traits"
+      ],
+      "title": "Personality",
+      "type": "object"
+    },
+    "PersonalityTraits": {
+      "additionalProperties": true,
+      "properties": {
+        "warmth": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Warmth"
+        },
+        "verbosity": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Verbosity"
+        },
+        "assertiveness": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assertiveness"
+        },
+        "humor": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Humor"
+        },
+        "empathy": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Empathy"
+        },
+        "directness": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Directness"
+        },
+        "rigor": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rigor"
+        },
+        "creativity": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Creativity"
+        },
+        "epistemic_humility": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Epistemic Humility"
+        },
+        "patience": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Patience"
+        }
+      },
+      "title": "PersonalityTraits",
+      "type": "object"
+    },
+    "PlatformConfig": {
+      "properties": {
+        "defaults": {
+          "$ref": "#/$defs/PlatformDefaults"
+        },
+        "overrides": {
+          "items": {
+            "$ref": "#/$defs/PlatformOverride"
+          },
+          "title": "Overrides",
+          "type": "array"
+        }
+      },
+      "title": "PlatformConfig",
+      "type": "object"
+    },
+    "PlatformDefaults": {
+      "properties": {
+        "max_response_length": {
+          "default": 2000,
+          "title": "Max Response Length",
+          "type": "integer"
+        },
+        "format": {
+          "default": "markdown",
+          "title": "Format",
+          "type": "string"
+        }
+      },
+      "title": "PlatformDefaults",
+      "type": "object"
+    },
+    "PlatformOverride": {
+      "properties": {
+        "platform": {
+          "title": "Platform",
+          "type": "string"
+        },
+        "format": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Format"
+        },
+        "max_response_length": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Response Length"
+        },
+        "tone_adjustment": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Tone Adjustment",
+          "type": "object"
+        },
+        "use_emoji": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EmojiUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "use_threads": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Use Threads"
+        },
+        "include_signature": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Include Signature"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signature"
+        },
+        "include_metadata": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Include Metadata"
+        },
+        "avoid_formatting": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Avoid Formatting"
+        },
+        "spell_out_abbreviations": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Spell Out Abbreviations"
+        }
+      },
+      "required": [
+        "platform"
+      ],
+      "title": "PlatformOverride",
+      "type": "object"
+    },
+    "Presentation": {
+      "properties": {
+        "voice": {
+          "$ref": "#/$defs/VoiceConfig"
+        },
+        "visual": {
+          "$ref": "#/$defs/VisualConfig"
+        },
+        "platforms": {
+          "$ref": "#/$defs/PlatformConfig"
+        }
+      },
+      "title": "Presentation",
+      "type": "object"
+    },
+    "Principle": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "priority": {
+          "minimum": 1,
+          "title": "Priority",
+          "type": "integer"
+        },
+        "statement": {
+          "title": "Statement",
+          "type": "string"
+        },
+        "implications": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Implications",
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "priority",
+        "statement"
+      ],
+      "title": "Principle",
+      "type": "object"
+    },
+    "ProactiveConfig": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "triggers": {
+          "items": {
+            "$ref": "#/$defs/ProactiveTrigger"
+          },
+          "title": "Triggers",
+          "type": "array"
+        },
+        "limits": {
+          "additionalProperties": true,
+          "title": "Limits",
+          "type": "object"
+        }
+      },
+      "title": "ProactiveConfig",
+      "type": "object"
+    },
+    "ProactiveTrigger": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "condition": {
+          "title": "Condition",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "announce": {
+          "default": true,
+          "title": "Announce",
+          "type": "boolean"
+        },
+        "priority": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Priority"
+        }
+      },
+      "required": [
+        "id",
+        "condition",
+        "action"
+      ],
+      "title": "ProactiveTrigger",
+      "type": "object"
+    },
+    "Pronunciation": {
+      "properties": {
+        "word": {
+          "title": "Word",
+          "type": "string"
+        },
+        "say": {
+          "title": "Say",
+          "type": "string"
+        }
+      },
+      "required": [
+        "word",
+        "say"
+      ],
+      "title": "Pronunciation",
+      "type": "object"
+    },
+    "ReadingLevel": {
+      "enum": [
+        "simple",
+        "intermediate",
+        "professional",
+        "academic"
+      ],
+      "title": "ReadingLevel",
+      "type": "string"
+    },
+    "Register": {
+      "enum": [
+        "intimate",
+        "casual",
+        "consultative",
+        "formal",
+        "frozen"
+      ],
+      "title": "Register",
+      "type": "string"
+    },
+    "RegressionConfig": {
+      "properties": {
+        "trigger": {
+          "default": "pre_deploy",
+          "title": "Trigger",
+          "type": "string"
+        },
+        "test_suite": {
+          "$ref": "#/$defs/TestSuite",
+          "default": "full"
+        },
+        "golden_tests": {
+          "$ref": "#/$defs/GoldenTestConfig"
+        },
+        "diff_report": {
+          "additionalProperties": true,
+          "title": "Diff Report",
+          "type": "object"
+        }
+      },
+      "title": "RegressionConfig",
+      "type": "object"
+    },
+    "Relationships": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "user_model": {
+          "additionalProperties": true,
+          "title": "User Model",
+          "type": "object"
+        },
+        "agent_relationships": {
+          "items": {
+            "$ref": "#/$defs/AgentRelationship"
+          },
+          "title": "Agent Relationships",
+          "type": "array"
+        }
+      },
+      "title": "Relationships",
+      "type": "object"
+    },
+    "Role": {
+      "properties": {
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "purpose": {
+          "maxLength": 1000,
+          "minLength": 1,
+          "title": "Purpose",
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/Scope"
+        },
+        "audience": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Audience"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "title",
+        "purpose",
+        "scope"
+      ],
+      "title": "Role",
+      "type": "object"
+    },
+    "RollbackConfig": {
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "max_versions": {
+          "default": 20,
+          "title": "Max Versions",
+          "type": "integer"
+        },
+        "method": {
+          "default": "full_snapshot",
+          "title": "Method",
+          "type": "string"
+        }
+      },
+      "title": "RollbackConfig",
+      "type": "object"
+    },
+    "Rubric": {
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "scoring": {
+          "$ref": "#/$defs/ScoringConfig"
+        },
+        "passing_score": {
+          "default": 3.5,
+          "title": "Passing Score",
+          "type": "number"
+        },
+        "weight": {
+          "default": 0.25,
+          "title": "Weight",
+          "type": "number"
+        }
+      },
+      "title": "Rubric",
+      "type": "object"
+    },
+    "RuntimeMutableField": {
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "bounds": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "number"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Bounds"
+        },
+        "drift_rate": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Drift Rate"
+        },
+        "trigger": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trigger"
+        }
+      },
+      "required": [
+        "field"
+      ],
+      "title": "RuntimeMutableField",
+      "type": "object"
+    },
+    "Scope": {
+      "properties": {
+        "primary": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Primary",
+          "type": "array"
+        },
+        "secondary": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Secondary",
+          "type": "array"
+        },
+        "out_of_scope": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Out Of Scope",
+          "type": "array"
+        }
+      },
+      "required": [
+        "primary"
+      ],
+      "title": "Scope",
+      "type": "object"
+    },
+    "ScoringConfig": {
+      "properties": {
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "model": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model"
+        },
+        "prompt_template": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Template"
+        },
+        "criteria": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Criteria",
+          "type": "array"
+        }
+      },
+      "title": "ScoringConfig",
+      "type": "object"
+    },
+    "SentenceLength": {
+      "enum": [
+        "short",
+        "mixed",
+        "long"
+      ],
+      "title": "SentenceLength",
+      "type": "string"
+    },
+    "SessionConfig": {
+      "properties": {
+        "strategy": {
+          "default": "sliding_window_with_summary",
+          "title": "Strategy",
+          "type": "string"
+        },
+        "sliding_window": {
+          "$ref": "#/$defs/SlidingWindow"
+        },
+        "summarization": {
+          "$ref": "#/$defs/SummarizationConfig"
+        },
+        "session_state": {
+          "additionalProperties": {
+            "type": "boolean"
+          },
+          "title": "Session State",
+          "type": "object"
+        }
+      },
+      "title": "SessionConfig",
+      "type": "object"
+    },
+    "Severity": {
+      "enum": [
+        "critical",
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "SlidingWindow": {
+      "properties": {
+        "max_turns": {
+          "default": 50,
+          "title": "Max Turns",
+          "type": "integer"
+        },
+        "max_tokens": {
+          "default": 8000,
+          "title": "Max Tokens",
+          "type": "integer"
+        }
+      },
+      "title": "SlidingWindow",
+      "type": "object"
+    },
+    "SoftGuardrail": {
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "rule": {
+          "title": "Rule",
+          "type": "string"
+        },
+        "enforcement": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Enforcement"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "override_level": {
+          "$ref": "#/$defs/OverrideLevel",
+          "default": "admin"
+        },
+        "current_config": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SoftGuardrailConfig"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "id",
+        "rule"
+      ],
+      "title": "SoftGuardrail",
+      "type": "object"
+    },
+    "SoftGuardrailConfig": {
+      "additionalProperties": true,
+      "properties": {},
+      "title": "SoftGuardrailConfig",
+      "type": "object"
+    },
+    "Status": {
+      "enum": [
+        "draft",
+        "active",
+        "deprecated",
+        "archived"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "StatusIndicators": {
+      "properties": {
+        "thinking": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Thinking"
+        },
+        "responding": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Responding"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        }
+      },
+      "title": "StatusIndicators",
+      "type": "object"
+    },
+    "StyleConfig": {
+      "properties": {
+        "sentence_length": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SentenceLength"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "paragraph_length": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ParagraphLength"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "use_headers": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Use Headers"
+        },
+        "use_lists": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Use Lists"
+        },
+        "use_code_blocks": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Use Code Blocks"
+        },
+        "use_emoji": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/EmojiUsage"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "preferred_formats": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Preferred Formats",
+          "type": "array"
+        }
+      },
+      "title": "StyleConfig",
+      "type": "object"
+    },
+    "SummarizationConfig": {
+      "properties": {
+        "enabled": {
+          "default": true,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "trigger": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Trigger"
+        },
+        "method": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Method"
+        },
+        "preserve": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Preserve",
+          "type": "array"
+        }
+      },
+      "title": "SummarizationConfig",
+      "type": "object"
+    },
+    "TestGenerationConfig": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "generators": {
+          "items": {
+            "$ref": "#/$defs/TestGenerator"
+          },
+          "title": "Generators",
+          "type": "array"
+        }
+      },
+      "title": "TestGenerationConfig",
+      "type": "object"
+    },
+    "TestGenerator": {
+      "properties": {
+        "source": {
+          "title": "Source",
+          "type": "string"
+        },
+        "method": {
+          "title": "Method",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "prompts_per_trait": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompts Per Trait"
+        },
+        "prompts_per_guardrail": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompts Per Guardrail"
+        },
+        "scenarios_per_strategy": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Scenarios Per Strategy"
+        },
+        "prompts_per_domain": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompts Per Domain"
+        }
+      },
+      "required": [
+        "source",
+        "method"
+      ],
+      "title": "TestGenerator",
+      "type": "object"
+    },
+    "TestSuite": {
+      "enum": [
+        "full",
+        "smoke",
+        "affected_only"
+      ],
+      "title": "TestSuite",
+      "type": "string"
+    },
+    "ToneConfig": {
+      "properties": {
+        "default": {
+          "type": "string",
+          "title": "Default"
+        },
+        "register": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Register"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "overrides": {
+          "items": {
+            "$ref": "#/$defs/ToneOverride"
+          },
+          "title": "Overrides",
+          "type": "array"
+        }
+      },
+      "required": [
+        "default"
+      ],
+      "title": "ToneConfig",
+      "type": "object"
+    },
+    "ToneOverride": {
+      "properties": {
+        "context": {
+          "title": "Context",
+          "type": "string"
+        },
+        "tone": {
+          "title": "Tone",
+          "type": "string"
+        },
+        "note": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Note"
+        }
+      },
+      "required": [
+        "context",
+        "tone"
+      ],
+      "title": "ToneOverride",
+      "type": "object"
+    },
+    "TopicEntry": {
+      "properties": {
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "subtopics": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Subtopics",
+          "type": "array"
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reason"
+        },
+        "redirect_to": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Redirect To"
+        },
+        "response": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Response"
+        }
+      },
+      "required": [
+        "category"
+      ],
+      "title": "TopicEntry",
+      "type": "object"
+    },
+    "Topics": {
+      "properties": {
+        "allowed": {
+          "items": {
+            "$ref": "#/$defs/TopicEntry"
+          },
+          "title": "Allowed",
+          "type": "array"
+        },
+        "restricted": {
+          "items": {
+            "$ref": "#/$defs/TopicEntry"
+          },
+          "title": "Restricted",
+          "type": "array"
+        },
+        "forbidden": {
+          "items": {
+            "$ref": "#/$defs/TopicEntry"
+          },
+          "title": "Forbidden",
+          "type": "array"
+        }
+      },
+      "title": "Topics",
+      "type": "object"
+    },
+    "Versioning": {
+      "properties": {
+        "auto_increment": {
+          "default": "patch",
+          "title": "Auto Increment",
+          "type": "string"
+        },
+        "changelog": {
+          "additionalProperties": true,
+          "title": "Changelog",
+          "type": "object"
+        },
+        "rollback": {
+          "$ref": "#/$defs/RollbackConfig"
+        }
+      },
+      "title": "Versioning",
+      "type": "object"
+    },
+    "VisualConfig": {
+      "properties": {
+        "avatar": {
+          "$ref": "#/$defs/Avatar"
+        },
+        "status_indicators": {
+          "$ref": "#/$defs/StatusIndicators"
+        }
+      },
+      "title": "VisualConfig",
+      "type": "object"
+    },
+    "VocabularyConfig": {
+      "properties": {
+        "preferred": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Preferred",
+          "type": "array"
+        },
+        "avoided": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Avoided",
+          "type": "array"
+        },
+        "signature_phrases": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Signature Phrases",
+          "type": "array"
+        }
+      },
+      "title": "VocabularyConfig",
+      "type": "object"
+    },
+    "VoiceConfig": {
+      "properties": {
+        "enabled": {
+          "default": false,
+          "title": "Enabled",
+          "type": "boolean"
+        },
+        "provider": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/VoiceProvider"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "voice_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Voice Id"
+        },
+        "settings": {
+          "$ref": "#/$defs/VoiceSettings"
+        },
+        "style": {
+          "$ref": "#/$defs/VoiceStyle"
+        },
+        "pronunciation": {
+          "items": {
+            "$ref": "#/$defs/Pronunciation"
+          },
+          "title": "Pronunciation",
+          "type": "array"
+        }
+      },
+      "title": "VoiceConfig",
+      "type": "object"
+    },
+    "VoiceProvider": {
+      "enum": [
+        "elevenlabs",
+        "azure",
+        "google",
+        "openai"
+      ],
+      "title": "VoiceProvider",
+      "type": "string"
+    },
+    "VoiceSettings": {
+      "properties": {
+        "speed": {
+          "default": 1.0,
+          "maximum": 2.0,
+          "minimum": 0.5,
+          "title": "Speed",
+          "type": "number"
+        },
+        "pitch": {
+          "default": 0.0,
+          "maximum": 1.0,
+          "minimum": -1.0,
+          "title": "Pitch",
+          "type": "number"
+        },
+        "stability": {
+          "default": 0.7,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Stability",
+          "type": "number"
+        },
+        "similarity_boost": {
+          "default": 0.8,
+          "maximum": 1.0,
+          "minimum": 0.0,
+          "title": "Similarity Boost",
+          "type": "number"
+        }
+      },
+      "title": "VoiceSettings",
+      "type": "object"
+    },
+    "VoiceStyle": {
+      "properties": {
+        "pacing": {
+          "$ref": "#/$defs/Pacing",
+          "default": "measured"
+        },
+        "emphasis": {
+          "$ref": "#/$defs/Emphasis",
+          "default": "key_terms"
+        },
+        "pause_at_transitions": {
+          "default": true,
+          "title": "Pause At Transitions",
+          "type": "boolean"
+        }
+      },
+      "title": "VoiceStyle",
+      "type": "object"
+    }
+  },
+  "description": "Complete agent identity specification.",
+  "properties": {
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^\\d+\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "extends": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Extends"
+    },
+    "mixins": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Mixins",
+      "type": "array"
+    },
+    "overrides": {
+      "anyOf": [
+        {
+          "additionalProperties": true,
+          "type": "object"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Overrides"
+    },
+    "archetype": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ArchetypeHeader"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "mixin": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MixinHeader"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "metadata": {
+      "$ref": "#/$defs/Metadata"
+    },
+    "role": {
+      "$ref": "#/$defs/Role"
+    },
+    "personality": {
+      "$ref": "#/$defs/Personality"
+    },
+    "communication": {
+      "$ref": "#/$defs/Communication"
+    },
+    "expertise": {
+      "$ref": "#/$defs/Expertise"
+    },
+    "principles": {
+      "items": {
+        "$ref": "#/$defs/Principle"
+      },
+      "minItems": 1,
+      "title": "Principles",
+      "type": "array"
+    },
+    "behavior": {
+      "$ref": "#/$defs/Behavior"
+    },
+    "guardrails": {
+      "$ref": "#/$defs/Guardrails"
+    },
+    "memory": {
+      "$ref": "#/$defs/Memory"
+    },
+    "presentation": {
+      "$ref": "#/$defs/Presentation"
+    },
+    "evolution": {
+      "$ref": "#/$defs/Evolution"
+    },
+    "evaluation": {
+      "$ref": "#/$defs/Evaluation"
+    },
+    "composition": {
+      "$ref": "#/$defs/CompositionConfig"
+    }
+  },
+  "required": [
+    "metadata",
+    "role",
+    "personality",
+    "communication",
+    "principles",
+    "guardrails"
+  ],
+  "title": "AI Agent Identity Framework v1.0",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://schema.agentplatform.dev/identity/v1.0/schema.json"
+}

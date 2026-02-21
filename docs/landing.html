@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PersonaNexus — YAML Personality Framework</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0f14;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent-start: #6366f1;
+            --accent-end: #8b5cf6;
+            --code-bg: #1e293b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 20px;
+            background: linear-gradient(
+                to bottom,
+                var(--bg) 0%,
+                #0f1621 100%
+            );
+            background-image: linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 24px;
+            line-height: 1.1;
+            background: linear-gradient(
+                135deg,
+                var(--accent-start),
+                var(--accent-end)
+            );
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            font-size: 1.25rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto 40px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+
+        .btn {
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            color: white;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4), 0 0 40px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            transform: translateY(-2px);
+        }
+
+        .code-snippet {
+            background: var(--code-bg);
+            padding: 20px;
+            border-radius: 12px;
+            font-family: 'Monospace', 'Courier New', monospace;
+            font-size: 0.85rem;
+            text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-width: 500px;
+            margin: 40px auto 0;
+        }
+
+        .code-snippet span.key { color: #93c5fd; }
+        .code-snippet span.val { color: #86efac; }
+        .code-snippet span.comment { color: #64748b; }
+
+        /* Features Section */
+        .features {
+            padding: 80px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 60px;
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .feature-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 32px;
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .feature-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 12px;
+        }
+
+        .feature-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+        }
+
+        /* Code Example Section */
+        .code-example {
+            padding: 80px 20px;
+            background: #0d131d;
+        }
+
+        .code-container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .code-box {
+            background: var(--code-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .code-header {
+            padding: 12px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            font-family: 'Monospace', 'Courier New', monospace;
+            font-size: 0.9rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        pre {
+            padding: 20px;
+            overflow-x: auto;
+            font-family: 'Monospace', 'Courier New', monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        /* Live YAML Editor Section */
+        .yaml-editor-section {
+            padding: 80px 20px;
+            background: #0d131d;
+        }
+
+        .yaml-editor-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+
+        .editor-panel {
+            background: var(--code-bg);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .editor-panel textarea {
+            width: 100%;
+            height: 600px;
+            background: #1e293b;
+            color: #e2e8f0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 20px;
+            font-family: 'Monospace', 'Courier New', monospace;
+            font-size: 0.9rem;
+            resize: none;
+            line-height: 1.6;
+        }
+
+        .editor-panel textarea:focus {
+            outline: none;
+            border-color: var(--accent-start);
+        }
+
+        .agent-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .agent-card h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .agent-role {
+            color: var(--accent-start);
+            font-weight: 600;
+            margin-bottom: 24px;
+        }
+
+        .radar-chart {
+            width: 100%;
+            height: 280px;
+            margin: 20px 0;
+        }
+
+        .mood-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .mood-badge {
+            background: rgba(139, 92, 246, 0.2);
+            color: var(--accent-end);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .input-yaml .key { color: #93c5fd; }
+        .input-yaml .val { color: #86efac; }
+        .input-yaml .comment { color: #64748b; }
+        .input-yaml .string { color: #86efac; }
+        .input-yaml .number { color: #fca5a5; }
+        .input-yaml .boolean { color: #fca5a5; }
+
+        .output-prompt .system { color: #fbbf24; font-weight: bold; }
+        .output-prompt .instruction { color: #a5b4fc; }
+        .output-prompt .personality { color: #86efac; }
+        .output-prompt .notes { color: #64748b; font-style: italic; }
+
+        /* Install Section */
+        #install {
+            padding: 80px 20px;
+        }
+
+        .install-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: var(--code-bg);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+
+        .terminal-header {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 20px;
+            display: flex;
+            gap: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .terminal-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .dot-red { background: #ef4444; }
+        .dot-yellow { background: #fbbf24; }
+        .dot-green { background: #86efac; }
+
+        .terminal-content {
+            padding: 30px 40px;
+            font-family: 'Monospace', 'Courier New', monospace;
+            color: var(--text);
+        }
+
+        .cmd {
+            color: var(--accent-end);
+            font-weight: 600;
+        }
+
+        .cmd-line {
+            margin-bottom: 24px;
+        }
+
+        .cmd-line:first-child {
+            margin-bottom: 30px;
+        }
+
+        .cmd-line span {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 60px 20px;
+            text-align: center;
+            background: #05070a;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-bottom: 20px;
+        }
+
+        .footer-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .animate-on-scroll.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            .code-container { grid-template-columns: 1fr; }
+            .hero-buttons { flex-direction: column; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <section class="hero animate-on-scroll">
+        <h1>Define Who Your AI Agents Are</h1>
+        <p class="subtitle">YAML-based identity framework with OCEAN & DISC personality models. Open source.</p>
+        <div class="hero-buttons">
+            <a href="#install" class="btn btn-primary">Get Started</a>
+            <a href="https://github.com/jcrowan3/personanexus" target="_blank" class="btn btn-secondary">GitHub</a>
+        </div>
+        
+        <div class="code-snippet">
+<span class="comment"># agent-personality.yaml</span>
+<span class="key">name:</span> <span class="string">Nexus-7</span>
+<span class="key">version:</span> <span class="val">1.4.0</span>
+<span class="key">description:</span> <span class="val">AI assistant with adaptive personality</span>
+
+<span class="key">personality:</span>
+  <span class="key">ocean:</span>
+    <span class="key">openness:</span> <span class="val">0.82</span>
+    <span class="key">conscientiousness:</span> <span class="val">0.76</span>
+    <span class="key">extraversion:</span> <span class="val">0.68</span>
+    <span class="key">agreeableness:</span> <span class="val">0.73</span>
+    <span class="key">neuroticism:</span> <span class="val">0.32</span>
+</div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features animate-on-scroll">
+        <h2 class="section-title">Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="icon">🧠</div>
+                <h3>Psychology-Based</h3>
+                <p>OCEAN/DISC personality models for scientifically-backed agent behavior patterns and emotional intelligence.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">📝</div>
+                <h3>YAML-First</h3>
+                <p>Version-controllable identity definitions using human-readable YAML for easy collaboration and git workflows.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🔄</div>
+                <h3>Compile Anywhere</h3>
+                <p>System prompts for any LLM — works with local models, cloud APIs, and self-hosted deployments.</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🎭</div>
+                <h3>Mood States</h3>
+                <p>Dynamic emotional state modifiers for context-aware responses (NEW v1.4)</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🔀</div>
+                <h3>Behavioral Modes</h3>
+                <p>Formal/casual/crisis modes that adapt communication style automatically (NEW v1.4)</p>
+            </div>
+            <div class="feature-card">
+                <div class="icon">🤝</div>
+                <h3>Relationships</h3>
+                <p>Agent interaction dynamics for multi-agent systems and team collaboration (NEW v1.4)</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Example Section -->
+    <section class="code-example animate-on-scroll">
+        <h2 class="section-title">How It Works</h2>
+        <div class="code-container">
+            <div class="code-box">
+                <div class="code-header">
+                    <span>agent-personality.yaml</span>
+                    <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+                </div>
+                <pre class="input-yaml"><span class="comment"># Define your agent's personality</span>
+<span class="key">name:</span> <span class="string">Nexus-7</span>
+<span class="key">version:</span> <span class="val">1.4.0</span>
+
+<span class="key">personality:</span>
+  <span class="key">ocean:</span>
+    <span class="key">openness:</span> <span class="val">0.82</span>
+    <span class="key">conscientiousness:</span> <span class="val">0.76</span>
+    <span class="key">extraversion:</span> <span class="val">0.68</span>
+  <span class="key">disc:</span>
+    <span class="key">dominance:</span> <span class="val">0.54</span>
+    <span class="key">influence:</span> <span class="val">0.71</span>
+    <span class="key">steadiness:</span> <span class="val">0.62</span>
+    <span class="key">conscientiousness:</span> <span class="val">0.48</span>
+
+<span class="key">behavior:</span>
+  <span class="key">modes:</span>
+    <span class="key">default:</span> <span class="val">casual</span>
+    <span class="key">crisis:</span> <span class="val">formal</span>
+</pre>
+            </div>
+
+            <div class="code-box">
+                <div class="code-header">
+                    <span>compiled-prompt.txt</span>
+                    <button class="copy-btn" onclick="copyCode2(this)">Copy</button>
+                </div>
+                <pre class="output-prompt"><span class="system">SYSTEM INSTRUCTIONS:</span>
+<span class="instruction">Your name is Nexus-7. You are an AI assistant with a well-balanced personality.</span>
+
+<span class="instruction">OCEAN Personality Profile:</span>
+<span class="personality">• Openness: 0.82 - Curious, creative, innovative thinker</span>
+<span class="personality">• Conscientiousness: 0.76 - Organized, thorough, reliable</span>
+<span class="personality">• Extraversion: 0.68 - Outgoing, energetic, warm communicator</span>
+
+<span class="instruction">DISC Profile:</span>
+<span class="personality">• Dominance: 0.54 - Balanced approach to challenges</span>
+<span class="personality">• Influence: 0.71 - Persuasive, enthusiastic, people-focused</span>
+
+<span class="instruction">Behavioral Mode: Casual (default)</span>
+<span class="notes">Mode changes to formal during crisis states based on context analysis.</span>
+<span class="notes">Adapt communication style dynamically based on user preferences.</span>
+</pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Install Section -->
+    <section id="install">
+        <div class="install-container">
+            <div class="terminal-header">
+                <div class="terminal-dot dot-red"></div>
+                <div class="terminal-dot dot-yellow"></div>
+                <div class="terminal-dot dot-green"></div>
+            </div>
+            <div class="terminal-content">
+                <div class="cmd-line">
+                    <span class="cmd">pip install personanexus</span>
+                    <div>Collecting package metadata: ...done</div>
+                    <div>Installing personanexus with OCEAN/DISC support</div>
+                </div>
+                
+                <div class="cmd-line">
+                    <span class="cmd">personanexus init my-agent</span>
+                    <div>Initialized agent personality structure in my-agent/</div>
+                    <div>Created personality.yaml with OCEAN defaults</div>
+                </div>
+
+                <div class="cmd-line">
+                    <span class="cmd">personanexus compile my-agent</span>
+                    <div>Compiled system prompt for OpenAI, Anthropic, and local LLMs</div>
+                    <div>Ready for deployment!</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Live YAML Editor Section -->
+    <section class="yaml-editor-section animate-on-scroll">
+        <h2 class="section-title">PersonaNexus Editor</h2>
+        <div class="yaml-editor-container">
+            <div class="editor-panel">
+                <div class="code-header">
+                    <span>Edit agent-personality.yaml</span>
+                </div>
+                <textarea id="yaml-editor" spellcheck="false">name: Ada
+role: Senior Data Analyst
+personality:
+  mode: ocean
+  ocean:
+    openness: 0.7
+    conscientiousness: 0.85
+    extraversion: 0.5
+    agreeableness: 0.6
+    neuroticism: 0.2
+  mood:
+    default: neutral
+    states:
+      - name: focused
+      - name: empathetic</textarea>
+            </div>
+            <div class="agent-card">
+                <h3 id="agent-name">Ada</h3>
+                <p class="agent-role" id="agent-role">Senior Data Analyst</p>
+                <svg class="radar-chart" viewBox="0 0 200 200">
+                    <g transform="translate(100,100)">
+                        <!-- Background circle -->
+                        <circle cx="0" cy="0" r="80" fill="none" stroke="#475569" stroke-width="1" opacity="0.5"/>
+                        <polygon id="ocean-polygon" points="0,-80 76,-25 47,64 -47,64 -76,-25" fill="rgba(99,102,241,0.5)" stroke="#6366f1" stroke-width="2"/>
+                        <polyline points="0,-80 76,-25 47,64 -47,64 -76,-25 0,-80" fill="none" stroke="#475569" stroke-width="1"/>
+                        <!-- Labels -->
+                        <text x="0" y="-95" text-anchor="middle" fill="#94a3b8" font-size="12">O</text>
+                        <text x="90" y="-30" text-anchor="middle" fill="#94a3b8" font-size="12">C</text>
+                        <text x="60" y="85" text-anchor="middle" fill="#94a3b8" font-size="12">E</text>
+                        <text x="-60" y="85" text-anchor="middle" fill="#94a3b8" font-size="12">A</text>
+                        <text x="-90" y="-30" text-anchor="middle" fill="#94a3b8" font-size="12">N</text>
+                        <!-- Value labels -->
+                        <g id="ocean-labels"></g>
+                    </g>
+                </svg>
+                <div class="mood-badges" id="mood-badges">
+                    <span class="mood-badge">neutral (default)</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="https://github.com/jcrowan3/personanexus" target="_blank" class="footer-link">GitHub</a>
+            <a href="https://pypi.org/project/personanexus" target="_blank" class="footer-link">PyPI</a>
+            <a href="https://github.com/jcrowan3/personanexus/blob/main/LICENSE" target="_blank" class="footer-link">MIT License</a>
+        </div>
+        <p class="license">Copyright &copy; 2026 Jason Crow. All rights reserved.</p>
+        <p class="built-for-devs">Built for developers building intelligent agents</p>
+    </footer>
+
+    <script>
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) e.target.classList.add('visible');
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
+
+        // YAML parser (simple string-based)
+        function parseYaml(yaml) {
+            const lines = yaml.split('\n');
+            const result = {
+                name: '',
+                role: '',
+                openness: 0,
+                conscientiousness: 0,
+                extraversion: 0,
+                agreeableness: 0,
+                neuroticism: 0,
+                moodStates: []
+            };
+
+            let currentSection = '';
+            let inMoodStates = false;
+
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed || trimmed.startsWith('#')) return;
+
+                const indent = line.search(/\S|$/);
+                const valueMatch = trimmed.match(/^(\w+):\s*(.*)/);
+
+                if (valueMatch) {
+                    const [, key, value] = valueMatch;
+
+                    if (indent === 0) {
+                        currentSection = key;
+                        if (key === 'name') result.name = value.trim() || 'Agent';
+                        if (key === 'role') result.role = value.trim() || 'AI Agent';
+                    } else if (indent === 2) {
+                        if (currentSection === 'personality' && key === 'mode' && value.includes('ocean')) {
+                            currentSection = 'ocean_values';
+                        } else if (key === 'states') {
+                            inMoodStates = true;
+                            currentSection = 'mood_states';
+                        }
+                    } else if (indent === 4) {
+                        if (currentSection === 'ocean_values') {
+                            const num = parseFloat(value);
+                            if (!isNaN(num)) {
+                                if (key === 'openness') result.openness = num;
+                                if (key === 'conscientiousness') result.conscientiousness = num;
+                                if (key === 'extraversion') result.extraversion = num;
+                                if (key === 'agreeableness') result.agreeableness = num;
+                                if (key === 'neuroticism') result.neuroticism = num;
+                            }
+                        }
+                    }
+                } else if (trimmed.startsWith('- name:')) {
+                    const name = trimmed.replace('- name:', '').trim();
+                    if (name) result.moodStates.push(name);
+                }
+            });
+
+            if (!result.name) result.name = 'Agent';
+            if (!result.role) result.role = 'AI Agent';
+
+            return result;
+        }
+
+        // Generate polygon points for radar chart
+        function getPolygonPoints(values) {
+            const points = [];
+            const labels = ['openness', 'conscientiousness', 'extraversion', 'agreeableness', 'neuroticism'];
+            const radius = 80;
+
+            // Pentagonal angles: -90, -18, 54, 126, 198 degrees
+            const angles = [-Math.PI/2, -Math.PI/10, 3*Math.PI/10, 7*Math.PI/10, 9*Math.PI/10];
+
+            labels.forEach((label, i) => {
+                const value = values[label] || 0;
+                const r = radius * Math.min(value, 1);
+                const x = r * Math.cos(angles[i]);
+                const y = r * Math.sin(angles[i]);
+                points.push(`${x},${y}`);
+            });
+
+            return points.join(' ');
+        }
+
+        // Update agent card from parsed data
+        function updateAgentCard(data) {
+            document.getElementById('agent-name').textContent = data.name;
+            document.getElementById('agent-role').textContent = data.role;
+
+            const values = {
+                openness: data.openness,
+                conscientiousness: data.conscientiousness,
+                extraversion: data.extraversion,
+                agreeableness: data.agreeableness,
+                neuroticism: data.neuroticism
+            };
+
+            const polygonPoints = getPolygonPoints(values);
+            document.getElementById('ocean-polygon').setAttribute('points', polygonPoints);
+
+            // Update mood badges
+            const moodContainer = document.getElementById('mood-badges');
+            const defaultMood = data.moodStates.length > 0 ? data.moodStates[0] : 'neutral';
+            let badges = `<span class="mood-badge">${defaultMood} (default)</span>`;
+            data.moodStates.slice(1).forEach(state => {
+                badges += `<span class="mood-badge">${state}</span>`;
+            });
+            moodContainer.innerHTML = badges;
+        }
+
+        // YAML editor event listener
+        const editor = document.getElementById('yaml-editor');
+        editor.addEventListener('input', function() {
+            const data = parseYaml(this.value);
+            updateAgentCard(data);
+        });
+
+        // Initial parse
+        updateAgentCard(parseYaml(editor.value));
+
+        // Copy functions
+        function copyCode(b){navigator.clipboard.writeText(b.parentElement.nextElementSibling.innerText).then(()=>{const t=b.innerText;b.innerText="Copied!";setTimeout(()=>b.innerText=t,2e3)})}function copyCode2(b){navigator.clipboard.writeText(b.parentElement.nextElementSibling.innerText).then(()=>{const t=b.innerText;b.innerText="Copied!";setTimeout(()=>b.innerText=t,2e3)})}
+    </script>
+</body>
+</html>
