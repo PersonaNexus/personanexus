@@ -3,7 +3,6 @@
 import pytest
 
 from personanexus.personality import (
-    DISC_PRESETS,
     compute_personality_traits,
     disc_to_traits,
     get_disc_preset,
@@ -21,7 +20,6 @@ from personanexus.types import (
     PersonalityProfile,
     PersonalityTraits,
 )
-
 
 # ---------------------------------------------------------------------------
 # OCEAN → Traits (forward mapping)
@@ -210,7 +208,11 @@ class TestReverseMapping:
             directness=0.6, creativity=0.5,
         )
         ocean = traits_to_ocean(traits)
-        for dim in ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]:
+        dims = [
+            "openness", "conscientiousness", "extraversion",
+            "agreeableness", "neuroticism",
+        ]
+        for dim in dims:
             val = getattr(ocean, dim)
             assert 0.0 <= val <= 1.0, f"{dim} = {val} out of range"
 
@@ -246,7 +248,11 @@ class TestReverseMapping:
         recovered = traits_to_ocean(traits)
 
         # Should be within ~0.2 of original (approximate mapping)
-        for dim in ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]:
+        dims = [
+            "openness", "conscientiousness", "extraversion",
+            "agreeableness", "neuroticism",
+        ]
+        for dim in dims:
             orig_val = getattr(original, dim)
             rec_val = getattr(recovered, dim)
             assert abs(orig_val - rec_val) < 0.3, (

@@ -1,10 +1,11 @@
 """Tests for interaction protocols."""
-import pytest
-from personanexus.types import (
-    HumanInteraction, AgentInteraction, InteractionConfig,
-    InteractionEscalationTrigger
-)
 from personanexus.compiler import SystemPromptCompiler
+from personanexus.types import (
+    AgentInteraction,
+    HumanInteraction,
+    InteractionConfig,
+    InteractionEscalationTrigger,
+)
 
 
 def test_human_interaction_defaults():

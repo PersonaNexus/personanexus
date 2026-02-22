@@ -5,17 +5,10 @@ from pydantic import ValidationError
 
 from personanexus.types import (
     AgentIdentity,
-    Communication,
-    Guardrails,
-    HardGuardrail,
-    LanguageConfig,
     Metadata,
     Personality,
     PersonalityTraits,
-    Principle,
-    Role,
     Scope,
-    ToneConfig,
 )
 
 

@@ -3,27 +3,22 @@
 from __future__ import annotations
 
 import json
-import math
 from pathlib import Path
 
 import pytest
 
 from personanexus.analyzer import (
-    AnalysisResult,
     AnalyzerError,
-    ComparisonResult,
-    DiscPresetMatch,
     PersonalityJsonParser,
     SoulAnalyzer,
     SoulMdParser,
     SourceFormat,
-    TraitExtraction,
     _cosine_similarity,
     detect_format,
     find_closest_preset,
 )
-from personanexus.compiler import SoulCompiler, compile_identity
-from personanexus.personality import DISC_PRESETS, disc_to_traits
+from personanexus.compiler import SoulCompiler
+from personanexus.personality import DISC_PRESETS
 from personanexus.types import DiscProfile, PersonalityTraits
 
 
@@ -394,7 +389,8 @@ metadata:
   updated_at: "2023-01-01T00:00:00Z"
 personality:
   # Missing required parts to cause error in parse
-  # We are trying to make a structure that will lead to AttributeError during compute_personality_traits
+  # We want a structure that leads to AttributeError
+  # during compute_personality_traits
   foo: bar
   baz:
     - 1
@@ -530,6 +526,7 @@ class TestComparison:
 class TestAnalyzeCommand:
     def test_analyze_yaml_cli(self, ada_path, examples_dir):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         runner = CliRunner()
@@ -544,6 +541,7 @@ class TestAnalyzeCommand:
 
     def test_analyze_json_output(self, ada_path, examples_dir):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         runner = CliRunner()
@@ -560,6 +558,7 @@ class TestAnalyzeCommand:
 
     def test_analyze_nonexistent_file(self):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         runner = CliRunner()
@@ -568,6 +567,7 @@ class TestAnalyzeCommand:
 
     def test_analyze_with_comparison(self, ada_path, ada_ocean_path, examples_dir):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         runner = CliRunner()

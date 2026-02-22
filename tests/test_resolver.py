@@ -1,6 +1,5 @@
 """Tests for inheritance and mixin resolution."""
 
-from pathlib import Path
 
 import pytest
 

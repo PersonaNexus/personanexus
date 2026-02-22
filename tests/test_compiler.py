@@ -1,7 +1,6 @@
 """Tests for the identity compiler."""
 
 import json
-from pathlib import Path
 
 import pytest
 from typer.testing import CliRunner
@@ -16,7 +15,6 @@ from personanexus.compiler import (
 )
 from personanexus.resolver import IdentityResolver
 from personanexus.types import Influence, Narrative, Opinion, VoiceExample, VoiceExamples
-
 
 runner = CliRunner()
 
@@ -623,7 +621,12 @@ class TestSoulCompilerNarrative:
 
     def test_voice_examples_in_style(self, soul_compiler, ada_identity):
         ada_identity.communication.voice_examples = VoiceExamples(
-            good=[VoiceExample(text="The data tells an interesting story here.", context="analysis")],
+            good=[
+                VoiceExample(
+                    text="The data tells an interesting story here.",
+                    context="analysis",
+                )
+            ],
             bad=[VoiceExample(text="As an AI, I cannot determine the answer.")],
         )
         result = soul_compiler.compile(ada_identity)

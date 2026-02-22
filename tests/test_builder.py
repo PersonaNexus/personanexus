@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
 
-import pytest
 import yaml
 
 from personanexus.builder import BuiltIdentity, IdentityBuilder, LLMEnhancer
-
 
 # ---------------------------------------------------------------------------
 # BuiltIdentity
@@ -206,7 +204,10 @@ class TestIdentityBuilderPhases:
 
 
 class TestRepromptOnInvalidInput:
-    """Tests that invalid input triggers a re-prompt instead of being silently skipped or defaulted."""
+    """Tests that invalid input triggers a re-prompt.
+
+    Instead of being silently skipped or defaulted.
+    """
 
     def _make_builder(self):
         return IdentityBuilder(console=MagicMock())

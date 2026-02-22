@@ -1,8 +1,6 @@
 """Tests for personality CLI commands."""
 
-import json
 
-import pytest
 from typer.testing import CliRunner
 
 from personanexus.cli import app
@@ -147,7 +145,10 @@ class TestShowProfileCommand:
     def test_show_ocean_profile(self, ada_ocean_path, examples_dir):
         result = runner.invoke(
             app,
-            ["personality", "show-profile", str(ada_ocean_path), "--search-path", str(examples_dir)],
+            [
+                "personality", "show-profile",
+                str(ada_ocean_path), "--search-path", str(examples_dir),
+            ],
         )
         assert result.exit_code == 0
         assert "Mode: ocean" in result.output

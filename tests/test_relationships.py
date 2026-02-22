@@ -1,12 +1,11 @@
 """Tests for enhanced agent relationships."""
-import pytest
+from personanexus.compiler import SystemPromptCompiler
 from personanexus.types import (
     AgentRelationship,
-    Relationships,
-    RelationshipDynamic,
     Memory,
+    RelationshipDynamic,
+    Relationships,
 )
-from personanexus.compiler import SystemPromptCompiler
 
 
 def test_relationship_with_dynamic():

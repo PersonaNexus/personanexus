@@ -1,8 +1,6 @@
 """Tests for the CLI commands."""
 
-from pathlib import Path
 
-import pytest
 from typer.testing import CliRunner
 
 from personanexus.cli import app
@@ -162,12 +160,17 @@ class TestDiffCommand:
         assert "IDENTITY DIFF REPORT" in result.output
 
     def test_diff_json_format(self, ada_path, ada_ocean_path):
-        result = runner.invoke(app, ["diff", str(ada_path), str(ada_ocean_path), "--format", "json"])
+        result = runner.invoke(
+            app, ["diff", str(ada_path), str(ada_ocean_path), "--format", "json"]
+        )
         assert result.exit_code == 0
         assert '"changed_fields"' in result.output
 
     def test_diff_markdown_format(self, ada_path, ada_ocean_path):
-        result = runner.invoke(app, ["diff", str(ada_path), str(ada_ocean_path), "--format", "markdown"])
+        result = runner.invoke(
+            app,
+            ["diff", str(ada_path), str(ada_ocean_path), "--format", "markdown"],
+        )
         assert result.exit_code == 0
         assert "IDENTITY DIFF" in result.output or "REPORT" in result.output
 

@@ -2,7 +2,7 @@
 
 import pytest
 
-from personanexus.validator import IdentityValidator, ValidationResult
+from personanexus.validator import IdentityValidator
 
 
 @pytest.fixture
