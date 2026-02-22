@@ -21,15 +21,21 @@ from personanexus.types import (
 class TestOceanProfile:
     def test_valid_profile(self):
         profile = OceanProfile(
-            openness=0.7, conscientiousness=0.8,
-            extraversion=0.5, agreeableness=0.6, neuroticism=0.3,
+            openness=0.7,
+            conscientiousness=0.8,
+            extraversion=0.5,
+            agreeableness=0.6,
+            neuroticism=0.3,
         )
         assert profile.openness == 0.7
 
     def test_boundary_values(self):
         profile = OceanProfile(
-            openness=0.0, conscientiousness=1.0,
-            extraversion=0.0, agreeableness=1.0, neuroticism=0.0,
+            openness=0.0,
+            conscientiousness=1.0,
+            extraversion=0.0,
+            agreeableness=1.0,
+            neuroticism=0.0,
         )
         assert profile.openness == 0.0
         assert profile.conscientiousness == 1.0
@@ -37,22 +43,30 @@ class TestOceanProfile:
     def test_out_of_range_high(self):
         with pytest.raises(ValidationError):
             OceanProfile(
-                openness=1.5, conscientiousness=0.5,
-                extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                openness=1.5,
+                conscientiousness=0.5,
+                extraversion=0.5,
+                agreeableness=0.5,
+                neuroticism=0.5,
             )
 
     def test_out_of_range_low(self):
         with pytest.raises(ValidationError):
             OceanProfile(
-                openness=-0.1, conscientiousness=0.5,
-                extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                openness=-0.1,
+                conscientiousness=0.5,
+                extraversion=0.5,
+                agreeableness=0.5,
+                neuroticism=0.5,
             )
 
     def test_missing_field_raises(self):
         with pytest.raises(ValidationError):
             OceanProfile(
-                openness=0.5, conscientiousness=0.5,
-                extraversion=0.5, agreeableness=0.5,
+                openness=0.5,
+                conscientiousness=0.5,
+                extraversion=0.5,
+                agreeableness=0.5,
                 # missing neuroticism
             )
 
@@ -65,22 +79,27 @@ class TestOceanProfile:
 class TestDiscProfile:
     def test_valid_profile(self):
         profile = DiscProfile(
-            dominance=0.9, influence=0.4,
-            steadiness=0.2, conscientiousness=0.5,
+            dominance=0.9,
+            influence=0.4,
+            steadiness=0.2,
+            conscientiousness=0.5,
         )
         assert profile.dominance == 0.9
 
     def test_out_of_range(self):
         with pytest.raises(ValidationError):
             DiscProfile(
-                dominance=1.5, influence=0.4,
-                steadiness=0.2, conscientiousness=0.5,
+                dominance=1.5,
+                influence=0.4,
+                steadiness=0.2,
+                conscientiousness=0.5,
             )
 
     def test_missing_field_raises(self):
         with pytest.raises(ValidationError):
             DiscProfile(
-                dominance=0.9, influence=0.4,
+                dominance=0.9,
+                influence=0.4,
                 steadiness=0.2,
                 # missing conscientiousness
             )
@@ -104,8 +123,11 @@ class TestPersonalityProfile:
         profile = PersonalityProfile(
             mode=PersonalityMode.OCEAN,
             ocean=OceanProfile(
-                openness=0.7, conscientiousness=0.8,
-                extraversion=0.5, agreeableness=0.6, neuroticism=0.3,
+                openness=0.7,
+                conscientiousness=0.8,
+                extraversion=0.5,
+                agreeableness=0.6,
+                neuroticism=0.3,
             ),
         )
         assert profile.mode == PersonalityMode.OCEAN
@@ -115,8 +137,10 @@ class TestPersonalityProfile:
         profile = PersonalityProfile(
             mode=PersonalityMode.DISC,
             disc=DiscProfile(
-                dominance=0.9, influence=0.4,
-                steadiness=0.2, conscientiousness=0.5,
+                dominance=0.9,
+                influence=0.4,
+                steadiness=0.2,
+                conscientiousness=0.5,
             ),
         )
         assert profile.mode == PersonalityMode.DISC
@@ -161,8 +185,11 @@ class TestPersonalityValidation:
             profile=PersonalityProfile(
                 mode=PersonalityMode.OCEAN,
                 ocean=OceanProfile(
-                    openness=0.5, conscientiousness=0.5,
-                    extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                    openness=0.5,
+                    conscientiousness=0.5,
+                    extraversion=0.5,
+                    agreeableness=0.5,
+                    neuroticism=0.5,
                 ),
             ),
         )
@@ -181,8 +208,10 @@ class TestPersonalityValidation:
             profile=PersonalityProfile(
                 mode=PersonalityMode.DISC,
                 disc=DiscProfile(
-                    dominance=0.9, influence=0.4,
-                    steadiness=0.2, conscientiousness=0.5,
+                    dominance=0.9,
+                    influence=0.4,
+                    steadiness=0.2,
+                    conscientiousness=0.5,
                 ),
             ),
         )
@@ -212,8 +241,11 @@ class TestPersonalityValidation:
                 profile=PersonalityProfile(
                     mode=PersonalityMode.HYBRID,
                     ocean=OceanProfile(
-                        openness=0.5, conscientiousness=0.5,
-                        extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                        openness=0.5,
+                        conscientiousness=0.5,
+                        extraversion=0.5,
+                        agreeableness=0.5,
+                        neuroticism=0.5,
                     ),
                 ),
             )
@@ -224,8 +256,11 @@ class TestPersonalityValidation:
             profile=PersonalityProfile(
                 mode=PersonalityMode.HYBRID,
                 ocean=OceanProfile(
-                    openness=0.5, conscientiousness=0.5,
-                    extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                    openness=0.5,
+                    conscientiousness=0.5,
+                    extraversion=0.5,
+                    agreeableness=0.5,
+                    neuroticism=0.5,
                 ),
             ),
         )

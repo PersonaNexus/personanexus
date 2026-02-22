@@ -17,6 +17,7 @@ runner = CliRunner()
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def sample_identity_yaml():
     """Sample identity YAML for testing."""
@@ -150,12 +151,13 @@ Testing is essential for reliable software. Every feature deserves comprehensive
 # analyze command tests
 # ---------------------------------------------------------------------------
 
+
 class TestAnalyzeCommand:
     """Test the analyze CLI command for soul analysis."""
 
     def test_analyze_identity_yaml(self, sample_identity_yaml):
         """Test analyzing an identity YAML file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(sample_identity_yaml)
             yaml_file = f.name
 
@@ -176,7 +178,7 @@ class TestAnalyzeCommand:
 
     def test_analyze_soul_md(self, sample_soul_md):
         """Test analyzing a SOUL.md file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".md", delete=False) as f:
             f.write(sample_soul_md)
             soul_file = f.name
 
@@ -196,7 +198,7 @@ class TestAnalyzeCommand:
 
     def test_analyze_json_format(self, sample_identity_yaml):
         """Test analyzing with JSON output format."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(sample_identity_yaml)
             yaml_file = f.name
 
@@ -228,11 +230,11 @@ class TestAnalyzeCommand:
         identity2 = sample_identity_yaml.replace("warmth: 0.8", "warmth: 0.5")
         identity2 = identity2.replace("directness: 0.7", "directness: 0.9")
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f1:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f1:
             f1.write(identity1)
             file1 = f1.name
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f2:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f2:
             f2.write(identity2)
             file2 = f2.name
 
@@ -258,7 +260,7 @@ class TestAnalyzeCommand:
 
     def test_analyze_invalid_yaml(self):
         """Test analyze with invalid YAML."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("invalid: yaml: content: [")
             invalid_file = f.name
 
@@ -274,12 +276,13 @@ class TestAnalyzeCommand:
 # validate-team command tests
 # ---------------------------------------------------------------------------
 
+
 class TestValidateTeamCommand:
     """Test the validate-team CLI command."""
 
     def test_validate_team_success(self, sample_team_yaml):
         """Test successful team validation."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(sample_team_yaml)
             team_file = f.name
 
@@ -293,7 +296,7 @@ class TestValidateTeamCommand:
 
     def test_validate_team_verbose(self, sample_team_yaml):
         """Test team validation with verbose output."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(sample_team_yaml)
             team_file = f.name
 
@@ -323,7 +326,7 @@ team:
     agents: {}  # Empty agents dict should fail validation
 """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(invalid_team)
             team_file = f.name
 
@@ -346,7 +349,7 @@ metadata:
   name: "Individual Agent"
 """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(wrong_schema)
             team_file = f.name
 
@@ -366,7 +369,7 @@ metadata:
 
     def test_validate_team_invalid_yaml(self):
         """Test validate-team with invalid YAML syntax."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write("invalid: yaml: content: [unclosed")
             invalid_file = f.name
 
@@ -407,7 +410,7 @@ team:
           objective: "Do analysis"
 """
 
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(invalid_workflow_team)
             team_file = f.name
 
@@ -425,25 +428,23 @@ team:
 # Integration tests combining multiple commands
 # ---------------------------------------------------------------------------
 
+
 class TestCLIIntegration:
     """Test CLI commands working together."""
 
     def test_compile_then_analyze_roundtrip(self, sample_identity_yaml):
         """Test compiling to SOUL.md then analyzing it back."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(sample_identity_yaml)
             yaml_file = f.name
 
         try:
             # First compile to SOUL.md
-            compile_result = runner.invoke(app, [
-                "compile", yaml_file,
-                "--target", "soul"
-            ])
+            compile_result = runner.invoke(app, ["compile", yaml_file, "--target", "soul"])
             assert compile_result.exit_code == 0
 
             # Check SOUL.md was created (default naming)
-            soul_file = yaml_file.replace('.yaml', '.SOUL.md')
+            soul_file = yaml_file.replace(".yaml", ".SOUL.md")
             assert Path(soul_file).exists()
 
             # Then analyze the generated SOUL.md
@@ -452,14 +453,14 @@ class TestCLIIntegration:
             assert "Test Agent" in analyze_result.output
 
         finally:
-            base_name = yaml_file.replace('.yaml', '')
+            base_name = yaml_file.replace(".yaml", "")
             for file_to_clean in [yaml_file, f"{base_name}.SOUL.md", f"{base_name}.STYLE.md"]:
                 with contextlib.suppress(FileNotFoundError):
                     Path(file_to_clean).unlink()
 
     def test_validate_then_analyze_workflow(self, sample_identity_yaml):
         """Test validating an identity then analyzing it."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.yaml', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
             f.write(sample_identity_yaml)
             yaml_file = f.name
 

@@ -1,6 +1,5 @@
 """Tests for the YAML parser."""
 
-
 import pytest
 
 from personanexus.parser import IdentityParser, ParseError

@@ -1,6 +1,5 @@
 """Tests for identity diff and compatibility features."""
 
-
 from personanexus.diff import (
     _calculate_disc_compatibility,
     _calculate_traits_compatibility,
@@ -35,13 +34,20 @@ class TestFlattenDict:
 
 class TestGetOceanTraits:
     def test_ocean_present(self, ada_ocean_path):
-        identity = {"personality": {"profile": {"mode": "ocean", "ocean": {
-            "openness": 0.7,
-            "conscientiousness": 0.85,
-            "extraversion": 0.5,
-            "agreeableness": 0.6,
-            "neuroticism": 0.2,
-        }}}}
+        identity = {
+            "personality": {
+                "profile": {
+                    "mode": "ocean",
+                    "ocean": {
+                        "openness": 0.7,
+                        "conscientiousness": 0.85,
+                        "extraversion": 0.5,
+                        "agreeableness": 0.6,
+                        "neuroticism": 0.2,
+                    },
+                }
+            }
+        }
         result = _get_ocean_traits(identity)
         assert result == {
             "openness": 0.7,
@@ -62,21 +68,35 @@ class TestGetOceanTraits:
 
 class TestGetDiscTraits:
     def test_disc_present(self):
-        identity = {"personality": {"profile": {"mode": "disc", "disc": {
-            "dominance": 0.3, "influence": 0.2, "steadiness": 0.6, "conscientiousness": 0.9,
-        }}}}
+        identity = {
+            "personality": {
+                "profile": {
+                    "mode": "disc",
+                    "disc": {
+                        "dominance": 0.3,
+                        "influence": 0.2,
+                        "steadiness": 0.6,
+                        "conscientiousness": 0.9,
+                    },
+                }
+            }
+        }
         result = _get_disc_traits(identity)
         assert result == {
-            "dominance": 0.3, "influence": 0.2,
-            "steadiness": 0.6, "conscientiousness": 0.9,
+            "dominance": 0.3,
+            "influence": 0.2,
+            "steadiness": 0.6,
+            "conscientiousness": 0.9,
         }
 
     def test_disc_preset(self):
         identity = {"personality": {"profile": {"mode": "disc", "disc_preset": "the_analyst"}}}
         result = _get_disc_traits(identity)
         assert result == {
-            "dominance": 0.3, "influence": 0.2,
-            "steadiness": 0.6, "conscientiousness": 0.9,
+            "dominance": 0.3,
+            "influence": 0.2,
+            "steadiness": 0.6,
+            "conscientiousness": 0.9,
         }
 
     def test_disc_missing(self):
@@ -334,31 +354,41 @@ class TestDiscDiff:
 class TestCalculateDiscCompatibility:
     def test_perfect_match(self):
         disc = {
-            "dominance": 0.5, "influence": 0.5,
-            "steadiness": 0.5, "conscientiousness": 0.5,
+            "dominance": 0.5,
+            "influence": 0.5,
+            "steadiness": 0.5,
+            "conscientiousness": 0.5,
         }
         assert _calculate_disc_compatibility(disc, disc) == 100.0
 
     def test_complete_mismatch(self):
         disc1 = {
-            "dominance": 0.0, "influence": 0.0,
-            "steadiness": 0.0, "conscientiousness": 0.0,
+            "dominance": 0.0,
+            "influence": 0.0,
+            "steadiness": 0.0,
+            "conscientiousness": 0.0,
         }
         disc2 = {
-            "dominance": 1.0, "influence": 1.0,
-            "steadiness": 1.0, "conscientiousness": 1.0,
+            "dominance": 1.0,
+            "influence": 1.0,
+            "steadiness": 1.0,
+            "conscientiousness": 1.0,
         }
         score = _calculate_disc_compatibility(disc1, disc2)
         assert score == 0.0
 
     def test_partial_difference(self):
         disc1 = {
-            "dominance": 0.3, "influence": 0.2,
-            "steadiness": 0.6, "conscientiousness": 0.9,
+            "dominance": 0.3,
+            "influence": 0.2,
+            "steadiness": 0.6,
+            "conscientiousness": 0.9,
         }
         disc2 = {
-            "dominance": 0.5, "influence": 0.4,
-            "steadiness": 0.5, "conscientiousness": 0.8,
+            "dominance": 0.5,
+            "influence": 0.4,
+            "steadiness": 0.5,
+            "conscientiousness": 0.8,
         }
         score = _calculate_disc_compatibility(disc1, disc2)
         assert 50 < score < 100
@@ -437,18 +467,8 @@ class TestFormatDiffMarkdown:
         file1 = tmp_path / "file1.yaml"
         file2 = tmp_path / "file2.yaml"
 
-        file1.write_text(
-            'schema_version: "1.0"\n'
-            "metadata:\n"
-            '  id: "test"\n'
-            '  version: "1.0.0"\n'
-        )
-        file2.write_text(
-            'schema_version: "1.0"\n'
-            "metadata:\n"
-            '  id: "test"\n'
-            '  status: "active"\n'
-        )
+        file1.write_text('schema_version: "1.0"\nmetadata:\n  id: "test"\n  version: "1.0.0"\n')
+        file2.write_text('schema_version: "1.0"\nmetadata:\n  id: "test"\n  status: "active"\n')
 
         diff = diff_identities(str(file1), str(file2))
         md = format_diff_markdown(diff)

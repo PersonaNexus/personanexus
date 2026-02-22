@@ -12,6 +12,7 @@ from personanexus.compiler import (
     SystemPromptCompiler,
     compile_identity,
 )
+from personanexus.conflict import MergeTrace, MergeTraceEntry
 from personanexus.parser import IdentityParser, parse_file, parse_identity_file, parse_yaml
 from personanexus.personality import (
     compute_personality_traits,
@@ -45,6 +46,8 @@ __all__ = [
     "IdentityParser",
     "IdentityResolver",
     "IdentityValidator",
+    "MergeTrace",
+    "MergeTraceEntry",
     "OceanProfile",
     "OpenClawCompiler",
     "PersonalityMode",

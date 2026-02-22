@@ -6,7 +6,7 @@ import logging
 from pathlib import Path
 from typing import Any
 
-from personanexus.conflict import ConflictResolver
+from personanexus.conflict import ConflictResolver, MergeTrace
 from personanexus.parser import IdentityParser, ParseError
 from personanexus.types import AgentIdentity, ConflictResolution
 
@@ -32,6 +32,17 @@ class IdentityResolver:
         resolved = self._resolve(data, path, depth=0, stack=[])
         return AgentIdentity.model_validate(resolved)
 
+    def resolve_file_traced(self, path: str | Path) -> tuple[AgentIdentity, MergeTrace]:
+        """Load and fully resolve an identity file, returning a merge trace.
+
+        Returns a tuple of (resolved identity, trace of all merge operations).
+        """
+        path = Path(path)
+        data = self._parser.parse_file(path)
+        trace = MergeTrace()
+        resolved = self._resolve(data, path, depth=0, stack=[], trace=trace)
+        return AgentIdentity.model_validate(resolved), trace
+
     def resolve_dict(
         self, data: dict[str, Any], base_path: str | Path | None = None
     ) -> AgentIdentity:
@@ -50,6 +61,7 @@ class IdentityResolver:
         source_path: Path,
         depth: int,
         stack: list[str],
+        trace: MergeTrace | None = None,
     ) -> dict[str, Any]:
         if depth > self.max_depth:
             raise ResolutionError(
@@ -89,7 +101,11 @@ class IdentityResolver:
             archetype_path = self._find_file(extends, source_path)
             archetype_data = self._parser.parse_file(archetype_path)
             base = self._resolve(
-                archetype_data, archetype_path, depth + 1, new_stack
+                archetype_data,
+                archetype_path,
+                depth + 1,
+                new_stack,
+                trace=trace,
             )
             base.pop("archetype", None)
 
@@ -98,17 +114,26 @@ class IdentityResolver:
             mixin_path = self._find_file(mixin_ref, source_path)
             mixin_data = self._parser.parse_file(mixin_path)
             mixin_resolved = self._resolve(
-                mixin_data, mixin_path, depth + 1, new_stack
+                mixin_data,
+                mixin_path,
+                depth + 1,
+                new_stack,
+                trace=trace,
             )
             mixin_resolved.pop("mixin", None)
-            base = merger.merge(base, mixin_resolved)
+            base = merger.merge(
+                base,
+                mixin_resolved,
+                trace=trace,
+                source=f"mixin:{mixin_ref}",
+            )
 
         # Step 3: Apply the identity's own fields (override inherited + mixin values)
-        result = merger.merge(base, own_data) if base else own_data
+        result = merger.merge(base, own_data, trace=trace, source="own") if base else own_data
 
         # Step 4: Apply explicit overrides block (highest priority)
         if overrides:
-            result = merger.merge(result, overrides)
+            result = merger.merge(result, overrides, trace=trace, source="override")
 
         return result
 

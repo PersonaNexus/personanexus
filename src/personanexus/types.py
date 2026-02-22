@@ -17,6 +17,7 @@ warnings.filterwarnings("ignore", message=".*Field name.*register.*shadows.*")
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class Status(enum.StrEnum):
     DRAFT = "draft"
     ACTIVE = "active"
@@ -163,6 +164,7 @@ class AvatarType(enum.StrEnum):
 # Interaction Protocols
 # ---------------------------------------------------------------------------
 
+
 class InteractionEscalationTrigger(enum.StrEnum):
     UNABLE_TO_HELP = "unable_to_help"
     USER_REQUESTS_HUMAN = "user_requests_human"
@@ -173,6 +175,7 @@ class InteractionEscalationTrigger(enum.StrEnum):
 
 class HumanInteraction(BaseModel):
     """How this agent interacts with human users."""
+
     greeting_style: str | None = None
     farewell_style: str | None = None
     tone_matching: bool = False
@@ -182,6 +185,7 @@ class HumanInteraction(BaseModel):
 
 class AgentInteraction(BaseModel):
     """How this agent interacts with other agents."""
+
     handoff_style: str = "structured"
     status_reporting: str = "on_request"
     conflict_resolution: str = "defer_to_hierarchy"
@@ -189,6 +193,7 @@ class AgentInteraction(BaseModel):
 
 class InteractionConfig(BaseModel):
     """Configuration for interaction protocols."""
+
     human: HumanInteraction = Field(default_factory=HumanInteraction)
     agent: AgentInteraction = Field(default_factory=AgentInteraction)
 
@@ -234,6 +239,7 @@ class TestSuite(enum.StrEnum):
 # Metadata
 # ---------------------------------------------------------------------------
 
+
 class Metadata(BaseModel):
     id: str = Field(..., pattern=r"^agt_[a-zA-Z0-9_]+$")
     name: str = Field(..., min_length=1, max_length=100)
@@ -249,6 +255,7 @@ class Metadata(BaseModel):
 # ---------------------------------------------------------------------------
 # Role & Purpose
 # ---------------------------------------------------------------------------
+
 
 class Scope(BaseModel):
     primary: list[str] = Field(..., min_length=1)
@@ -272,6 +279,7 @@ class Role(BaseModel):
 # ---------------------------------------------------------------------------
 # Personality
 # ---------------------------------------------------------------------------
+
 
 class OceanProfile(BaseModel):
     """Big Five (OCEAN) personality profile with five dimensions scaled 0-1."""
@@ -330,12 +338,14 @@ class PersonalityTraits(BaseModel):
 
 class TraitModifier(BaseModel):
     """Modifier to apply to a personality trait in a given mood state."""
+
     trait: str
     delta: float = Field(ge=-1.0, le=1.0)
 
 
 class MoodState(BaseModel):
     """A named emotional/mood state that modifies personality expression."""
+
     name: str
     description: str | None = None
     trait_modifiers: list[TraitModifier] = Field(default_factory=list)
@@ -344,6 +354,7 @@ class MoodState(BaseModel):
 
 class MoodTransition(BaseModel):
     """Rule for transitioning between mood states."""
+
     from_state: str = "*"  # "*" means any state
     to_state: str
     trigger: str  # e.g. "user_frustration_detected", "complex_technical_query"
@@ -351,6 +362,7 @@ class MoodTransition(BaseModel):
 
 class MoodConfig(BaseModel):
     """Configuration for dynamic mood/emotional states."""
+
     default: str = "neutral"
     states: list[MoodState] = Field(default_factory=list)
     transitions: list[MoodTransition] = Field(default_factory=list)
@@ -360,8 +372,10 @@ class MoodConfig(BaseModel):
 # Behavioral Modes (state machine for operating modes)
 # ============================================================================
 
+
 class BehavioralModeOverrides(BaseModel):
     """Overrides to apply when a behavioral mode is active."""
+
     tone_register: str | None = None  # e.g. "formal", "casual"
     tone_default: str | None = None
     emoji_usage: str | None = None  # "never", "sparingly", "frequently"
@@ -371,6 +385,7 @@ class BehavioralModeOverrides(BaseModel):
 
 class BehavioralMode(BaseModel):
     """A named operating mode with personality/communication overrides."""
+
     name: str
     description: str | None = None
     overrides: BehavioralModeOverrides = Field(default_factory=BehavioralModeOverrides)
@@ -379,6 +394,7 @@ class BehavioralMode(BaseModel):
 
 class BehavioralModeConfig(BaseModel):
     """Configuration for behavioral mode state machine."""
+
     default: str = "standard"
     modes: list[BehavioralMode] = Field(default_factory=list)
 
@@ -398,21 +414,15 @@ class Personality(BaseModel):
             # Custom mode: require at least 2 traits set directly
             set_traits = self.traits.defined_traits()
             if len(set_traits) < 2:
-                raise ValueError(
-                    "At least 2 personality traits must be defined in custom mode"
-                )
+                raise ValueError("At least 2 personality traits must be defined in custom mode")
 
         elif mode == PersonalityMode.OCEAN:
             if self.profile.ocean is None:
-                raise ValueError(
-                    "OCEAN profile is required when mode is 'ocean'"
-                )
+                raise ValueError("OCEAN profile is required when mode is 'ocean'")
 
         elif mode == PersonalityMode.DISC:
             if self.profile.disc is None and self.profile.disc_preset is None:
-                raise ValueError(
-                    "DISC profile or disc_preset is required when mode is 'disc'"
-                )
+                raise ValueError("DISC profile or disc_preset is required when mode is 'disc'")
 
         elif mode == PersonalityMode.HYBRID:
             has_framework = (
@@ -422,15 +432,11 @@ class Personality(BaseModel):
             )
             if not has_framework:
                 raise ValueError(
-                    "At least one framework profile (ocean/disc) is required "
-                    "in hybrid mode"
+                    "At least one framework profile (ocean/disc) is required in hybrid mode"
                 )
             has_overrides = len(self.traits.defined_traits()) > 0
             if not has_overrides:
-                raise ValueError(
-                    "At least one explicit trait override is required "
-                    "in hybrid mode"
-                )
+                raise ValueError("At least one explicit trait override is required in hybrid mode")
 
         return self
 
@@ -438,6 +444,7 @@ class Personality(BaseModel):
 # ---------------------------------------------------------------------------
 # Communication
 # ---------------------------------------------------------------------------
+
 
 class ToneOverride(BaseModel):
     context: str
@@ -502,6 +509,7 @@ class Communication(BaseModel):
 # Expertise
 # ---------------------------------------------------------------------------
 
+
 class ExpertiseDomain(BaseModel):
     name: str
     level: float = Field(..., ge=0.0, le=1.0)
@@ -521,6 +529,7 @@ class Expertise(BaseModel):
 # Principles
 # ---------------------------------------------------------------------------
 
+
 class Principle(BaseModel):
     id: str
     priority: int = Field(..., ge=1)
@@ -531,6 +540,7 @@ class Principle(BaseModel):
 # ---------------------------------------------------------------------------
 # Behavioral Framework
 # ---------------------------------------------------------------------------
+
 
 class BehaviorRule(BaseModel):
     condition: str | None = None
@@ -581,12 +591,8 @@ class ClarificationPolicy(BaseModel):
 
 
 class ConversationConfig(BaseModel):
-    length_calibration: LengthCalibrationConfig = Field(
-        default_factory=LengthCalibrationConfig
-    )
-    clarification_policy: ClarificationPolicy = Field(
-        default_factory=ClarificationPolicy
-    )
+    length_calibration: LengthCalibrationConfig = Field(default_factory=LengthCalibrationConfig)
+    clarification_policy: ClarificationPolicy = Field(default_factory=ClarificationPolicy)
     reference_prior_context: bool = True
     summarize_long_threads: bool = True
     thread_summary_threshold: int = 15
@@ -613,6 +619,7 @@ class Behavior(BaseModel):
 # ---------------------------------------------------------------------------
 # Guardrails & Boundaries
 # ---------------------------------------------------------------------------
+
 
 class HardGuardrail(BaseModel):
     id: str
@@ -692,6 +699,7 @@ class Guardrails(BaseModel):
 # ---------------------------------------------------------------------------
 # Memory & Context
 # ---------------------------------------------------------------------------
+
 
 class IdentityContext(BaseModel):
     always_loaded: list[str] = Field(default_factory=list)
@@ -791,6 +799,7 @@ class Memory(BaseModel):
 # Multi-Modal Presentation
 # ---------------------------------------------------------------------------
 
+
 class VoiceSettings(BaseModel):
     speed: float = Field(1.0, ge=0.5, le=2.0)
     pitch: float = Field(0.0, ge=-1.0, le=1.0)
@@ -870,6 +879,7 @@ class Presentation(BaseModel):
 # Dynamic Identity & Evolution
 # ---------------------------------------------------------------------------
 
+
 class RuntimeMutableField(BaseModel):
     field: str
     bounds: list[float] | None = None
@@ -915,6 +925,7 @@ class Evolution(BaseModel):
 # Evaluation & Testing
 # ---------------------------------------------------------------------------
 
+
 class TestGenerator(BaseModel):
     source: str
     method: str
@@ -957,9 +968,7 @@ class RegressionConfig(BaseModel):
 
 
 class Evaluation(BaseModel):
-    test_generation: TestGenerationConfig = Field(
-        default_factory=TestGenerationConfig
-    )
+    test_generation: TestGenerationConfig = Field(default_factory=TestGenerationConfig)
     rubrics: dict[str, Rubric] = Field(default_factory=dict)
     regression: RegressionConfig = Field(default_factory=RegressionConfig)
 
@@ -967,6 +976,7 @@ class Evaluation(BaseModel):
 # ---------------------------------------------------------------------------
 # Composition & Conflict Resolution
 # ---------------------------------------------------------------------------
+
 
 class ExplicitResolution(BaseModel):
     field: str
@@ -988,12 +998,8 @@ class ConflictResolution(BaseModel):
 
 
 class CompositionConfig(BaseModel):
-    conflict_resolution: ConflictResolution = Field(
-        default_factory=ConflictResolution
-    )
-    contradiction_detection: ContradictionDetection = Field(
-        default_factory=ContradictionDetection
-    )
+    conflict_resolution: ConflictResolution = Field(default_factory=ConflictResolution)
+    contradiction_detection: ContradictionDetection = Field(default_factory=ContradictionDetection)
 
 
 # ---------------------------------------------------------------------------
@@ -1046,6 +1052,7 @@ class Narrative(BaseModel):
 # Archetype & Mixin wrappers (used in archetype/mixin YAML files)
 # ---------------------------------------------------------------------------
 
+
 class ArchetypeHeader(BaseModel):
     id: str
     name: str
@@ -1062,6 +1069,7 @@ class MixinHeader(BaseModel):
 # ---------------------------------------------------------------------------
 # Top-Level PersonaNexus
 # ---------------------------------------------------------------------------
+
 
 class AgentIdentity(BaseModel):
     """Complete PersonaNexus specification."""

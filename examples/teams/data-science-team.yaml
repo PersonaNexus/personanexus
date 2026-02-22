@@ -1,0 +1,360 @@
+# ============================================================================
+# TEAM: Data Science Team
+# Three-agent team with two workflow patterns, governance with peer review,
+# and collaboration protocols.
+#
+# Agents:
+#   1. data_engineer    — Pipeline architect, data quality
+#   2. ml_researcher    — Model development, experimentation
+#   3. analytics_lead   — Insight delivery, stakeholder communication
+#
+# Workflows:
+#   1. model_development — Full pipeline: data prep -> research -> deployment
+#   2. ad_hoc_analysis   — Quick turnaround: query -> analyze -> report
+# ============================================================================
+
+schema_version: "2.0"
+
+team:
+  metadata:
+    id: "team_data_science_001"
+    name: "Data Science Team"
+    description: |
+      A three-agent data science team covering the full lifecycle from
+      data engineering through model research to business analytics delivery.
+    version: "1.0.0"
+    created_at: "2026-02-21T00:00:00Z"
+    author: "platform-team"
+
+  # --- Team Composition ----------------------------------------------------
+  composition:
+    agents:
+      data_engineer:
+        agent_id: "agt_data_eng_001"
+        role: "data_pipeline_architect"
+        authority_level: 3
+        expertise_domains:
+          - "data_pipeline_design"
+          - "sql_optimization"
+          - "data_quality"
+          - "etl_orchestration"
+          - "cloud_data_infrastructure"
+        capabilities:
+          - "write_sql"
+          - "build_pipelines"
+          - "data_profiling"
+          - "schema_design"
+          - "monitoring_setup"
+        delegation_rights:
+          - "approve_data_schemas"
+          - "validate_data_quality"
+          - "deploy_pipelines"
+        personality_summary:
+          rigor: 0.95
+          patience: 0.7
+          directness: 0.85
+
+      ml_researcher:
+        agent_id: "agt_ml_research_001"
+        role: "ml_research_lead"
+        authority_level: 3
+        expertise_domains:
+          - "machine_learning"
+          - "deep_learning"
+          - "experimental_design"
+          - "statistical_modeling"
+          - "feature_engineering"
+        capabilities:
+          - "model_training"
+          - "experiment_tracking"
+          - "hyperparameter_optimization"
+          - "model_evaluation"
+          - "paper_review"
+        delegation_rights:
+          - "approve_model_architecture"
+          - "validate_experiment_design"
+          - "sign_off_model_performance"
+        personality_summary:
+          creativity: 0.85
+          rigor: 0.9
+          curiosity: 0.9
+
+      analytics_lead:
+        agent_id: "agt_analytics_lead_001"
+        role: "analytics_and_insights_lead"
+        authority_level: 4
+        expertise_domains:
+          - "business_analytics"
+          - "data_visualization"
+          - "stakeholder_communication"
+          - "kpi_design"
+          - "a_b_testing"
+        capabilities:
+          - "dashboard_creation"
+          - "report_generation"
+          - "insight_synthesis"
+          - "presentation_design"
+          - "metric_definition"
+        delegation_rights:
+          - "approve_final_deliverables"
+          - "define_success_metrics"
+          - "prioritize_analysis_requests"
+          - "communicate_with_stakeholders"
+        personality_summary:
+          warmth: 0.75
+          directness: 0.8
+          clarity: 0.9
+
+  # --- Workflow Patterns ---------------------------------------------------
+  workflow_patterns:
+    # Full model development lifecycle
+    model_development:
+      description: "End-to-end ML model development: data preparation through deployment readiness"
+      estimated_duration: "3-7 days"
+      stages:
+        - stage: "data_preparation"
+          primary_agent: data_engineer
+          objective: "Build or adapt data pipeline for model training. Ensure data quality and feature availability."
+          deliverables:
+            - "clean_training_dataset"
+            - "feature_store_updates"
+            - "data_quality_report"
+            - "pipeline_documentation"
+          success_criteria:
+            - "data_quality_score > 0.95"
+            - "null_rate < 0.01"
+            - "feature_coverage >= required_features"
+            - "pipeline_tests_passing == true"
+          max_duration: "2 days"
+
+        - stage: "experimentation"
+          primary_agent: ml_researcher
+          trigger_conditions:
+            - "data_preparation.data_quality_score > 0.95"
+          input_context:
+            - "clean_training_dataset"
+            - "feature_store_updates"
+            - "business_requirements"
+          objective: "Develop, train, and evaluate candidate models. Run ablation studies."
+          deliverables:
+            - "model_artifacts"
+            - "experiment_log"
+            - "performance_comparison_table"
+            - "recommended_model_with_justification"
+          success_criteria:
+            - "baseline_beaten == true"
+            - "experiments_logged >= 5"
+            - "statistical_significance_confirmed == true"
+          max_duration: "3 days"
+          # Peer review gate: analytics_lead reviews experiment design
+          peer_review:
+            reviewer: analytics_lead
+            review_scope: "experiment_design_and_metric_selection"
+            blocking: false
+
+        - stage: "evaluation_and_reporting"
+          primary_agent: analytics_lead
+          trigger_conditions:
+            - "experimentation.baseline_beaten == true"
+          input_context:
+            - "model_artifacts"
+            - "experiment_log"
+            - "performance_comparison_table"
+          objective: "Translate model results into business impact analysis. Prepare stakeholder report."
+          deliverables:
+            - "business_impact_report"
+            - "model_performance_dashboard"
+            - "deployment_recommendation"
+            - "stakeholder_presentation"
+          success_criteria:
+            - "business_impact_quantified == true"
+            - "recommendation_clear == true"
+            - "stakeholder_review_passed == true"
+          max_duration: "2 days"
+          # Peer review gate: ml_researcher validates technical accuracy
+          peer_review:
+            reviewer: ml_researcher
+            review_scope: "technical_accuracy_of_reported_results"
+            blocking: true
+
+    # Quick ad-hoc analysis for time-sensitive requests
+    ad_hoc_analysis:
+      description: "Fast turnaround analysis for ad-hoc business questions"
+      estimated_duration: "2-8 hours"
+      stages:
+        - stage: "data_retrieval"
+          primary_agent: data_engineer
+          objective: "Write and optimize queries to pull the requested data"
+          deliverables:
+            - "query_results"
+            - "data_dictionary"
+          success_criteria:
+            - "query_returns_results == true"
+            - "data_freshness < 24_hours"
+          max_duration: "2 hours"
+
+        - stage: "analysis"
+          primary_agent: analytics_lead
+          trigger_conditions:
+            - "data_retrieval.query_returns_results == true"
+          input_context:
+            - "query_results"
+            - "data_dictionary"
+            - "original_business_question"
+          objective: "Analyze data and produce actionable insights"
+          deliverables:
+            - "analysis_summary"
+            - "visualizations"
+            - "recommendations"
+          success_criteria:
+            - "original_question_answered == true"
+            - "recommendations_actionable == true"
+          max_duration: "4 hours"
+
+        - stage: "validation"
+          primary_agent: ml_researcher
+          trigger_conditions:
+            - "analysis.original_question_answered == true"
+          objective: "Validate statistical methodology and conclusions"
+          deliverables:
+            - "validation_report"
+            - "methodology_sign_off"
+          success_criteria:
+            - "methodology_sound == true"
+            - "conclusions_supported == true"
+          max_duration: "2 hours"
+
+  # --- Governance ----------------------------------------------------------
+  governance:
+    decision_frameworks:
+      data_architecture:
+        authority: data_engineer
+        description: "Data engineer has final say on schema design, pipeline architecture, and data quality standards"
+        consultation_required: [analytics_lead]
+        escalation_criteria:
+          - "breaking_schema_changes"
+          - "data_retention_policy_changes"
+
+      model_selection:
+        authority: ml_researcher
+        description: "ML researcher owns model architecture and algorithm selection decisions"
+        consultation_required: [data_engineer, analytics_lead]
+        veto_rights: [analytics_lead]
+        escalation_criteria:
+          - "model_complexity_vs_interpretability_conflict"
+          - "training_cost_exceeds_budget"
+
+      deliverable_quality:
+        authority: analytics_lead
+        description: "Analytics lead approves all external-facing deliverables and stakeholder communications"
+        consultation_required: [ml_researcher]
+        escalation_criteria:
+          - "conflicting_stakeholder_requirements"
+          - "results_not_statistically_significant"
+
+      resource_allocation:
+        authority: consensus
+        voting_weights:
+          data_engineer: 0.3
+          ml_researcher: 0.3
+          analytics_lead: 0.4
+        fallback_authority: analytics_lead
+        timeout: "2_hours"
+        escalation_path: "human_intervention"
+
+    # Peer review is mandatory for production model deployments
+    peer_review_requirements:
+      model_deployment:
+        required_reviewers: 2
+        review_criteria:
+          - "model_performance_validated"
+          - "data_pipeline_stable"
+          - "business_impact_documented"
+          - "monitoring_plan_defined"
+        blocking: true
+
+      ad_hoc_report:
+        required_reviewers: 1
+        review_criteria:
+          - "methodology_appropriate"
+          - "conclusions_supported_by_data"
+        blocking: false
+
+    conflict_resolution:
+      methodology_disagreements:
+        strategy: "evidence_based_decision"
+        process:
+          - "Each agent presents evidence for their approach"
+          - "Quantitative comparison where possible"
+          - "Fallback to analytics_lead decision if unresolved"
+        fallback_authority: analytics_lead
+
+  # --- Collaboration Protocols ---------------------------------------------
+  collaboration_protocols:
+    handoff_standards:
+      context_transfer:
+        required_fields:
+          - "objective_achieved"
+          - "deliverables_location"
+          - "success_criteria_met"
+          - "assumptions_made"
+          - "data_lineage"
+          - "next_agent_context"
+        optional_fields:
+          - "alternative_approaches_considered"
+          - "known_limitations"
+          - "time_spent"
+        validation: "receiving_agent_acknowledges_understanding"
+        timeout: "30_minutes"
+
+      quality_gates:
+        - gate: "data_quality"
+          enforced_by: data_engineer
+          criteria:
+            - "schema_validated == true"
+            - "null_rate < threshold"
+            - "freshness_check_passed == true"
+          auto_check: true
+
+        - gate: "model_quality"
+          enforced_by: ml_researcher
+          criteria:
+            - "validation_metrics_computed == true"
+            - "overfitting_check_passed == true"
+            - "reproducibility_confirmed == true"
+          auto_check: false
+
+        - gate: "deliverable_quality"
+          enforced_by: analytics_lead
+          criteria:
+            - "audience_appropriate == true"
+            - "actionable_recommendations == true"
+            - "visualizations_clear == true"
+          auto_check: false
+
+    status_updates:
+      frequency: "every_2_hours_during_active_work"
+      required_fields: ["current_stage", "progress_percentage", "blockers", "eta"]
+      broadcast_to: "all_team_members"
+      escalation_triggers:
+        - "no_progress_for_4_hours"
+        - "blocker_identified"
+        - "eta_exceeded_by_50_percent"
+
+  # --- Performance Metrics -------------------------------------------------
+  performance_metrics:
+    team_effectiveness:
+      - metric: "workflow_completion_rate"
+        target: "> 0.90"
+        measurement: "successful_workflows / total_attempted"
+        review_frequency: "weekly"
+
+      - metric: "peer_review_turnaround"
+        target: "< 4_hours"
+        measurement: "time_from_review_request_to_completion"
+        review_frequency: "weekly"
+
+      - metric: "stakeholder_satisfaction"
+        target: "> 4.0/5.0"
+        measurement: "post_delivery_feedback"
+        review_frequency: "monthly"

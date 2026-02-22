@@ -230,9 +230,7 @@ DISC_PRESETS: dict[str, DiscProfile] = {
     "the_steady_hand": DiscProfile(
         dominance=0.2, influence=0.5, steadiness=0.9, conscientiousness=0.5
     ),
-    "the_analyst": DiscProfile(
-        dominance=0.3, influence=0.2, steadiness=0.6, conscientiousness=0.9
-    ),
+    "the_analyst": DiscProfile(dominance=0.3, influence=0.2, steadiness=0.6, conscientiousness=0.9),
 }
 
 
@@ -357,9 +355,7 @@ def get_disc_preset(name: str) -> DiscProfile:
     """
     if name not in DISC_PRESETS:
         available = ", ".join(sorted(DISC_PRESETS.keys()))
-        raise KeyError(
-            f"Unknown DISC preset '{name}'. Available: {available}"
-        )
+        raise KeyError(f"Unknown DISC preset '{name}'. Available: {available}")
     return DISC_PRESETS[name]
 
 

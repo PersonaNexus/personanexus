@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 # Enums for Team Schema
 # ---------------------------------------------------------------------------
 
+
 class ConflictStrategy(enum.StrEnum):
     EVIDENCE_BASED_DECISION = "evidence_based_decision"
     AUTHORITY_HIERARCHY = "authority_hierarchy"
@@ -31,6 +32,7 @@ class WorkflowTriggerType(enum.StrEnum):
 # Team Metadata
 # ---------------------------------------------------------------------------
 
+
 class TeamMetadata(BaseModel):
     """Team-level metadata and identification."""
 
@@ -48,6 +50,7 @@ class TeamMetadata(BaseModel):
 # ---------------------------------------------------------------------------
 # Agent Composition
 # ---------------------------------------------------------------------------
+
 
 class TeamAgent(BaseModel):
     """Agent definition within a team context."""
@@ -90,6 +93,7 @@ class TeamComposition(BaseModel):
 # Workflow Patterns
 # ---------------------------------------------------------------------------
 
+
 class WorkflowStage(BaseModel):
     """A single stage in a workflow pattern."""
 
@@ -128,6 +132,7 @@ class WorkflowPattern(BaseModel):
 # Governance Framework
 # ---------------------------------------------------------------------------
 
+
 class DecisionFramework(BaseModel):
     """Framework for decision-making in a specific domain."""
 
@@ -161,6 +166,7 @@ class TeamGovernance(BaseModel):
 # Performance Metrics
 # ---------------------------------------------------------------------------
 
+
 class PerformanceMetric(BaseModel):
     """A measurable performance indicator for the team."""
 
@@ -180,6 +186,7 @@ class TeamPerformanceMetrics(BaseModel):
 # ---------------------------------------------------------------------------
 # Collaboration Protocols
 # ---------------------------------------------------------------------------
+
 
 class HandoffStandards(BaseModel):
     """Standards for agent-to-agent handoffs."""
@@ -210,6 +217,7 @@ class CollaborationProtocols(BaseModel):
 # Adaptation Rules
 # ---------------------------------------------------------------------------
 
+
 class AdaptationTrigger(BaseModel):
     """Trigger for team adaptation."""
 
@@ -228,6 +236,7 @@ class AdaptationRules(BaseModel):
 # Operations Configuration
 # ---------------------------------------------------------------------------
 
+
 class OperationsConfig(BaseModel):
     """Operational parameters for the team."""
 
@@ -240,6 +249,7 @@ class OperationsConfig(BaseModel):
 # ---------------------------------------------------------------------------
 # Top-Level Team Configuration
 # ---------------------------------------------------------------------------
+
 
 class TeamConfiguration(BaseModel):
     """Complete multi-agent team configuration."""
@@ -272,7 +282,9 @@ class TeamSpec(BaseModel):
     @field_validator("workflow_patterns")
     @classmethod
     def validate_workflow_agents(
-        cls, v: dict[str, WorkflowPattern], info,
+        cls,
+        v: dict[str, WorkflowPattern],
+        info,
     ) -> dict[str, WorkflowPattern]:
         """Validate that workflow agents exist in team composition."""
         if not info.data:

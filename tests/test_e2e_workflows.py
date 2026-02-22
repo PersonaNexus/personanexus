@@ -20,6 +20,7 @@ runner = CliRunner()
 # E2E Test Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def workspace():
     """Create a temporary workspace directory for E2E tests."""
@@ -446,6 +447,7 @@ expectations.
 # E2E Workflow Tests
 # ---------------------------------------------------------------------------
 
+
 class TestCompleteAgentWorkflow:
     """Test complete workflows from agent definition to output generation."""
 
@@ -492,7 +494,10 @@ class TestCompleteAgentWorkflow:
         assert "Similarity:" in result.output
 
     def test_team_validation_and_agent_cross_reference(
-        self, workspace, sample_agent_yaml, sample_team_yaml,
+        self,
+        workspace,
+        sample_agent_yaml,
+        sample_team_yaml,
     ):
         """Test team validation with agent cross-referencing."""
         # Create agent files referenced by team
@@ -572,20 +577,30 @@ class TestCompleteAgentWorkflow:
         (agents_dir / "analytical_researcher.yaml").write_text(analytical_yaml)
 
         # Compare original vs creative
-        result = runner.invoke(app, [
-            "analyze", str(agents_dir / "researcher.yaml"),
-            "--compare", str(agents_dir / "creative_researcher.yaml")
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                str(agents_dir / "researcher.yaml"),
+                "--compare",
+                str(agents_dir / "creative_researcher.yaml"),
+            ],
+        )
         assert result.exit_code == 0
         assert "vs" in result.output
         assert "creativity" in result.output
         assert "rigor" in result.output
 
         # Compare original vs analytical (should be more similar)
-        result = runner.invoke(app, [
-            "analyze", str(agents_dir / "researcher.yaml"),
-            "--compare", str(agents_dir / "analytical_researcher.yaml")
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                str(agents_dir / "researcher.yaml"),
+                "--compare",
+                str(agents_dir / "analytical_researcher.yaml"),
+            ],
+        )
         assert result.exit_code == 0
         assert "Similarity:" in result.output
 
@@ -733,14 +748,23 @@ class TestDataIntegrity:
     def test_ocean_disc_conversion_consistency(self, workspace):
         """Test consistency of OCEAN ↔ DISC conversions."""
         # Test known OCEAN values
-        result = runner.invoke(app, [
-            "personality", "ocean-to-traits",
-            "--openness", "0.8",
-            "--conscientiousness", "0.9",
-            "--extraversion", "0.3",
-            "--agreeableness", "0.7",
-            "--neuroticism", "0.2"
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "personality",
+                "ocean-to-traits",
+                "--openness",
+                "0.8",
+                "--conscientiousness",
+                "0.9",
+                "--extraversion",
+                "0.3",
+                "--agreeableness",
+                "0.7",
+                "--neuroticism",
+                "0.2",
+            ],
+        )
         assert result.exit_code == 0
 
         # Test DISC presets

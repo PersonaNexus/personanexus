@@ -63,8 +63,13 @@ class TestFormatDetector:
             ),
         ],
         ids=[
-            "yaml-ext", "yml-ext", "json-ext", "md-ext",
-            "content-yaml", "content-json", "content-md",
+            "yaml-ext",
+            "yml-ext",
+            "json-ext",
+            "md-ext",
+            "content-yaml",
+            "content-json",
+            "content-md",
         ],
     )
     def test_format_detection(self, tmp_path, filename, content, expected):
@@ -95,14 +100,16 @@ class TestFormatDetector:
 class TestPersonalityJsonParser:
     def test_parse_valid_json(self):
         parser = PersonalityJsonParser()
-        data = json.dumps({
-            "agent_name": "Test Agent",
-            "personality_traits": {
-                "warmth": 0.8,
-                "rigor": 0.9,
-                "humor": 0.3,
-            },
-        })
+        data = json.dumps(
+            {
+                "agent_name": "Test Agent",
+                "personality_traits": {
+                    "warmth": 0.8,
+                    "rigor": 0.9,
+                    "humor": 0.3,
+                },
+            }
+        )
         traits, extractions = parser.parse(data)
         assert traits["warmth"] == 0.8
         assert traits["rigor"] == 0.9
@@ -111,14 +118,22 @@ class TestPersonalityJsonParser:
 
     def test_all_ten_traits_extracted(self):
         parser = PersonalityJsonParser()
-        data = json.dumps({
-            "personality_traits": {
-                "warmth": 0.7, "verbosity": 0.5, "assertiveness": 0.6,
-                "humor": 0.4, "empathy": 0.8, "directness": 0.6,
-                "rigor": 0.9, "creativity": 0.5, "epistemic_humility": 0.7,
-                "patience": 0.8,
-            },
-        })
+        data = json.dumps(
+            {
+                "personality_traits": {
+                    "warmth": 0.7,
+                    "verbosity": 0.5,
+                    "assertiveness": 0.6,
+                    "humor": 0.4,
+                    "empathy": 0.8,
+                    "directness": 0.6,
+                    "rigor": 0.9,
+                    "creativity": 0.5,
+                    "epistemic_humility": 0.7,
+                    "patience": 0.8,
+                },
+            }
+        )
         traits, extractions = parser.parse(data)
         assert len(traits) == 10
         assert len(extractions) == 10
@@ -155,12 +170,14 @@ class TestPersonalityJsonParser:
 
     def test_parse_with_none_trait_value(self):
         parser = PersonalityJsonParser()
-        data = json.dumps({
-            "personality_traits": {
-                "warmth": None,
-                "rigor": 0.9,
-            },
-        })
+        data = json.dumps(
+            {
+                "personality_traits": {
+                    "warmth": None,
+                    "rigor": 0.9,
+                },
+            }
+        )
         traits, extractions = parser.parse(data)
         # None value should be skipped, not raise error
         assert "rigor" in traits
@@ -328,9 +345,15 @@ class TestSoulAnalyzer:
         data = {
             "agent_name": "Test Bot",
             "personality_traits": {
-                "warmth": 0.8, "verbosity": 0.5, "assertiveness": 0.6,
-                "humor": 0.4, "empathy": 0.8, "directness": 0.6,
-                "rigor": 0.9, "creativity": 0.5, "epistemic_humility": 0.7,
+                "warmth": 0.8,
+                "verbosity": 0.5,
+                "assertiveness": 0.6,
+                "humor": 0.4,
+                "empathy": 0.8,
+                "directness": 0.6,
+                "rigor": 0.9,
+                "creativity": 0.5,
+                "epistemic_humility": 0.7,
                 "patience": 0.8,
             },
         }
@@ -487,17 +510,29 @@ class TestComparison:
         # Create two very different personalities
         data_a = {
             "personality_traits": {
-                "warmth": 0.1, "verbosity": 0.1, "assertiveness": 0.1,
-                "humor": 0.1, "empathy": 0.1, "directness": 0.1,
-                "rigor": 0.1, "creativity": 0.1, "epistemic_humility": 0.1,
+                "warmth": 0.1,
+                "verbosity": 0.1,
+                "assertiveness": 0.1,
+                "humor": 0.1,
+                "empathy": 0.1,
+                "directness": 0.1,
+                "rigor": 0.1,
+                "creativity": 0.1,
+                "epistemic_humility": 0.1,
                 "patience": 0.1,
             },
         }
         data_b = {
             "personality_traits": {
-                "warmth": 0.9, "verbosity": 0.9, "assertiveness": 0.9,
-                "humor": 0.9, "empathy": 0.9, "directness": 0.9,
-                "rigor": 0.9, "creativity": 0.9, "epistemic_humility": 0.9,
+                "warmth": 0.9,
+                "verbosity": 0.9,
+                "assertiveness": 0.9,
+                "humor": 0.9,
+                "empathy": 0.9,
+                "directness": 0.9,
+                "rigor": 0.9,
+                "creativity": 0.9,
+                "epistemic_humility": 0.9,
                 "patience": 0.9,
             },
         }
@@ -529,10 +564,15 @@ class TestAnalyzeCommand:
         from personanexus.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "analyze", str(ada_path),
-            "--search-path", str(examples_dir),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                str(ada_path),
+                "--search-path",
+                str(examples_dir),
+            ],
+        )
         assert result.exit_code == 0
         assert "Personality Traits" in result.output
         assert "OCEAN" in result.output
@@ -544,11 +584,17 @@ class TestAnalyzeCommand:
         from personanexus.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "analyze", str(ada_path),
-            "--search-path", str(examples_dir),
-            "--format", "json",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                str(ada_path),
+                "--search-path",
+                str(examples_dir),
+                "--format",
+                "json",
+            ],
+        )
         assert result.exit_code == 0
         data = json.loads(result.output)
         assert "traits" in data
@@ -570,11 +616,17 @@ class TestAnalyzeCommand:
         from personanexus.cli import app
 
         runner = CliRunner()
-        result = runner.invoke(app, [
-            "analyze", str(ada_path),
-            "--compare", str(ada_ocean_path),
-            "--search-path", str(examples_dir),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "analyze",
+                str(ada_path),
+                "--compare",
+                str(ada_ocean_path),
+                "--search-path",
+                str(examples_dir),
+            ],
+        )
         assert result.exit_code == 0
         assert "Comparison" in result.output or "Similarity" in result.output
 

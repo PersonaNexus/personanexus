@@ -1,4 +1,5 @@
 """Tests for interaction protocols."""
+
 from personanexus.compiler import SystemPromptCompiler
 from personanexus.types import (
     AgentInteraction,
@@ -22,9 +23,9 @@ def test_human_interaction_full():
         tone_matching=True,
         escalation_triggers=[
             InteractionEscalationTrigger.UNABLE_TO_HELP,
-            InteractionEscalationTrigger.SAFETY_CONCERN
+            InteractionEscalationTrigger.SAFETY_CONCERN,
         ],
-        escalation_message="Let me connect you with someone who can help."
+        escalation_message="Let me connect you with someone who can help.",
     )
     assert h.tone_matching is True
     assert len(h.escalation_triggers) == 2
@@ -40,7 +41,7 @@ def test_agent_interaction_defaults():
 def test_interaction_config():
     config = InteractionConfig(
         human=HumanInteraction(greeting_style="professional", tone_matching=True),
-        agent=AgentInteraction(handoff_style="verbose", status_reporting="proactive")
+        agent=AgentInteraction(handoff_style="verbose", status_reporting="proactive"),
     )
     assert config.human.greeting_style == "professional"
     assert config.agent.status_reporting == "proactive"
@@ -53,9 +54,9 @@ def test_compiler_renders_interaction():
             greeting_style="warm",
             tone_matching=True,
             escalation_triggers=[InteractionEscalationTrigger.UNABLE_TO_HELP],
-            escalation_message="Connecting you with a human."
+            escalation_message="Connecting you with a human.",
         ),
-        agent=AgentInteraction(handoff_style="structured")
+        agent=AgentInteraction(handoff_style="structured"),
     )
     result = compiler._render_interaction(config)
     assert "Interaction Protocols" in result

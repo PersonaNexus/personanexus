@@ -1,6 +1,5 @@
 """Tests for the CLI commands."""
 
-
 from typer.testing import CliRunner
 
 from personanexus.cli import app
@@ -56,9 +55,7 @@ class TestResolveCommand:
         assert "Helper" in result.output
 
     def test_resolve_ada_with_search_path(self, ada_path, examples_dir):
-        result = runner.invoke(
-            app, ["resolve", str(ada_path), "--search-path", str(examples_dir)]
-        )
+        result = runner.invoke(app, ["resolve", str(ada_path), "--search-path", str(examples_dir)])
         assert result.exit_code == 0
         assert "Ada" in result.output
 

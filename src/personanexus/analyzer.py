@@ -106,8 +106,16 @@ class ComparisonResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 STANDARD_TRAITS = [
-    "warmth", "verbosity", "assertiveness", "humor", "empathy",
-    "directness", "rigor", "creativity", "epistemic_humility", "patience",
+    "warmth",
+    "verbosity",
+    "assertiveness",
+    "humor",
+    "empathy",
+    "directness",
+    "rigor",
+    "creativity",
+    "epistemic_humility",
+    "patience",
 ]
 
 # Level boundaries match _trait_to_language() in compiler.py:
@@ -192,10 +200,7 @@ def _build_reverse_templates() -> dict[str, list[tuple[str, float]]]:
     """
     reverse: dict[str, list[tuple[str, float]]] = {}
     for trait_name, templates in _TRAIT_TEMPLATES.items():
-        pairs = [
-            (template, _LEVEL_MIDPOINTS[i])
-            for i, template in enumerate(templates)
-        ]
+        pairs = [(template, _LEVEL_MIDPOINTS[i]) for i, template in enumerate(templates)]
         # Reverse so we match high-value (more specific) phrases first
         reverse[trait_name] = list(reversed(pairs))
     return reverse
@@ -263,12 +268,14 @@ class PersonalityJsonParser:
             if name in traits_raw and isinstance(traits_raw[name], (int, float)):
                 val = max(0.0, min(1.0, float(traits_raw[name])))
                 traits[name] = val
-                extractions.append(TraitExtraction(
-                    name=name,
-                    value=val,
-                    confidence=1.0,
-                    source_text=f"personality_traits.{name}: {traits_raw[name]}",
-                ))
+                extractions.append(
+                    TraitExtraction(
+                        name=name,
+                        value=val,
+                        confidence=1.0,
+                        source_text=f"personality_traits.{name}: {traits_raw[name]}",
+                    )
+                )
 
         return traits, extractions
 
@@ -284,7 +291,9 @@ class IdentityYamlParser:
     """Extract personality traits from an personanexus YAML file."""
 
     def parse(
-        self, path: Path, search_paths: list[Path] | None = None,
+        self,
+        path: Path,
+        search_paths: list[Path] | None = None,
     ) -> tuple[dict[str, float], list[TraitExtraction]]:
         resolver = IdentityResolver(search_paths=search_paths or [])
         identity = resolver.resolve_file(path)
@@ -292,13 +301,10 @@ class IdentityYamlParser:
             computed = compute_personality_traits(identity.personality)
             traits_dict = computed.defined_traits()
         except Exception as exc:
-            raise AnalyzerError(
-                f"Failed to compute personality traits from {path}: {exc}"
-            ) from exc
+            raise AnalyzerError(f"Failed to compute personality traits from {path}: {exc}") from exc
 
         extractions = [
-            TraitExtraction(name=k, value=v, confidence=1.0)
-            for k, v in traits_dict.items()
+            TraitExtraction(name=k, value=v, confidence=1.0) for k, v in traits_dict.items()
         ]
         return traits_dict, extractions
 
@@ -333,12 +339,14 @@ class SoulMdParser:
                 pattern = f"you are {phrase}".lower()
                 if pattern in content_lower:
                     traits[trait_name] = value
-                    extractions.append(TraitExtraction(
-                        name=trait_name,
-                        value=value,
-                        confidence=1.0,
-                        source_text=f"You are {phrase}.",
-                    ))
+                    extractions.append(
+                        TraitExtraction(
+                            name=trait_name,
+                            value=value,
+                            confidence=1.0,
+                            source_text=f"You are {phrase}.",
+                        )
+                    )
                     matched = True
                     break
 
@@ -360,21 +368,25 @@ class SoulMdParser:
             if best_score > 0:
                 confidence = min(0.7, 0.3 + best_score * 0.4)
                 traits[trait_name] = best_value
-                extractions.append(TraitExtraction(
-                    name=trait_name,
-                    value=best_value,
-                    confidence=round(confidence, 2),
-                    source_text=f"keywords: {', '.join(best_keywords)}",
-                ))
+                extractions.append(
+                    TraitExtraction(
+                        name=trait_name,
+                        value=best_value,
+                        confidence=round(confidence, 2),
+                        source_text=f"keywords: {', '.join(best_keywords)}",
+                    )
+                )
             else:
                 # Fallback: neutral with low confidence
                 traits[trait_name] = 0.5
-                extractions.append(TraitExtraction(
-                    name=trait_name,
-                    value=0.5,
-                    confidence=0.1,
-                    source_text=None,
-                ))
+                extractions.append(
+                    TraitExtraction(
+                        name=trait_name,
+                        value=0.5,
+                        confidence=0.1,
+                        source_text=None,
+                    )
+                )
 
         return traits, extractions
 
@@ -471,11 +483,7 @@ class SoulAnalyzer:
         closest = find_closest_preset(disc)
 
         # Overall confidence
-        avg_conf = (
-            sum(e.confidence for e in extractions) / len(extractions)
-            if extractions
-            else 0.0
-        )
+        avg_conf = sum(e.confidence for e in extractions) / len(extractions) if extractions else 0.0
 
         return AnalysisResult(
             source_path=str(path),
@@ -490,7 +498,9 @@ class SoulAnalyzer:
         )
 
     def compare(
-        self, result_a: AnalysisResult, result_b: AnalysisResult,
+        self,
+        result_a: AnalysisResult,
+        result_b: AnalysisResult,
     ) -> ComparisonResult:
         """Compare two analysis results."""
         traits_a = result_a.traits.defined_traits()
@@ -502,10 +512,14 @@ class SoulAnalyzer:
         for trait in all_traits:
             va = traits_a.get(trait, 0.5)
             vb = traits_b.get(trait, 0.5)
-            deltas.append(TraitDelta(
-                trait=trait, value_a=va, value_b=vb,
-                delta=round(vb - va, 4),
-            ))
+            deltas.append(
+                TraitDelta(
+                    trait=trait,
+                    value_a=va,
+                    value_b=vb,
+                    delta=round(vb - va, 4),
+                )
+            )
 
         # OCEAN deltas
         oa = result_a.ocean.model_dump()

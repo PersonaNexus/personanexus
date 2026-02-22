@@ -1,6 +1,5 @@
 """Tests for inheritance and mixin resolution."""
 
-
 import pytest
 
 from personanexus.parser import ParseError

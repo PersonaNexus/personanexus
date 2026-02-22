@@ -173,9 +173,7 @@ class IdentityValidator:
 
         return warnings
 
-    def _check_personality_profile(
-        self, identity: AgentIdentity
-    ) -> list[ValidationWarning]:
+    def _check_personality_profile(self, identity: AgentIdentity) -> list[ValidationWarning]:
         """Check personality profile for enterprise recommendations."""
         warnings: list[ValidationWarning] = []
         profile = identity.personality.profile
@@ -186,38 +184,36 @@ class IdentityValidator:
             and profile.ocean is not None
             and profile.ocean.neuroticism > 0.6
         ):
-                warnings.append(
-                    ValidationWarning(
-                        type="personality_profile",
-                        message=(
-                            f"OCEAN neuroticism ({profile.ocean.neuroticism}) is above 0.6 "
-                            "— enterprise agents typically perform better with lower neuroticism"
-                        ),
-                        severity="medium",
-                        path="personality.profile.ocean.neuroticism",
-                    )
+            warnings.append(
+                ValidationWarning(
+                    type="personality_profile",
+                    message=(
+                        f"OCEAN neuroticism ({profile.ocean.neuroticism}) is above 0.6 "
+                        "— enterprise agents typically perform better with lower neuroticism"
+                    ),
+                    severity="medium",
+                    path="personality.profile.ocean.neuroticism",
                 )
+            )
 
         # Enterprise recommendation for customer-facing agents
         if (
             profile.mode in (PersonalityMode.OCEAN, PersonalityMode.HYBRID)
             and profile.ocean is not None
         ):
-                combined = (
-                    profile.ocean.conscientiousness + profile.ocean.agreeableness
-                )
-                if combined < 0.8:
-                    warnings.append(
-                        ValidationWarning(
-                            type="personality_profile",
-                            message=(
-                                f"OCEAN conscientiousness + agreeableness = {combined:.2f} "
-                                "(below 0.8) — customer-facing agents benefit from higher values"
-                            ),
-                            severity="low",
-                            path="personality.profile.ocean",
-                        )
+            combined = profile.ocean.conscientiousness + profile.ocean.agreeableness
+            if combined < 0.8:
+                warnings.append(
+                    ValidationWarning(
+                        type="personality_profile",
+                        message=(
+                            f"OCEAN conscientiousness + agreeableness = {combined:.2f} "
+                            "(below 0.8) — customer-facing agents benefit from higher values"
+                        ),
+                        severity="low",
+                        path="personality.profile.ocean",
                     )
+                )
 
         # DISC preset validation (soft check — preset may not exist)
         if profile.disc_preset is not None:
@@ -229,8 +225,7 @@ class IdentityValidator:
                     ValidationWarning(
                         type="personality_profile",
                         message=(
-                            f"Unknown DISC preset '{profile.disc_preset}'. "
-                            f"Available: {available}"
+                            f"Unknown DISC preset '{profile.disc_preset}'. Available: {available}"
                         ),
                         severity="high",
                         path="personality.profile.disc_preset",

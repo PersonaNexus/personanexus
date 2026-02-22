@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import uuid
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -59,6 +60,34 @@ class BuiltIdentity:
         """Return the raw identity dict."""
         return self.data
 
+    @classmethod
+    def from_yaml(cls, path: str | Path) -> BuiltIdentity:
+        """Load a BuiltIdentity from a YAML file on disk.
+
+        Parameters
+        ----------
+        path:
+            Filesystem path to a YAML identity file.
+
+        Returns
+        -------
+        BuiltIdentity
+            A new instance populated with the data from the file.
+
+        Raises
+        ------
+        FileNotFoundError
+            If *path* does not exist.
+        yaml.YAMLError
+            If the file is not valid YAML.
+        """
+        path = Path(path)
+        with path.open("r", encoding="utf-8") as fh:
+            data = yaml.safe_load(fh)
+        if not isinstance(data, dict):
+            raise ValueError(f"Expected a YAML mapping at top level, got {type(data).__name__}")
+        return cls(data)
+
 
 # ---------------------------------------------------------------------------
 # IdentityBuilder wizard
@@ -68,8 +97,9 @@ class BuiltIdentity:
 class IdentityBuilder:
     """Interactive wizard for building agent identities step-by-step."""
 
-    def __init__(self, console: Console | None = None):
+    def __init__(self, console: Console | None = None, edit_path: str | None = None):
         self.console = console or Console()
+        self.edit_path = edit_path
 
     # ------------------------------------------------------------------
     # Input helpers with re-prompting
@@ -124,15 +154,24 @@ class IdentityBuilder:
             )
         )
 
+        # ---- Edit-existing mode -------------------------------------------
+        if self.edit_path is not None:
+            existing = BuiltIdentity.from_yaml(self.edit_path)
+            return self._phase_edit_existing(existing.data)
+
+        # ---- Normal creation mode -----------------------------------------
         data: dict[str, Any] = {"schema_version": "1.0"}
 
-        self._phase_basics(data)
-        self._phase_personality_mode(data)
-        self._phase_personality(data)
-        self._phase_communication(data)
-        self._phase_principles(data)
-        self._phase_guardrails(data)
-        self._phase_expertise(data)
+        self._phase_basics(data)  # Phase 1
+        self._phase_personality_mode(data)  # Phase 2a
+        self._phase_personality(data)  # Phase 2b
+        self._phase_communication(data)  # Phase 3
+        self._phase_principles(data)  # Phase 4
+        self._phase_guardrails(data)  # Phase 5
+        self._phase_narrative(data)  # Phase 6
+        self._phase_behavioral_modes(data)  # Phase 7
+        self._phase_interaction(data)  # Phase 8
+        self._phase_expertise(data)  # Phase 9
 
         self.console.print("\n[green]Identity created successfully![/green]")
 
@@ -149,9 +188,7 @@ class IdentityBuilder:
         name = Prompt.ask("Agent name", default="MyAgent")
         title = Prompt.ask("Role title", default=name)
         default_purpose = f"Assist users with {name.lower()}-related tasks"
-        purpose = Prompt.ask(
-            "Purpose (what does this agent do?)", default=default_purpose
-        )
+        purpose = Prompt.ask("Purpose (what does this agent do?)", default=default_purpose)
         description = Prompt.ask("Description", default=f"An AI agent named {name}")
 
         # Primary scope
@@ -263,9 +300,7 @@ class IdentityBuilder:
 
         self.console.print("\n[bold blue]Phase 2b: OCEAN (Big Five) Profile[/bold blue]")
         self.console.rule()
-        self.console.print(
-            "[dim]Rate each OCEAN dimension from 0.0 to 1.0.[/dim]\n"
-        )
+        self.console.print("[dim]Rate each OCEAN dimension from 0.0 to 1.0.[/dim]\n")
 
         ocean_dims = {
             "openness": "Curiosity, creativity, openness to new experiences",
@@ -321,9 +356,7 @@ class IdentityBuilder:
         use_preset = Confirm.ask("Use a preset?", default=True)
 
         if use_preset:
-            preset_name = self._prompt_choice(
-                "Preset", preset_names, default="the_analyst"
-            )
+            preset_name = self._prompt_choice("Preset", preset_names, default="the_analyst")
             disc = get_disc_preset(preset_name)
             computed = disc_to_traits(disc)
             disc_data: dict[str, Any] = {
@@ -331,9 +364,7 @@ class IdentityBuilder:
                 "disc_preset": preset_name,
             }
         else:
-            self.console.print(
-                "[dim]Rate each DISC dimension from 0.0 to 1.0.[/dim]\n"
-            )
+            self.console.print("[dim]Rate each DISC dimension from 0.0 to 1.0.[/dim]\n")
             disc_dims = {
                 "dominance": "Drive, assertiveness, control orientation",
                 "influence": "Sociability, enthusiasm, collaboration",
@@ -372,16 +403,17 @@ class IdentityBuilder:
             "Then override specific traits manually.[/dim]\n"
         )
 
-        framework = self._prompt_choice(
-            "Base framework", ["ocean", "disc"], default="ocean"
-        )
+        framework = self._prompt_choice("Base framework", ["ocean", "disc"], default="ocean")
 
         profile_data: dict[str, Any] = {"mode": "hybrid"}
 
         if framework == "ocean":
             ocean_dims = [
-                "openness", "conscientiousness", "extraversion",
-                "agreeableness", "neuroticism",
+                "openness",
+                "conscientiousness",
+                "extraversion",
+                "agreeableness",
+                "neuroticism",
             ]
             scores: dict[str, float] = {}
             for dim in ocean_dims:
@@ -392,7 +424,10 @@ class IdentityBuilder:
             profile_data["ocean"] = scores
         else:
             disc_dims = [
-                "dominance", "influence", "steadiness", "conscientiousness",
+                "dominance",
+                "influence",
+                "steadiness",
+                "conscientiousness",
             ]
             scores = {}
             for dim in disc_dims:
@@ -406,9 +441,7 @@ class IdentityBuilder:
         self._show_computed_traits_preview(computed)
 
         # Now allow overrides
-        self.console.print(
-            "\n[dim]Override specific traits (Enter to keep computed value):[/dim]"
-        )
+        self.console.print("\n[dim]Override specific traits (Enter to keep computed value):[/dim]")
         overrides: dict[str, float] = {}
         for trait_name in _TRAIT_ORDER:
             current = computed.get(trait_name, 0.5)
@@ -482,8 +515,7 @@ class IdentityBuilder:
         self.console.print("\n[bold blue]Phase 4: Core Principles[/bold blue]")
         self.console.rule()
         self.console.print(
-            "[dim]Enter guiding principles for the agent."
-            " Empty input to finish.[/dim]\n"
+            "[dim]Enter guiding principles for the agent. Empty input to finish.[/dim]\n"
         )
 
         principles: list[dict[str, Any]] = []
@@ -507,8 +539,7 @@ class IdentityBuilder:
         # Add default if empty
         if not principles:
             self.console.print(
-                "[yellow]No principles entered."
-                " Adding default safety principle.[/yellow]"
+                "[yellow]No principles entered. Adding default safety principle.[/yellow]"
             )
             principles.append(
                 {
@@ -528,8 +559,7 @@ class IdentityBuilder:
         self.console.print("\n[bold blue]Phase 5: Guardrails[/bold blue]")
         self.console.rule()
         self.console.print(
-            "[dim]Enter hard constraints the agent must never violate."
-            " Empty to finish.[/dim]\n"
+            "[dim]Enter hard constraints the agent must never violate. Empty to finish.[/dim]\n"
         )
 
         guardrails: list[dict[str, Any]] = []
@@ -566,11 +596,173 @@ class IdentityBuilder:
         data["guardrails"] = {"hard": guardrails}
 
     # ------------------------------------------------------------------
-    # Phase 6: Expertise (optional)
+    # Phase 6: Narrative / Backstory
+    # ------------------------------------------------------------------
+
+    def _phase_narrative(self, data: dict[str, Any]) -> None:
+        """Collect optional backstory, current focus items, and pet peeves."""
+        self.console.print("\n[bold blue]Phase 6: Narrative / Backstory[/bold blue]")
+        self.console.rule()
+
+        add_narrative = Confirm.ask("Add narrative/backstory details?", default=False)
+        if not add_narrative:
+            return
+
+        narrative: dict[str, Any] = {}
+
+        # Backstory (optional, single prompt)
+        self.console.print(
+            "[dim]Enter a backstory for the agent (optional, press Enter to skip).[/dim]"
+        )
+        backstory = Prompt.ask("  Backstory", default="")
+        if backstory.strip():
+            narrative["backstory"] = backstory.strip()
+
+        # Current focus items (loop until empty)
+        self.console.print("\n[dim]Enter current focus items. Empty to finish.[/dim]")
+        focus_items: list[str] = []
+        counter = 1
+        while True:
+            item = Prompt.ask(f"  Focus {counter}", default="")
+            if not item.strip():
+                break
+            focus_items.append(item.strip())
+            counter += 1
+        if focus_items:
+            narrative["current_focus"] = focus_items
+
+        # Pet peeves (loop until empty)
+        self.console.print("\n[dim]Enter pet peeves. Empty to finish.[/dim]")
+        pet_peeves: list[str] = []
+        counter = 1
+        while True:
+            peeve = Prompt.ask(f"  Pet peeve {counter}", default="")
+            if not peeve.strip():
+                break
+            pet_peeves.append(peeve.strip())
+            counter += 1
+        if pet_peeves:
+            narrative["pet_peeves"] = pet_peeves
+
+        if narrative:
+            data["narrative"] = narrative
+
+    # ------------------------------------------------------------------
+    # Phase 7: Behavioral Modes
+    # ------------------------------------------------------------------
+
+    def _phase_behavioral_modes(self, data: dict[str, Any]) -> None:
+        """Define named behavioral modes with optional tone overrides."""
+        self.console.print("\n[bold blue]Phase 7: Behavioral Modes[/bold blue]")
+        self.console.rule()
+
+        add_modes = Confirm.ask("Define behavioral modes?", default=False)
+        if not add_modes:
+            return
+
+        modes: list[dict[str, Any]] = []
+
+        self.console.print(
+            "[dim]Add behavioral modes. Each mode has a name, description, "
+            "and optional tone overrides. Empty name to finish.[/dim]\n"
+        )
+
+        while True:
+            mode_name = Prompt.ask("  Mode name (empty to finish)", default="")
+            if not mode_name.strip():
+                break
+
+            description = Prompt.ask("  Description", default="")
+
+            mode_entry: dict[str, Any] = {
+                "name": mode_name.strip(),
+                "description": description.strip() if description.strip() else mode_name.strip(),
+            }
+
+            # Optional tone_register override
+            register_override = Prompt.ask("  Tone register override (empty to skip)", default="")
+            if register_override.strip():
+                mode_entry["tone_register"] = register_override.strip()
+
+            # Optional tone_default override
+            tone_override = Prompt.ask("  Tone default override (empty to skip)", default="")
+            if tone_override.strip():
+                mode_entry["tone_default"] = tone_override.strip()
+
+            modes.append(mode_entry)
+            self.console.print(f"  [green]Added mode: {mode_name.strip()}[/green]\n")
+
+        if not modes:
+            return
+
+        # Ask for a default mode
+        mode_names = [m["name"] for m in modes]
+        default_mode = self._prompt_choice("  Default mode", mode_names, default=mode_names[0])
+
+        data["behavioral_modes"] = {
+            "modes": modes,
+            "default": default_mode,
+        }
+
+    # ------------------------------------------------------------------
+    # Phase 8: Interaction Protocols
+    # ------------------------------------------------------------------
+
+    def _phase_interaction(self, data: dict[str, Any]) -> None:
+        """Configure interaction protocols for human and agent interactions."""
+        self.console.print("\n[bold blue]Phase 8: Interaction Protocols[/bold blue]")
+        self.console.rule()
+
+        add_interaction = Confirm.ask("Configure interaction protocols?", default=False)
+        if not add_interaction:
+            return
+
+        interaction: dict[str, Any] = {}
+
+        # --- Human interaction settings ---
+        self.console.print("\n[bold]Human Interaction[/bold]")
+
+        greeting_style = Prompt.ask("  Greeting style (empty to skip)", default="")
+        farewell_style = Prompt.ask("  Farewell style (empty to skip)", default="")
+        tone_matching = Confirm.ask("  Enable tone matching?", default=True)
+
+        human_config: dict[str, Any] = {"tone_matching": tone_matching}
+        if greeting_style.strip():
+            human_config["greeting_style"] = greeting_style.strip()
+        if farewell_style.strip():
+            human_config["farewell_style"] = farewell_style.strip()
+
+        interaction["human"] = human_config
+
+        # --- Agent interaction settings ---
+        self.console.print("\n[bold]Agent Interaction[/bold]")
+
+        handoff_style = self._prompt_choice(
+            "  Handoff style", ["structured", "freeform"], default="structured"
+        )
+        status_reporting = self._prompt_choice(
+            "  Status reporting", ["verbose", "concise", "minimal"], default="concise"
+        )
+        conflict_resolution = self._prompt_choice(
+            "  Conflict resolution",
+            ["escalate", "negotiate", "defer"],
+            default="escalate",
+        )
+
+        interaction["agent"] = {
+            "handoff_style": handoff_style,
+            "status_reporting": status_reporting,
+            "conflict_resolution": conflict_resolution,
+        }
+
+        data["interaction"] = interaction
+
+    # ------------------------------------------------------------------
+    # Phase 9: Expertise (optional)
     # ------------------------------------------------------------------
 
     def _phase_expertise(self, data: dict[str, Any]) -> None:
-        self.console.print("\n[bold blue]Phase 6: Expertise (Optional)[/bold blue]")
+        self.console.print("\n[bold blue]Phase 9: Expertise (Optional)[/bold blue]")
         self.console.rule()
 
         add_expertise = Confirm.ask("Add expertise domains?", default=False)
@@ -599,6 +791,102 @@ class IdentityBuilder:
 
         if domains:
             data["expertise"] = {"domains": domains}
+
+    # ------------------------------------------------------------------
+    # Edit-existing mode
+    # ------------------------------------------------------------------
+
+    # Map of phase keys to (display name, phase method name) for the edit menu
+    _EDITABLE_PHASES: list[tuple[str, str, str]] = [
+        ("basics", "Basics", "_phase_basics"),
+        ("personality", "Personality", "_phase_personality_edit_wrapper"),
+        ("communication", "Communication Style", "_phase_communication"),
+        ("principles", "Core Principles", "_phase_principles"),
+        ("guardrails", "Guardrails", "_phase_guardrails"),
+        ("narrative", "Narrative / Backstory", "_phase_narrative"),
+        ("behavioral_modes", "Behavioral Modes", "_phase_behavioral_modes"),
+        ("interaction", "Interaction Protocols", "_phase_interaction"),
+        ("expertise", "Expertise", "_phase_expertise"),
+    ]
+
+    def _phase_personality_edit_wrapper(self, data: dict[str, Any]) -> None:
+        """Run personality mode selection then personality traits when editing."""
+        self._phase_personality_mode(data)
+        self._phase_personality(data)
+
+    def _phase_edit_existing(self, data: dict[str, Any]) -> BuiltIdentity:
+        """Edit an existing identity by choosing which sections to re-run.
+
+        Displays current values and lets the user pick which phases to
+        re-execute. Phases that are not selected keep their current data.
+        """
+        self.console.print(
+            Panel(
+                "[bold]Editing Existing Identity[/bold]\n\n"
+                f"Loaded: {data.get('metadata', {}).get('name', '(unknown)')}\n"
+                f"Version: {data.get('metadata', {}).get('version', '?')}",
+                border_style="yellow",
+            )
+        )
+
+        # Show summary of current sections
+        self.console.print("\n[bold]Current sections:[/bold]")
+        section_table = Table(show_header=True, header_style="bold")
+        section_table.add_column("#", style="dim", width=3)
+        section_table.add_column("Section", style="cyan")
+        section_table.add_column("Status", style="dim")
+
+        for idx, (key, display_name, _method) in enumerate(self._EDITABLE_PHASES, 1):
+            present = (
+                key in data
+                or (key == "basics" and "metadata" in data)
+                or (key == "personality" and "personality" in data)
+            )
+            status = "[green]present[/green]" if present else "[dim]empty[/dim]"
+            section_table.add_row(str(idx), display_name, status)
+
+        self.console.print(section_table)
+
+        # Ask which sections to re-run
+        self.console.print(
+            "\n[dim]Select sections to re-run (comma-separated numbers, "
+            "or 'all'). Press Enter to keep everything unchanged.[/dim]"
+        )
+        selection = Prompt.ask("  Sections to edit", default="")
+
+        if not selection.strip():
+            self.console.print("\n[green]No changes made.[/green]")
+            return BuiltIdentity(data)
+
+        # Parse selection
+        phases_to_run: list[int] = []
+        if selection.strip().lower() == "all":
+            phases_to_run = list(range(len(self._EDITABLE_PHASES)))
+        else:
+            for part in selection.split(","):
+                part = part.strip()
+                if part.isdigit():
+                    idx = int(part) - 1
+                    if 0 <= idx < len(self._EDITABLE_PHASES):
+                        phases_to_run.append(idx)
+                    else:
+                        self.console.print(f"  [yellow]Skipping invalid number: {part}[/yellow]")
+                else:
+                    self.console.print(f"  [yellow]Skipping invalid input: {part}[/yellow]")
+
+        # Run selected phases
+        for idx in phases_to_run:
+            _key, display_name, method_name = self._EDITABLE_PHASES[idx]
+            self.console.print(f"\n[bold yellow]Re-running: {display_name}[/bold yellow]")
+            method = getattr(self, method_name)
+            method(data)
+
+        # Update timestamp
+        if "metadata" in data:
+            data["metadata"]["updated_at"] = datetime.now(UTC).isoformat()
+
+        self.console.print("\n[green]Identity updated successfully![/green]")
+        return BuiltIdentity(data)
 
 
 # ---------------------------------------------------------------------------
@@ -712,8 +1000,7 @@ Respond in this exact JSON format (no markdown, just raw JSON):
             return json.loads(text)
         except Exception as exc:
             self.console.print(
-                f"[yellow]LLM enhancement failed: {exc}."
-                " Falling back to templates.[/yellow]"
+                f"[yellow]LLM enhancement failed: {exc}. Falling back to templates.[/yellow]"
             )
             return self._enhance_with_templates(identity)
 
@@ -736,26 +1023,226 @@ Respond in this exact JSON format (no markdown, just raw JSON):
         if traits.get("humor", 0) >= 0.6:
             notes_parts.append(f"{name} isn't afraid to lighten the mood with appropriate humor.")
 
-        # Build greeting
-        purpose_first_line = purpose.strip().split("\n")[0]
-        greeting = f"Hello! I'm {name}, your {role}. {purpose_first_line} How can I help you today?"
+        # Additional notes for other prominent traits
+        if traits.get("empathy", 0) >= 0.7:
+            notes_parts.append(
+                f"{name} is deeply attuned to the emotional state of those they interact with."
+            )
+        if traits.get("creativity", 0) >= 0.7:
+            notes_parts.append(
+                f"{name} favors innovative and unconventional approaches to problem-solving."
+            )
+        if traits.get("patience", 0) >= 0.7:
+            notes_parts.append(
+                f"{name} takes a calm, unhurried approach and gives every question"
+                f" the time it deserves."
+            )
+        if traits.get("directness", 0) >= 0.8:
+            notes_parts.append(f"{name} values candor and gets straight to the point.")
+        elif traits.get("directness", 0) <= 0.2:
+            notes_parts.append(f"{name} communicates with tact and diplomatic sensitivity.")
 
-        # Build vocabulary
-        vocabulary = {
-            "preferred": [
+        # ---- Greeting style variation based on warmth & assertiveness ----
+        warmth = traits.get("warmth", 0.5)
+        assertiveness = traits.get("assertiveness", 0.5)
+        purpose_first_line = purpose.strip().split("\n")[0]
+
+        if warmth >= 0.7 and assertiveness >= 0.7:
+            greeting = (
+                f"Hey there! I'm {name}, your {role}. "
+                f"{purpose_first_line} "
+                f"Let's dive right in -- what are we tackling today?"
+            )
+        elif warmth >= 0.7 and assertiveness < 0.4:
+            greeting = (
+                f"Hi! I'm {name}, your {role}. "
+                f"{purpose_first_line} "
+                f"Whenever you're ready, I'm here to help."
+            )
+        elif warmth < 0.3 and assertiveness >= 0.7:
+            greeting = (
+                f"I'm {name}, {role}. {purpose_first_line} State your request and I'll get started."
+            )
+        elif warmth < 0.3:
+            greeting = f"I'm {name}, {role}. {purpose_first_line} How may I assist you?"
+        else:
+            greeting = (
+                f"Hello! I'm {name}, your {role}. {purpose_first_line} How can I help you today?"
+            )
+
+        # ---- Sophisticated vocabulary generation based on traits ----------
+        preferred: list[str] = []
+        avoided: list[str] = []
+        signature_phrases: list[str] = []
+
+        # High rigor -> formal, precise words
+        rigor = traits.get("rigor", 0.5)
+        if rigor >= 0.7:
+            preferred.extend(
+                [
+                    "Precisely",
+                    "To be specific",
+                    "The data indicates",
+                    "Let me verify that",
+                ]
+            )
+            avoided.extend(
+                [
+                    "Roughly speaking",
+                    "More or less",
+                    "I think maybe",
+                ]
+            )
+            signature_phrases.append("Let me be precise about this")
+        elif rigor <= 0.3:
+            preferred.extend(
+                [
+                    "Roughly",
+                    "In broad strokes",
+                    "The gist is",
+                ]
+            )
+            avoided.extend(
+                [
+                    "To be pedantic",
+                    "Technically speaking",
+                ]
+            )
+            signature_phrases.append("Here's the big picture")
+
+        # High warmth -> casual, friendly words
+        if warmth >= 0.7:
+            preferred.extend(
+                [
+                    "Great question!",
+                    "I'd love to help with that",
+                    "Absolutely",
+                ]
+            )
+            avoided.extend(
+                [
+                    "Negative",
+                    "That is incorrect",
+                ]
+            )
+            signature_phrases.append("Let's work through this together")
+        elif warmth <= 0.3:
+            preferred.extend(
+                [
+                    "Understood",
+                    "Acknowledged",
+                    "Proceeding",
+                ]
+            )
+            avoided.extend(
+                [
+                    "No worries!",
+                    "Awesome!",
+                ]
+            )
+            signature_phrases.append("Here is the assessment")
+
+        # High humor -> playful language
+        humor = traits.get("humor", 0.5)
+        if humor >= 0.6:
+            preferred.extend(
+                [
+                    "Fun fact",
+                    "Here's the interesting part",
+                ]
+            )
+            signature_phrases.append("Glad you asked!")
+        elif humor <= 0.2:
+            avoided.extend(
+                [
+                    "Just kidding",
+                    "LOL",
+                    "Haha",
+                ]
+            )
+
+        # High assertiveness -> directive language
+        if assertiveness >= 0.7:
+            preferred.extend(
+                [
+                    "Here's what I'd recommend",
+                    "The best approach is",
+                    "You should",
+                ]
+            )
+            signature_phrases.append("Here's my take on it")
+        elif assertiveness <= 0.3:
+            preferred.extend(
+                [
+                    "You might consider",
+                    "One option could be",
+                    "If you'd like",
+                ]
+            )
+            signature_phrases.append("What do you think about this approach?")
+
+        # High empathy -> emotionally aware language
+        empathy = traits.get("empathy", 0.5)
+        if empathy >= 0.7:
+            preferred.extend(
+                [
+                    "I understand how that feels",
+                    "That makes sense",
+                ]
+            )
+            avoided.append("Just do it")
+
+        # High creativity -> inventive phrasing
+        creativity = traits.get("creativity", 0.5)
+        if creativity >= 0.7:
+            preferred.extend(
+                [
+                    "Here's an unconventional idea",
+                    "What if we tried",
+                ]
+            )
+            signature_phrases.append("Let's think outside the box")
+
+        # High epistemic humility -> hedged language
+        epistemic_humility = traits.get("epistemic_humility", 0.5)
+        if epistemic_humility >= 0.7:
+            preferred.extend(
+                [
+                    "Based on what I know",
+                    "I could be wrong, but",
+                ]
+            )
+            avoided.extend(
+                [
+                    "Obviously",
+                    "Clearly",
+                    "Without a doubt",
+                ]
+            )
+
+        # Fallback defaults if nothing accumulated
+        if not preferred:
+            preferred = [
                 "Let me help you with that",
                 "Here's what I'd recommend",
                 "Good question",
-            ],
-            "avoided": [
+            ]
+        if not avoided:
+            avoided = [
                 "As an AI",
                 "I cannot",
                 "It depends",
-            ],
-            "signature_phrases": [
+            ]
+        if not signature_phrases:
+            signature_phrases = [
                 "Let's work through this together",
                 "Here's my take on it",
-            ],
+            ]
+
+        vocabulary = {
+            "preferred": preferred,
+            "avoided": avoided,
+            "signature_phrases": signature_phrases,
         }
 
         # Build strategies

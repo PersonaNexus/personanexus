@@ -1,4 +1,5 @@
 """Tests for enhanced agent relationships."""
+
 from personanexus.compiler import SystemPromptCompiler
 from personanexus.types import (
     AgentRelationship,

@@ -56,11 +56,11 @@ class TestIdentityBuilderPhases:
     @patch("personanexus.builder.Prompt.ask")
     def test_phase_basics_generates_valid_id(self, mock_ask):
         mock_ask.side_effect = [
-            "TestBot",       # name
-            "Test Assistant", # title
+            "TestBot",  # name
+            "Test Assistant",  # title
             "Help users test things",  # purpose
-            "A test bot",    # description
-            "testing, QA",   # scope
+            "A test bot",  # description
+            "testing, QA",  # scope
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -77,16 +77,16 @@ class TestIdentityBuilderPhases:
     def test_phase_personality_validates_range(self, mock_ask):
         # Provide values for all 10 traits: some valid, some skipped
         mock_ask.side_effect = [
-            "0.8",   # warmth
-            "",      # verbosity (skip)
-            "0.6",   # assertiveness
-            "",      # humor (skip)
-            "",      # empathy (skip)
-            "0.7",   # directness
-            "",      # rigor (skip)
-            "",      # creativity (skip)
-            "",      # epistemic_humility (skip)
-            "",      # patience (skip)
+            "0.8",  # warmth
+            "",  # verbosity (skip)
+            "0.6",  # assertiveness
+            "",  # humor (skip)
+            "",  # empathy (skip)
+            "0.7",  # directness
+            "",  # rigor (skip)
+            "",  # creativity (skip)
+            "",  # epistemic_humility (skip)
+            "",  # patience (skip)
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -163,8 +163,8 @@ class TestIdentityBuilderPhases:
     def test_phase_communication(self, mock_ask):
         mock_ask.side_effect = [
             "warm and professional",  # tone
-            "consultative",            # register
-            "sparingly",               # emoji
+            "consultative",  # register
+            "sparingly",  # emoji
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -187,10 +187,10 @@ class TestIdentityBuilderPhases:
     def test_phase_expertise_with_domains(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "Python",   # domain name
-            "0.9",      # level
+            "Python",  # domain name
+            "0.9",  # level
             "primary",  # category
-            "",         # end loop (domain name empty)
+            "",  # end loop (domain name empty)
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -219,17 +219,17 @@ class TestRepromptOnInvalidInput:
     def test_personality_reprompts_on_out_of_range(self, mock_ask):
         # First trait: enter 1.5 (rejected), then 0.8 (accepted), then skip the rest
         mock_ask.side_effect = [
-            "1.5",   # warmth — out of range, re-prompt
-            "0.8",   # warmth — accepted
-            "",      # verbosity (skip)
-            "0.6",   # assertiveness
-            "",      # humor (skip)
-            "",      # empathy (skip)
-            "0.7",   # directness
-            "",      # rigor (skip)
-            "",      # creativity (skip)
-            "",      # epistemic_humility (skip)
-            "",      # patience (skip)
+            "1.5",  # warmth — out of range, re-prompt
+            "0.8",  # warmth — accepted
+            "",  # verbosity (skip)
+            "0.6",  # assertiveness
+            "",  # humor (skip)
+            "",  # empathy (skip)
+            "0.7",  # directness
+            "",  # rigor (skip)
+            "",  # creativity (skip)
+            "",  # epistemic_humility (skip)
+            "",  # patience (skip)
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -244,17 +244,17 @@ class TestRepromptOnInvalidInput:
     def test_personality_reprompts_on_non_numeric(self, mock_ask):
         # First trait: enter "abc" (rejected), then "0.7" (accepted), skip rest
         mock_ask.side_effect = [
-            "abc",   # warmth — not a number, re-prompt
-            "0.7",   # warmth — accepted
-            "",      # verbosity (skip)
-            "0.5",   # assertiveness
-            "",      # humor (skip)
-            "",      # empathy (skip)
-            "",      # directness (skip)
-            "",      # rigor (skip)
-            "",      # creativity (skip)
-            "",      # epistemic_humility (skip)
-            "",      # patience (skip)
+            "abc",  # warmth — not a number, re-prompt
+            "0.7",  # warmth — accepted
+            "",  # verbosity (skip)
+            "0.5",  # assertiveness
+            "",  # humor (skip)
+            "",  # empathy (skip)
+            "",  # directness (skip)
+            "",  # rigor (skip)
+            "",  # creativity (skip)
+            "",  # epistemic_humility (skip)
+            "",  # patience (skip)
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -269,16 +269,16 @@ class TestRepromptOnInvalidInput:
         # Enter -0.5 (rejected), then 0.3 (accepted), then skip rest
         mock_ask.side_effect = [
             "-0.5",  # warmth — negative, re-prompt
-            "0.3",   # warmth — accepted
-            "0.6",   # verbosity
-            "",      # assertiveness (skip)
-            "",      # humor (skip)
-            "",      # empathy (skip)
-            "",      # directness (skip)
-            "",      # rigor (skip)
-            "",      # creativity (skip)
-            "",      # epistemic_humility (skip)
-            "",      # patience (skip)
+            "0.3",  # warmth — accepted
+            "0.6",  # verbosity
+            "",  # assertiveness (skip)
+            "",  # humor (skip)
+            "",  # empathy (skip)
+            "",  # directness (skip)
+            "",  # rigor (skip)
+            "",  # creativity (skip)
+            "",  # epistemic_humility (skip)
+            "",  # patience (skip)
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -291,9 +291,9 @@ class TestRepromptOnInvalidInput:
     def test_communication_reprompts_bad_register(self, mock_ask):
         mock_ask.side_effect = [
             "warm and professional",  # tone — free text, accepted
-            "pirate",                  # register — invalid, re-prompt
-            "casual",                  # register — accepted
-            "sparingly",               # emoji — accepted
+            "pirate",  # register — invalid, re-prompt
+            "casual",  # register — accepted
+            "sparingly",  # emoji — accepted
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -304,10 +304,10 @@ class TestRepromptOnInvalidInput:
     @patch("personanexus.builder.Prompt.ask")
     def test_communication_reprompts_bad_emoji(self, mock_ask):
         mock_ask.side_effect = [
-            "friendly",    # tone
-            "consultative", # register — accepted
-            "lots",        # emoji — invalid, re-prompt
-            "frequent",    # emoji — accepted
+            "friendly",  # tone
+            "consultative",  # register — accepted
+            "lots",  # emoji — invalid, re-prompt
+            "frequent",  # emoji — accepted
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -320,11 +320,11 @@ class TestRepromptOnInvalidInput:
     def test_expertise_reprompts_bad_level(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "Python",   # domain name
-            "abc",      # level — not a number, re-prompt
-            "0.9",      # level — accepted
+            "Python",  # domain name
+            "abc",  # level — not a number, re-prompt
+            "0.9",  # level — accepted
             "primary",  # category — accepted
-            "",         # end loop
+            "",  # end loop
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -337,11 +337,11 @@ class TestRepromptOnInvalidInput:
     def test_expertise_reprompts_out_of_range_level(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "ML",       # domain name
-            "1.5",      # level — out of range, re-prompt
-            "0.7",      # level — accepted
-            "secondary", # category — accepted
-            "",          # end loop
+            "ML",  # domain name
+            "1.5",  # level — out of range, re-prompt
+            "0.7",  # level — accepted
+            "secondary",  # category — accepted
+            "",  # end loop
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -354,11 +354,11 @@ class TestRepromptOnInvalidInput:
     def test_expertise_reprompts_bad_category(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "Python",   # domain name
-            "0.9",      # level — accepted
-            "main",     # category — invalid, re-prompt
+            "Python",  # domain name
+            "0.9",  # level — accepted
+            "main",  # category — invalid, re-prompt
             "primary",  # category — accepted
-            "",         # end loop
+            "",  # end loop
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -372,11 +372,11 @@ class TestRepromptOnInvalidInput:
         """Level is required (allow_skip=False) when adding a domain — empty input re-prompts."""
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "Python",   # domain name
-            "",         # level — empty, re-prompt (required)
-            "0.8",      # level — accepted
+            "Python",  # domain name
+            "",  # level — empty, re-prompt (required)
+            "0.8",  # level — accepted
             "primary",  # category — accepted
-            "",         # end loop
+            "",  # end loop
         ]
         builder = self._make_builder()
         data: dict = {"schema_version": "1.0"}
@@ -392,12 +392,14 @@ class TestRepromptOnInvalidInput:
 
 class TestLLMEnhancer:
     def test_template_fallback_returns_expected_keys(self):
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "TestBot"},
-            "role": {"title": "Helper", "purpose": "Help users"},
-            "personality": {"traits": {"warmth": 0.8, "rigor": 0.7}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "TestBot"},
+                "role": {"title": "Helper", "purpose": "Help users"},
+                "personality": {"traits": {"warmth": 0.8, "rigor": 0.7}},
+            }
+        )
         enhancer = LLMEnhancer(api_key=None)
         result = enhancer.enhance(identity)
 
@@ -407,12 +409,14 @@ class TestLLMEnhancer:
         assert "strategies" in result
 
     def test_personality_notes_reference_agent_role(self):
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "DataBot"},
-            "role": {"title": "Data Analyst", "purpose": "Analyze data"},
-            "personality": {"traits": {"warmth": 0.5, "rigor": 0.9}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "DataBot"},
+                "role": {"title": "Data Analyst", "purpose": "Analyze data"},
+                "personality": {"traits": {"warmth": 0.5, "rigor": 0.9}},
+            }
+        )
         enhancer = LLMEnhancer(api_key=None)
         result = enhancer.enhance(identity)
 
@@ -420,37 +424,43 @@ class TestLLMEnhancer:
         assert "Data Analyst" in result["personality_notes"]
 
     def test_greeting_includes_agent_name(self):
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "Ada"},
-            "role": {"title": "Analyst", "purpose": "Analyze things"},
-            "personality": {"traits": {"warmth": 0.7, "rigor": 0.8}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "Ada"},
+                "role": {"title": "Analyst", "purpose": "Analyze things"},
+                "personality": {"traits": {"warmth": 0.7, "rigor": 0.8}},
+            }
+        )
         enhancer = LLMEnhancer(api_key=None)
         result = enhancer.enhance(identity)
 
         assert "Ada" in result["greeting"]
 
     def test_template_high_warmth_notes(self):
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "WarmBot"},
-            "role": {"title": "Helper", "purpose": "Help"},
-            "personality": {"traits": {"warmth": 0.9, "rigor": 0.5}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "WarmBot"},
+                "role": {"title": "Helper", "purpose": "Help"},
+                "personality": {"traits": {"warmth": 0.9, "rigor": 0.5}},
+            }
+        )
         enhancer = LLMEnhancer(api_key=None)
         result = enhancer.enhance(identity)
 
         assert "warmth" in result["personality_notes"].lower()
 
     def test_apply_enhancements_non_interactive(self):
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "TestBot"},
-            "role": {"title": "Helper", "purpose": "Help"},
-            "personality": {"traits": {"warmth": 0.7, "rigor": 0.5}},
-            "communication": {"tone": {"default": "friendly"}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "TestBot"},
+                "role": {"title": "Helper", "purpose": "Help"},
+                "personality": {"traits": {"warmth": 0.7, "rigor": 0.5}},
+                "communication": {"tone": {"default": "friendly"}},
+            }
+        )
         enhancements = {
             "personality_notes": "A helpful bot.",
             "greeting": "Hello!",
@@ -472,12 +482,14 @@ class TestLLMEnhancer:
         assert result.data["behavior"]["strategies"]["uncertainty"]["approach"] == "transparent"
 
     def test_no_api_key_falls_back_to_templates(self):
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "Bot"},
-            "role": {"title": "Helper", "purpose": "Help"},
-            "personality": {"traits": {"warmth": 0.5, "rigor": 0.5}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "Bot"},
+                "role": {"title": "Helper", "purpose": "Help"},
+                "personality": {"traits": {"warmth": 0.5, "rigor": 0.5}},
+            }
+        )
         enhancer = LLMEnhancer(api_key=None, console=MagicMock())
         result = enhancer.enhance(identity)
 
@@ -498,17 +510,34 @@ class TestIdentityBuilderRun:
         """Full wizard run with custom personality mode (default)."""
         mock_ask.side_effect = [
             # Phase 1: Basics
-            "TestBot", "Test Assistant", "Help users", "A test bot", "testing",
+            "TestBot",
+            "Test Assistant",
+            "Help users",
+            "A test bot",
+            "testing",
             # Phase 2a: Mode — default "custom" accepted
             "custom",
             # Phase 2b: Custom personality — 10 traits (skip most)
-            "0.8", "", "0.6", "", "", "0.7", "", "", "", "",
+            "0.8",
+            "",
+            "0.6",
+            "",
+            "",
+            "0.7",
+            "",
+            "",
+            "",
+            "",
             # Phase 3: Communication
-            "professional", "consultative", "sparingly",
+            "professional",
+            "consultative",
+            "sparingly",
             # Phase 4: Principles
-            "Be safe", "",
+            "Be safe",
+            "",
             # Phase 5: Guardrails
-            "Never harm", "",
+            "Never harm",
+            "",
         ]
         mock_confirm.return_value = False  # skip expertise
 
@@ -590,9 +619,22 @@ class TestPersonalityModes:
         mock_ask.side_effect = [
             "ocean",  # framework choice
             # 5 OCEAN dimensions
-            "0.7", "0.8", "0.6", "0.5", "0.3",
+            "0.7",
+            "0.8",
+            "0.6",
+            "0.5",
+            "0.3",
             # 10 trait overrides (all skipped)
-            "", "", "", "", "", "", "", "", "", "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
         ]
         builder = self._make_builder()
         data: dict = {"_personality_mode": "hybrid"}
@@ -608,9 +650,21 @@ class TestPersonalityModes:
         mock_ask.side_effect = [
             "disc",  # framework choice
             # 4 DISC dimensions
-            "0.7", "0.6", "0.5", "0.8",
+            "0.7",
+            "0.6",
+            "0.5",
+            "0.8",
             # 10 trait overrides (all skipped)
-            "", "", "", "", "", "", "", "", "", "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
         ]
         builder = self._make_builder()
         data: dict = {"_personality_mode": "hybrid"}
@@ -625,9 +679,22 @@ class TestPersonalityModes:
         mock_ask.side_effect = [
             "ocean",  # framework choice
             # 5 OCEAN dimensions
-            "0.7", "0.8", "0.6", "0.5", "0.3",
+            "0.7",
+            "0.8",
+            "0.6",
+            "0.5",
+            "0.3",
             # 10 trait overrides: override warmth=0.9, skip rest
-            "0.9", "", "", "", "", "", "", "", "", "",
+            "0.9",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
         ]
         builder = self._make_builder()
         data: dict = {"_personality_mode": "hybrid"}
@@ -685,12 +752,14 @@ class TestLLMEnhancerClient:
     def test_enhance_with_api_key_but_no_sdk(self):
         """When API key set but anthropic not installed, falls back to templates."""
         enhancer = LLMEnhancer(api_key="fake_key", console=MagicMock())
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "Bot"},
-            "role": {"title": "Helper", "purpose": "Help"},
-            "personality": {"traits": {"warmth": 0.5}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "Bot"},
+                "role": {"title": "Helper", "purpose": "Help"},
+                "personality": {"traits": {"warmth": 0.5}},
+            }
+        )
         # _get_client will return None (no anthropic installed)
         result = enhancer.enhance(identity)
         assert isinstance(result, dict)
@@ -701,28 +770,36 @@ class TestLLMEnhancerLLMPath:
     def test_enhance_with_llm_success(self):
         mock_client = MagicMock()
         mock_response = MagicMock()
-        mock_response.content = [MagicMock(text=json.dumps({
-            "personality_notes": "Test bot is great.",
-            "greeting": "Hi there!",
-            "vocabulary": {
-                "preferred": ["great"],
-                "avoided": ["bad"],
-                "signature_phrases": ["you bet"],
-            },
-            "strategies": {
-                "uncertainty": {"approach": "transparent"},
-                "disagreement": {"approach": "respectful"},
-            },
-        }))]
+        mock_response.content = [
+            MagicMock(
+                text=json.dumps(
+                    {
+                        "personality_notes": "Test bot is great.",
+                        "greeting": "Hi there!",
+                        "vocabulary": {
+                            "preferred": ["great"],
+                            "avoided": ["bad"],
+                            "signature_phrases": ["you bet"],
+                        },
+                        "strategies": {
+                            "uncertainty": {"approach": "transparent"},
+                            "disagreement": {"approach": "respectful"},
+                        },
+                    }
+                )
+            )
+        ]
         mock_client.messages.create.return_value = mock_response
 
         enhancer = LLMEnhancer(api_key="test_key", console=MagicMock())
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "TestBot"},
-            "role": {"title": "Helper", "purpose": "Help users"},
-            "personality": {"traits": {"warmth": 0.8}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "TestBot"},
+                "role": {"title": "Helper", "purpose": "Help users"},
+                "personality": {"traits": {"warmth": 0.8}},
+            }
+        )
 
         result = enhancer._enhance_with_llm(mock_client, identity)
         assert result["personality_notes"] == "Test bot is great."
@@ -734,12 +811,14 @@ class TestLLMEnhancerLLMPath:
         mock_client.messages.create.side_effect = Exception("API error")
 
         enhancer = LLMEnhancer(api_key="test_key", console=MagicMock())
-        identity = BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "Bot"},
-            "role": {"title": "Helper", "purpose": "Help"},
-            "personality": {"traits": {"warmth": 0.5}},
-        })
+        identity = BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "Bot"},
+                "role": {"title": "Helper", "purpose": "Help"},
+                "personality": {"traits": {"warmth": 0.5}},
+            }
+        )
 
         result = enhancer._enhance_with_llm(mock_client, identity)
         # Falls back to templates
@@ -754,12 +833,14 @@ class TestLLMEnhancerLLMPath:
 
 class TestLLMEnhancerTemplates:
     def _make_identity(self, **traits):
-        return BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "TestBot"},
-            "role": {"title": "Helper", "purpose": "Help users"},
-            "personality": {"traits": traits},
-        })
+        return BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "TestBot"},
+                "role": {"title": "Helper", "purpose": "Help users"},
+                "personality": {"traits": traits},
+            }
+        )
 
     def test_template_low_warmth(self):
         identity = self._make_identity(warmth=0.2, rigor=0.5)
@@ -805,11 +886,13 @@ class TestLLMEnhancerTemplates:
 
 class TestApplyEnhancementsInteractive:
     def _make_identity(self):
-        return BuiltIdentity({
-            "schema_version": "1.0",
-            "metadata": {"name": "TestBot"},
-            "personality": {"traits": {"warmth": 0.5}},
-        })
+        return BuiltIdentity(
+            {
+                "schema_version": "1.0",
+                "metadata": {"name": "TestBot"},
+                "personality": {"traits": {"warmth": 0.5}},
+            }
+        )
 
     @patch("personanexus.builder.Confirm.ask")
     def test_accept_personality_notes(self, mock_confirm):

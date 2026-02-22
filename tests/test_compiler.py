@@ -603,9 +603,7 @@ class TestSoulCompilerNarrative:
         assert "Cherry-picked statistics" in result["soul_md"]
 
     def test_current_focus_rendered(self, soul_compiler, ada_identity):
-        ada_identity.narrative = Narrative(
-            current_focus=["Building better health dashboards"]
-        )
+        ada_identity.narrative = Narrative(current_focus=["Building better health dashboards"])
         result = soul_compiler.compile(ada_identity)
         assert "## Current Focus" in result["soul_md"]
         assert "health dashboards" in result["soul_md"]

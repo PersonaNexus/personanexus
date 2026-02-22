@@ -1,6 +1,5 @@
 """Tests for personality CLI commands."""
 
-
 from typer.testing import CliRunner
 
 from personanexus.cli import app
@@ -18,12 +17,18 @@ class TestOceanToTraits:
         result = runner.invoke(
             app,
             [
-                "personality", "ocean-to-traits",
-                "--openness", "0.7",
-                "--conscientiousness", "0.8",
-                "--extraversion", "0.5",
-                "--agreeableness", "0.6",
-                "--neuroticism", "0.3",
+                "personality",
+                "ocean-to-traits",
+                "--openness",
+                "0.7",
+                "--conscientiousness",
+                "0.8",
+                "--extraversion",
+                "0.5",
+                "--agreeableness",
+                "0.6",
+                "--neuroticism",
+                "0.3",
             ],
         )
         assert result.exit_code == 0
@@ -34,12 +39,18 @@ class TestOceanToTraits:
         result = runner.invoke(
             app,
             [
-                "personality", "ocean-to-traits",
-                "--openness", "1.0",
-                "--conscientiousness", "1.0",
-                "--extraversion", "1.0",
-                "--agreeableness", "1.0",
-                "--neuroticism", "1.0",
+                "personality",
+                "ocean-to-traits",
+                "--openness",
+                "1.0",
+                "--conscientiousness",
+                "1.0",
+                "--extraversion",
+                "1.0",
+                "--agreeableness",
+                "1.0",
+                "--neuroticism",
+                "1.0",
             ],
         )
         assert result.exit_code == 0
@@ -48,12 +59,18 @@ class TestOceanToTraits:
         result = runner.invoke(
             app,
             [
-                "personality", "ocean-to-traits",
-                "--openness", "0.0",
-                "--conscientiousness", "0.0",
-                "--extraversion", "0.0",
-                "--agreeableness", "0.0",
-                "--neuroticism", "0.0",
+                "personality",
+                "ocean-to-traits",
+                "--openness",
+                "0.0",
+                "--conscientiousness",
+                "0.0",
+                "--extraversion",
+                "0.0",
+                "--agreeableness",
+                "0.0",
+                "--neuroticism",
+                "0.0",
             ],
         )
         assert result.exit_code == 0
@@ -69,11 +86,16 @@ class TestDiscToTraits:
         result = runner.invoke(
             app,
             [
-                "personality", "disc-to-traits",
-                "--dominance", "0.9",
-                "--influence", "0.4",
-                "--steadiness", "0.2",
-                "--conscientiousness", "0.5",
+                "personality",
+                "disc-to-traits",
+                "--dominance",
+                "0.9",
+                "--influence",
+                "0.4",
+                "--steadiness",
+                "0.2",
+                "--conscientiousness",
+                "0.5",
             ],
         )
         assert result.exit_code == 0
@@ -146,8 +168,11 @@ class TestShowProfileCommand:
         result = runner.invoke(
             app,
             [
-                "personality", "show-profile",
-                str(ada_ocean_path), "--search-path", str(examples_dir),
+                "personality",
+                "show-profile",
+                str(ada_ocean_path),
+                "--search-path",
+                str(examples_dir),
             ],
         )
         assert result.exit_code == 0

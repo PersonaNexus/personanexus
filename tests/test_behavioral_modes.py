@@ -1,4 +1,5 @@
 """Tests for behavioral modes system."""
+
 from pathlib import Path
 
 from personanexus.compiler import SystemPromptCompiler
@@ -16,9 +17,8 @@ def test_mode_creation():
         name="formal",
         description="Client-facing",
         overrides=BehavioralModeOverrides(
-            tone_register="formal",
-            trait_modifiers=[TraitModifier(trait="warmth", delta=-0.1)]
-        )
+            tone_register="formal", trait_modifiers=[TraitModifier(trait="warmth", delta=-0.1)]
+        ),
     )
     assert mode.name == "formal"
     assert mode.overrides.tone_register == "formal"
@@ -35,11 +35,12 @@ def test_mode_config_with_modes():
         default="standard",
         modes=[
             BehavioralMode(name="standard"),
-            BehavioralMode(name="formal", overrides=BehavioralModeOverrides(
-                tone_register="formal", emoji_usage="never"
-            )),
-            BehavioralMode(name="crisis", additional_guardrails=["Escalate always"])
-        ]
+            BehavioralMode(
+                name="formal",
+                overrides=BehavioralModeOverrides(tone_register="formal", emoji_usage="never"),
+            ),
+            BehavioralMode(name="crisis", additional_guardrails=["Escalate always"]),
+        ],
     )
     assert len(config.modes) == 3
     assert config.modes[2].additional_guardrails == ["Escalate always"]
@@ -51,9 +52,12 @@ def test_compiler_renders_modes():
         default="standard",
         modes=[
             BehavioralMode(name="standard", description="Default"),
-            BehavioralMode(name="formal", description="Executive comms",
-                          overrides=BehavioralModeOverrides(tone_register="formal"))
-        ]
+            BehavioralMode(
+                name="formal",
+                description="Executive comms",
+                overrides=BehavioralModeOverrides(tone_register="formal"),
+            ),
+        ],
     )
     result = compiler._render_behavioral_modes(config)
     assert "Behavioral Modes" in result

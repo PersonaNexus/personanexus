@@ -119,10 +119,19 @@ def resolve(
     search_path: Annotated[
         list[Path],
         typer.Option(
-            "--search-path", "-s",
+            "--search-path",
+            "-s",
             help="Additional search paths for archetypes/mixins (repeatable)",
         ),
     ] = None,
+    trace: Annotated[
+        bool,
+        typer.Option("--trace", help="Show merge trace after resolved output"),
+    ] = False,
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Show only the merge trace, not the resolved identity"),
+    ] = False,
 ) -> None:
     """Show fully resolved identity after inheritance and mixin composition."""
     if not file.exists():
@@ -135,17 +144,21 @@ def resolve(
 
     if output not in ("yaml", "json"):
         console.print(
-            f"[red]Error: Invalid output format '{output}'."
-            f" Must be 'yaml' or 'json'[/red]"
+            f"[red]Error: Invalid output format '{output}'. Must be 'yaml' or 'json'[/red]"
         )
         raise typer.Exit(code=1)
 
     # Build search paths
     search_paths = search_path or []
+    use_trace = trace or dry_run
 
     try:
         resolver = IdentityResolver(search_paths=search_paths)
-        identity = resolver.resolve_file(file)
+        if use_trace:
+            identity, merge_trace = resolver.resolve_file_traced(file)
+        else:
+            identity = resolver.resolve_file(file)
+            merge_trace = None
     except ParseError as exc:
         console.print(f"[red]Parse error: {exc}[/red]")
         raise typer.Exit(code=1)
@@ -163,20 +176,28 @@ def resolve(
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1)
 
-    # Convert to dict — use mode="json" for serializable output
-    resolved_dict = json.loads(identity.model_dump_json(exclude_none=True))
+    # Show resolved identity (unless --dry-run)
+    if not dry_run:
+        # Convert to dict — use mode="json" for serializable output
+        resolved_dict = json.loads(identity.model_dump_json(exclude_none=True))
 
-    if output == "json":
-        json_str = json.dumps(resolved_dict, indent=2)
-        console.print(json_str)
-    else:
-        yaml_str = yaml.dump(
-            resolved_dict,
-            default_flow_style=False,
-            sort_keys=False,
-            allow_unicode=True,
-        )
-        console.print(yaml_str)
+        if output == "json":
+            json_str = json.dumps(resolved_dict, indent=2)
+            console.print(json_str)
+        else:
+            yaml_str = yaml.dump(
+                resolved_dict,
+                default_flow_style=False,
+                sort_keys=False,
+                allow_unicode=True,
+            )
+            console.print(yaml_str)
+
+    # Show merge trace if requested
+    if merge_trace is not None:
+        if not dry_run:
+            console.print()  # separator between output and trace
+        console.print(merge_trace.format_text())
 
 
 # ---------------------------------------------------------------------------
@@ -550,14 +571,16 @@ def compile(
     target: Annotated[
         str,
         typer.Option(
-            "--target", "-t",
-            help="Target format: text, anthropic, openai, openclaw, soul, or json",
+            "--target",
+            "-t",
+            help="Target: text, anthropic, openai, openclaw, soul, json, langchain, markdown",
         ),
     ] = "text",
     search_path: Annotated[
         list[Path],
         typer.Option(
-            "--search-path", "-s",
+            "--search-path",
+            "-s",
             help="Additional search paths for archetypes/mixins (repeatable)",
         ),
     ] = None,
@@ -579,7 +602,16 @@ def compile(
         console.print(f"[red]Error: Not a file: {file}[/red]")
         raise typer.Exit(code=1)
 
-    valid_targets = ("text", "anthropic", "openai", "openclaw", "soul", "json")
+    valid_targets = (
+        "text",
+        "anthropic",
+        "openai",
+        "openclaw",
+        "soul",
+        "json",
+        "langchain",
+        "markdown",
+    )
     if target not in valid_targets:
         console.print(
             f"[red]Error: Invalid target '{target}'."
@@ -654,6 +686,8 @@ def compile(
             "openai": ".compiled.openai.md",
             "openclaw": ".personality.json",
             "json": ".compiled.json",
+            "langchain": ".langchain.json",
+            "markdown": ".compiled.doc.md",
         }
         suffix = ext_map.get(target, ".compiled.txt")
         output = file.parent / f"{stem}{suffix}"
@@ -701,8 +735,7 @@ def analyze(
 
     if output_format not in ("table", "json"):
         console.print(
-            f"[red]Error: Invalid format '{output_format}'."
-            f" Must be 'table' or 'json'[/red]"
+            f"[red]Error: Invalid format '{output_format}'. Must be 'table' or 'json'[/red]"
         )
         raise typer.Exit(code=1)
 
@@ -755,9 +788,7 @@ def _print_analysis(result: AnalysisResult) -> None:
     name = result.agent_name or "Unknown Agent"
     fmt = result.source_format.value.replace("_", " ").title()
     conf_color = (
-        "green" if result.confidence >= 0.8
-        else "yellow" if result.confidence >= 0.5
-        else "red"
+        "green" if result.confidence >= 0.8 else "yellow" if result.confidence >= 0.5 else "red"
     )
 
     console.print(
@@ -776,8 +807,16 @@ def _print_analysis(result: AnalysisResult) -> None:
     table.add_column("Confidence", justify="right")
 
     trait_order = [
-        "warmth", "verbosity", "assertiveness", "humor", "empathy",
-        "directness", "rigor", "creativity", "epistemic_humility", "patience",
+        "warmth",
+        "verbosity",
+        "assertiveness",
+        "humor",
+        "empathy",
+        "directness",
+        "rigor",
+        "creativity",
+        "epistemic_humility",
+        "patience",
     ]
     for trait_name in trait_order:
         if trait_name in traits:
@@ -911,8 +950,7 @@ def personality_disc_to_traits(
     preset: Annotated[
         str | None,
         typer.Option(
-            help="DISC preset name (e.g. the_commander)"
-            " - overrides individual values if provided",
+            help="DISC preset name (e.g. the_commander) - overrides individual values if provided",
         ),
     ] = None,
     dominance: Annotated[float | None, typer.Option(help="Dominance (0-1)")] = None,
@@ -929,12 +967,13 @@ def personality_disc_to_traits(
             profile = get_disc_preset(preset)
         else:
             if (
-                dominance is None or influence is None
-                or steadiness is None or conscientiousness is None
+                dominance is None
+                or influence is None
+                or steadiness is None
+                or conscientiousness is None
             ):
                 console.print(
-                    "[red]Error: All DISC values required"
-                    " when --preset not provided[/red]"
+                    "[red]Error: All DISC values required when --preset not provided[/red]"
                 )
                 raise typer.Exit(code=1)
             profile = DiscProfile(
@@ -1065,8 +1104,16 @@ def _print_traits_table(title: str, traits: dict[str, float]) -> None:
     table.add_column("Level", style="dim")
 
     trait_order = [
-        "warmth", "verbosity", "assertiveness", "humor", "empathy",
-        "directness", "rigor", "creativity", "epistemic_humility", "patience",
+        "warmth",
+        "verbosity",
+        "assertiveness",
+        "humor",
+        "empathy",
+        "directness",
+        "rigor",
+        "creativity",
+        "epistemic_humility",
+        "patience",
     ]
     for trait_name in trait_order:
         if trait_name in traits:
@@ -1267,17 +1314,19 @@ def compat(
 
         # Create a colored progress bar style display
         console.print()
-        console.print(Panel(
-            f"[bold]Compatibility Score[/bold]\n\n"
-            f"  {file1.name}  \u2194  {file2.name}\n"
-            f"\n"
-            f"  [bold][green]{score}%[/green][/bold]\n"
-            f"\n"
-            f"[dim]Based on personality trait alignment (OCEAN/DISC)[/dim]",
-            title="Score",
-            border_style="green",
-            padding=(1, 2),
-        ))
+        console.print(
+            Panel(
+                f"[bold]Compatibility Score[/bold]\n\n"
+                f"  {file1.name}  \u2194  {file2.name}\n"
+                f"\n"
+                f"  [bold][green]{score}%[/green][/bold]\n"
+                f"\n"
+                f"[dim]Based on personality trait alignment (OCEAN/DISC)[/dim]",
+                title="Score",
+                border_style="green",
+                padding=(1, 2),
+            )
+        )
 
         # Interpret the score
         if score >= 80:
@@ -1287,8 +1336,7 @@ def compat(
             )
         elif score >= 60:
             console.print(
-                "\n[yellow]Interpretation: Good alignment"
-                " - minor adjustments may help.[/yellow]"
+                "\n[yellow]Interpretation: Good alignment - minor adjustments may help.[/yellow]"
             )
         elif score >= 40:
             console.print(

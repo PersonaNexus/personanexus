@@ -38,8 +38,16 @@ class TestOceanToTraits:
         traits = ocean_to_traits(profile)
         assert len(traits) == 10
         expected_keys = {
-            "warmth", "verbosity", "assertiveness", "humor", "empathy",
-            "directness", "rigor", "creativity", "epistemic_humility", "patience",
+            "warmth",
+            "verbosity",
+            "assertiveness",
+            "humor",
+            "empathy",
+            "directness",
+            "rigor",
+            "creativity",
+            "epistemic_humility",
+            "patience",
         }
         assert set(traits.keys()) == expected_keys
 
@@ -101,8 +109,11 @@ class TestOceanToTraits:
 
     def test_all_zeros(self):
         profile = OceanProfile(
-            openness=0.0, conscientiousness=0.0,
-            extraversion=0.0, agreeableness=0.0, neuroticism=0.0,
+            openness=0.0,
+            conscientiousness=0.0,
+            extraversion=0.0,
+            agreeableness=0.0,
+            neuroticism=0.0,
         )
         traits = ocean_to_traits(profile)
         for val in traits.values():
@@ -110,8 +121,11 @@ class TestOceanToTraits:
 
     def test_all_ones(self):
         profile = OceanProfile(
-            openness=1.0, conscientiousness=1.0,
-            extraversion=1.0, agreeableness=1.0, neuroticism=1.0,
+            openness=1.0,
+            conscientiousness=1.0,
+            extraversion=1.0,
+            agreeableness=1.0,
+            neuroticism=1.0,
         )
         traits = ocean_to_traits(profile)
         for val in traits.values():
@@ -120,8 +134,11 @@ class TestOceanToTraits:
     def test_neutral_profile_moderate_traits(self):
         """All 0.5 inputs should give moderate trait values."""
         profile = OceanProfile(
-            openness=0.5, conscientiousness=0.5,
-            extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+            openness=0.5,
+            conscientiousness=0.5,
+            extraversion=0.5,
+            agreeableness=0.5,
+            neuroticism=0.5,
         )
         traits = ocean_to_traits(profile)
         for val in traits.values():
@@ -136,16 +153,20 @@ class TestOceanToTraits:
 class TestDiscToTraits:
     def test_returns_all_ten_traits(self):
         profile = DiscProfile(
-            dominance=0.5, influence=0.5,
-            steadiness=0.5, conscientiousness=0.5,
+            dominance=0.5,
+            influence=0.5,
+            steadiness=0.5,
+            conscientiousness=0.5,
         )
         traits = disc_to_traits(profile)
         assert len(traits) == 10
 
     def test_all_values_in_range(self):
         profile = DiscProfile(
-            dominance=0.9, influence=0.4,
-            steadiness=0.2, conscientiousness=0.5,
+            dominance=0.9,
+            influence=0.4,
+            steadiness=0.2,
+            conscientiousness=0.5,
         )
         traits = disc_to_traits(profile)
         for name, val in traits.items():
@@ -153,32 +174,40 @@ class TestDiscToTraits:
 
     def test_high_dominance_high_assertiveness(self):
         profile = DiscProfile(
-            dominance=0.95, influence=0.3,
-            steadiness=0.2, conscientiousness=0.5,
+            dominance=0.95,
+            influence=0.3,
+            steadiness=0.2,
+            conscientiousness=0.5,
         )
         traits = disc_to_traits(profile)
         assert traits["assertiveness"] > 0.7
 
     def test_high_influence_high_humor(self):
         profile = DiscProfile(
-            dominance=0.2, influence=0.95,
-            steadiness=0.5, conscientiousness=0.3,
+            dominance=0.2,
+            influence=0.95,
+            steadiness=0.5,
+            conscientiousness=0.3,
         )
         traits = disc_to_traits(profile)
         assert traits["humor"] > 0.5
 
     def test_high_steadiness_high_patience(self):
         profile = DiscProfile(
-            dominance=0.2, influence=0.3,
-            steadiness=0.95, conscientiousness=0.5,
+            dominance=0.2,
+            influence=0.3,
+            steadiness=0.95,
+            conscientiousness=0.5,
         )
         traits = disc_to_traits(profile)
         assert traits["patience"] > 0.6
 
     def test_high_conscientiousness_high_rigor(self):
         profile = DiscProfile(
-            dominance=0.3, influence=0.2,
-            steadiness=0.5, conscientiousness=0.95,
+            dominance=0.3,
+            influence=0.2,
+            steadiness=0.5,
+            conscientiousness=0.95,
         )
         traits = disc_to_traits(profile)
         assert traits["rigor"] > 0.6
@@ -192,8 +221,11 @@ class TestDiscToTraits:
 class TestReverseMapping:
     def test_traits_to_ocean_returns_five_dims(self):
         traits = PersonalityTraits(
-            warmth=0.7, rigor=0.9, empathy=0.7,
-            directness=0.6, creativity=0.5,
+            warmth=0.7,
+            rigor=0.9,
+            empathy=0.7,
+            directness=0.6,
+            creativity=0.5,
         )
         ocean = traits_to_ocean(traits)
         assert hasattr(ocean, "openness")
@@ -204,13 +236,19 @@ class TestReverseMapping:
 
     def test_traits_to_ocean_values_in_range(self):
         traits = PersonalityTraits(
-            warmth=0.7, rigor=0.9, empathy=0.7,
-            directness=0.6, creativity=0.5,
+            warmth=0.7,
+            rigor=0.9,
+            empathy=0.7,
+            directness=0.6,
+            creativity=0.5,
         )
         ocean = traits_to_ocean(traits)
         dims = [
-            "openness", "conscientiousness", "extraversion",
-            "agreeableness", "neuroticism",
+            "openness",
+            "conscientiousness",
+            "extraversion",
+            "agreeableness",
+            "neuroticism",
         ]
         for dim in dims:
             val = getattr(ocean, dim)
@@ -218,8 +256,11 @@ class TestReverseMapping:
 
     def test_traits_to_disc_returns_four_dims(self):
         traits = PersonalityTraits(
-            warmth=0.7, rigor=0.9, empathy=0.7,
-            directness=0.6, creativity=0.5,
+            warmth=0.7,
+            rigor=0.9,
+            empathy=0.7,
+            directness=0.6,
+            creativity=0.5,
         )
         disc = traits_to_disc(traits)
         assert hasattr(disc, "dominance")
@@ -229,8 +270,11 @@ class TestReverseMapping:
 
     def test_traits_to_disc_values_in_range(self):
         traits = PersonalityTraits(
-            warmth=0.7, rigor=0.9, empathy=0.7,
-            directness=0.6, creativity=0.5,
+            warmth=0.7,
+            rigor=0.9,
+            empathy=0.7,
+            directness=0.6,
+            creativity=0.5,
         )
         disc = traits_to_disc(traits)
         for dim in ["dominance", "influence", "steadiness", "conscientiousness"]:
@@ -240,8 +284,11 @@ class TestReverseMapping:
     def test_round_trip_ocean_approximate(self):
         """OCEAN → traits → OCEAN should be approximate (not exact)."""
         original = OceanProfile(
-            openness=0.7, conscientiousness=0.8,
-            extraversion=0.6, agreeableness=0.5, neuroticism=0.3,
+            openness=0.7,
+            conscientiousness=0.8,
+            extraversion=0.6,
+            agreeableness=0.5,
+            neuroticism=0.3,
         )
         traits_dict = ocean_to_traits(original)
         traits = PersonalityTraits(**traits_dict)
@@ -249,15 +296,16 @@ class TestReverseMapping:
 
         # Should be within ~0.2 of original (approximate mapping)
         dims = [
-            "openness", "conscientiousness", "extraversion",
-            "agreeableness", "neuroticism",
+            "openness",
+            "conscientiousness",
+            "extraversion",
+            "agreeableness",
+            "neuroticism",
         ]
         for dim in dims:
             orig_val = getattr(original, dim)
             rec_val = getattr(recovered, dim)
-            assert abs(orig_val - rec_val) < 0.3, (
-                f"{dim}: original={orig_val}, recovered={rec_val}"
-            )
+            assert abs(orig_val - rec_val) < 0.3, f"{dim}: original={orig_val}, recovered={rec_val}"
 
 
 # ---------------------------------------------------------------------------
@@ -324,8 +372,11 @@ class TestComputePersonalityTraits:
             profile=PersonalityProfile(
                 mode=PersonalityMode.OCEAN,
                 ocean=OceanProfile(
-                    openness=0.7, conscientiousness=0.85,
-                    extraversion=0.5, agreeableness=0.6, neuroticism=0.2,
+                    openness=0.7,
+                    conscientiousness=0.85,
+                    extraversion=0.5,
+                    agreeableness=0.6,
+                    neuroticism=0.2,
                 ),
             ),
         )
@@ -340,8 +391,10 @@ class TestComputePersonalityTraits:
             profile=PersonalityProfile(
                 mode=PersonalityMode.DISC,
                 disc=DiscProfile(
-                    dominance=0.9, influence=0.4,
-                    steadiness=0.2, conscientiousness=0.5,
+                    dominance=0.9,
+                    influence=0.4,
+                    steadiness=0.2,
+                    conscientiousness=0.5,
                 ),
             ),
         )
@@ -369,8 +422,11 @@ class TestComputePersonalityTraits:
             profile=PersonalityProfile(
                 mode=PersonalityMode.HYBRID,
                 ocean=OceanProfile(
-                    openness=0.5, conscientiousness=0.5,
-                    extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                    openness=0.5,
+                    conscientiousness=0.5,
+                    extraversion=0.5,
+                    agreeableness=0.5,
+                    neuroticism=0.5,
                 ),
                 override_priority=OverridePriority.EXPLICIT_WINS,
             ),
@@ -387,8 +443,11 @@ class TestComputePersonalityTraits:
             profile=PersonalityProfile(
                 mode=PersonalityMode.HYBRID,
                 ocean=OceanProfile(
-                    openness=0.5, conscientiousness=0.5,
-                    extraversion=0.5, agreeableness=0.5, neuroticism=0.5,
+                    openness=0.5,
+                    conscientiousness=0.5,
+                    extraversion=0.5,
+                    agreeableness=0.5,
+                    neuroticism=0.5,
                 ),
                 override_priority=OverridePriority.FRAMEWORK_WINS,
             ),

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import re
 from typing import Any
 
 from personanexus.personality import compute_personality_traits
@@ -149,6 +150,28 @@ def _expertise_level_text(level: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Section names used for truncation priority ordering
+# ---------------------------------------------------------------------------
+
+# Sections that are always kept during truncation (never dropped).
+_REQUIRED_SECTIONS = {"header", "role", "guardrails"}
+
+# Optional sections listed from HIGHEST priority (dropped last) to LOWEST
+# priority (dropped first).  When truncating, we drop in reverse order —
+# i.e. "interaction" is dropped first, then "behavioral_modes", etc.
+_OPTIONAL_SECTION_PRIORITY = [
+    "personality",
+    "communication",
+    "principles",
+    "expertise",
+    "behavior",
+    "relationships",
+    "behavioral_modes",
+    "interaction",
+]
+
+
+# ---------------------------------------------------------------------------
 # System Prompt Compiler
 # ---------------------------------------------------------------------------
 
@@ -158,6 +181,10 @@ class SystemPromptCompiler:
 
     def __init__(self, token_budget: int = 3000):
         self.token_budget = token_budget
+        # Track which sections were included/omitted after compilation
+        self._sections_included: list[str] = []
+        self._sections_omitted: list[str] = []
+        self._was_truncated: bool = False
 
     def compile(self, identity: AgentIdentity, format: str = "text") -> str:
         """
@@ -170,48 +197,175 @@ class SystemPromptCompiler:
         Returns:
             The system prompt as a string.
         """
-        sections: list[str] = []
+        # Reset truncation tracking
+        self._sections_included = []
+        self._sections_omitted = []
+        self._was_truncated = False
 
-        sections.append(self._render_header(identity))
-        sections.append(self._render_role(identity.role))
-        sections.append(self._render_personality(identity.personality))
-        sections.append(self._render_communication(identity.communication))
+        # Build named sections as (name, content) pairs
+        named_sections: list[tuple[str, str]] = []
+
+        named_sections.append(("header", self._render_header(identity)))
+        named_sections.append(("role", self._render_role(identity.role)))
+        named_sections.append(("personality", self._render_personality(identity.personality)))
+        named_sections.append(("communication", self._render_communication(identity.communication)))
 
         expertise_section = self._render_expertise(identity.expertise)
         if expertise_section:
-            sections.append(expertise_section)
+            named_sections.append(("expertise", expertise_section))
 
-        sections.append(self._render_principles(identity.principles))
+        named_sections.append(("principles", self._render_principles(identity.principles)))
 
         behavior_section = self._render_behavior(identity.behavior)
         if behavior_section:
-            sections.append(behavior_section)
+            named_sections.append(("behavior", behavior_section))
 
-        sections.append(self._render_guardrails(identity.guardrails))
+        named_sections.append(("guardrails", self._render_guardrails(identity.guardrails)))
 
         modes_section = self._render_behavioral_modes(identity.behavioral_modes)
         if modes_section:
-            sections.append(modes_section)
+            named_sections.append(("behavioral_modes", modes_section))
 
         relationships_section = self._render_relationships(identity.memory)
         if relationships_section:
-            sections.append(relationships_section)
+            named_sections.append(("relationships", relationships_section))
 
         interaction_section = self._render_interaction(identity.interaction)
         if interaction_section:
-            sections.append(interaction_section)
+            named_sections.append(("interaction", interaction_section))
 
-        prompt = "\n\n".join(s for s in sections if s)
+        # Join all sections for initial prompt
+        prompt = "\n\n".join(content for _name, content in named_sections if content)
+
+        # Check token budget and truncate if necessary
+        estimated = self.estimate_tokens(prompt)
+        if estimated > self.token_budget:
+            logger.warning(
+                "Prompt estimated at %d tokens, exceeds budget of %d. Truncating.",
+                estimated,
+                self.token_budget,
+            )
+            named_sections = self._truncate_to_budget(named_sections, self.token_budget)
+            prompt = "\n\n".join(content for _name, content in named_sections if content)
+            self._was_truncated = True
+        else:
+            # All sections included, nothing omitted
+            self._sections_included = [name for name, _ in named_sections]
+            self._sections_omitted = []
 
         if format == "anthropic":
             return self._wrap_anthropic(prompt, identity)
         elif format == "openai":
-            return self._wrap_openai(prompt)
+            return self._wrap_openai(prompt, identity)
         return prompt
 
     def estimate_tokens(self, text: str) -> int:
         """Rough token estimate (~4 chars per token)."""
         return len(text) // 4
+
+    def _estimate_tokens_by_model(self, text: str, model: str) -> int:
+        """Estimate tokens using model-specific character ratios.
+
+        Args:
+            text: The text to estimate tokens for.
+            model: Model family identifier. Recognized values:
+                   "anthropic", "openai" -> ~4 chars/token
+                   "soul" -> ~3.5 chars/token (markdown is slightly more efficient)
+
+        Returns:
+            Estimated token count.
+        """
+        model_lower = model.lower()
+        if model_lower in ("soul",):
+            # Markdown-heavy content is slightly more token-efficient
+            return int(len(text) / 3.5)
+        # Default: anthropic, openai, and anything else
+        return len(text) // 4
+
+    def _truncate_to_budget(
+        self,
+        named_sections: list[tuple[str, str]],
+        budget: int,
+    ) -> list[tuple[str, str]]:
+        """Drop optional sections in reverse priority order to fit the token budget.
+
+        Strategy:
+        1. Keep required sections (header, role, guardrails) always.
+        2. Drop optional sections starting from the lowest priority:
+           interaction -> behavioral_modes -> relationships -> behavior -> expertise
+        3. If still over budget after dropping all optional sections, truncate
+           principles to the top 5.
+
+        Args:
+            named_sections: List of (section_name, content) pairs.
+            budget: Token budget to fit within.
+
+        Returns:
+            Trimmed list of (section_name, content) pairs.
+        """
+        # Build a mutable list and a quick lookup
+        sections = list(named_sections)
+
+        # Drop order: reverse of priority (lowest priority dropped first)
+        drop_order = list(reversed(_OPTIONAL_SECTION_PRIORITY))
+
+        omitted: list[str] = []
+
+        for section_to_drop in drop_order:
+            prompt = "\n\n".join(content for _, content in sections if content)
+            if self.estimate_tokens(prompt) <= budget:
+                break
+
+            # Find and remove this section (if present)
+            new_sections = []
+            dropped = False
+            for name, content in sections:
+                if name == section_to_drop and not dropped:
+                    logger.info("Dropping section '%s' to fit token budget.", section_to_drop)
+                    omitted.append(section_to_drop)
+                    dropped = True
+                else:
+                    new_sections.append((name, content))
+            sections = new_sections
+
+        # Check if still over budget — truncate principles to top 5
+        prompt = "\n\n".join(content for _, content in sections if content)
+        if self.estimate_tokens(prompt) > budget:
+            new_sections = []
+            for name, content in sections:
+                if name == "principles":
+                    content = self._truncate_principles(content, max_count=5)
+                    logger.info("Truncated principles to top 5 to fit token budget.")
+                new_sections.append((name, content))
+            sections = new_sections
+
+        self._sections_included = [name for name, _ in sections]
+        self._sections_omitted = omitted
+
+        return sections
+
+    @staticmethod
+    def _truncate_principles(principles_text: str, max_count: int = 5) -> str:
+        """Keep only the first N numbered principles from the rendered text."""
+        lines = principles_text.split("\n")
+        result_lines: list[str] = []
+        principle_count = 0
+        for line in lines:
+            # Detect numbered principle lines like "1. ..." "2. ..."
+            if re.match(r"^\d+\.\s", line):
+                principle_count += 1
+                if principle_count > max_count:
+                    # Skip this and all subsequent lines that are part of this principle
+                    continue
+            elif principle_count > max_count:
+                # Skip implication lines (indented) belonging to a dropped principle
+                if line.startswith("   "):
+                    continue
+                # If it's a non-indented, non-numbered line after we've exceeded,
+                # it's probably an orphan — skip it too
+                continue
+            result_lines.append(line)
+        return "\n".join(result_lines)
 
     # ------------------------------------------------------------------
     # Section renderers
@@ -286,14 +440,10 @@ class SystemPromptCompiler:
                 lines.append("Transitions:")
                 for transition in personality.mood.transitions:
                     from_display = (
-                        "*"
-                        if transition.from_state == "*"
-                        else f"'{transition.from_state}'"
+                        "*" if transition.from_state == "*" else f"'{transition.from_state}'"
                     )
                     lines.append(
-                        f"- [{transition.trigger}] → "
-                        f"'{transition.to_state}' "
-                        f"(from: {from_display})"
+                        f"- [{transition.trigger}] → '{transition.to_state}' (from: {from_display})"
                     )
 
         return "\n".join(lines)
@@ -408,11 +558,7 @@ class SystemPromptCompiler:
 
         critical = [g for g in guardrails.hard if g.severity == Severity.CRITICAL]
         high = [g for g in guardrails.hard if g.severity == Severity.HIGH]
-        other = [
-            g
-            for g in guardrails.hard
-            if g.severity not in (Severity.CRITICAL, Severity.HIGH)
-        ]
+        other = [g for g in guardrails.hard if g.severity not in (Severity.CRITICAL, Severity.HIGH)]
 
         if critical:
             lines.append("\nCRITICAL — you must NEVER violate these:")
@@ -517,15 +663,69 @@ class SystemPromptCompiler:
     # ------------------------------------------------------------------
 
     def _wrap_anthropic(self, prompt: str, identity: AgentIdentity) -> str:
-        """Wrap for Anthropic Claude — use XML section tags for clarity."""
-        sections = [
-            f"<identity>\n{prompt}\n</identity>",
-        ]
-        return "\n".join(sections)
+        """Wrap for Anthropic Claude — use XML section tags for better parsing."""
+        # Split the prompt into its component sections and wrap each in XML tags
+        wrapped_parts: list[str] = []
 
-    def _wrap_openai(self, prompt: str) -> str:
-        """OpenAI uses system prompt as-is."""
-        return prompt
+        # Map markdown section headers to XML tag names
+        section_map = {
+            "# ": "identity",
+            "## Your Role": "role",
+            "## Your Personality": "personality",
+            "## Emotional States": "personality",
+            "## Communication Style": "communication",
+            "## Your Expertise": "expertise",
+            "## Core Principles": "principles",
+            "## Behavioral Strategies": "behavior",
+            "## Non-Negotiable Rules": "guardrails",
+            "## Behavioral Modes": "behavioral_modes",
+            "## Agent Relationships": "relationships",
+            "## Interaction Protocols": "interaction",
+        }
+
+        # Split on double newlines (section boundaries)
+        raw_sections = prompt.split("\n\n")
+
+        # Group consecutive blocks that belong to the same XML section
+        current_tag: str | None = None
+        current_content: list[str] = []
+
+        def _flush() -> None:
+            nonlocal current_tag, current_content
+            if current_content:
+                text = "\n\n".join(current_content)
+                if current_tag:
+                    wrapped_parts.append(f"<{current_tag}>\n{text}\n</{current_tag}>")
+                else:
+                    wrapped_parts.append(text)
+            current_content = []
+
+        for block in raw_sections:
+            first_line = block.split("\n")[0].strip()
+            matched_tag = None
+
+            for prefix, tag in section_map.items():
+                if first_line.startswith(prefix):
+                    matched_tag = tag
+                    break
+
+            if matched_tag and matched_tag != current_tag:
+                _flush()
+                current_tag = matched_tag
+                current_content = [block]
+            else:
+                current_content.append(block)
+
+        _flush()
+
+        return "\n\n".join(wrapped_parts)
+
+    def _wrap_openai(self, prompt: str, identity: AgentIdentity) -> str:
+        """Wrap for OpenAI — add a concise summary prefix."""
+        name = identity.metadata.name
+        role_title = identity.role.title
+        prefix = f"You are {name}, a {role_title}."
+        return f"{prefix}\n\n{prompt}"
 
 
 # ---------------------------------------------------------------------------
@@ -582,8 +782,7 @@ class OpenClawCompiler:
                 else []
             ),
             "guidelines": [
-                p.statement
-                for p in sorted(identity.principles, key=lambda p: p.priority)
+                p.statement for p in sorted(identity.principles, key=lambda p: p.priority)
             ],
         }
 
@@ -608,10 +807,7 @@ class OpenClawCompiler:
         name = identity.metadata.name
         role = identity.role.title
         purpose = identity.role.purpose.strip().split("\n")[0]  # first line only
-        return (
-            f"Hello! I'm {name}, your {role}. "
-            f"{purpose} How can I assist you today?"
-        )
+        return f"Hello! I'm {name}, your {role}. {purpose} How can I assist you today?"
 
     def _default_model_config(
         self,
@@ -986,6 +1182,161 @@ class SoulCompiler:
 
 
 # ---------------------------------------------------------------------------
+# Markdown Compiler — clean documentation-oriented markdown
+# ---------------------------------------------------------------------------
+
+
+class MarkdownCompiler:
+    """Compiles a resolved AgentIdentity into clean, structured Markdown documentation."""
+
+    def compile(self, identity: AgentIdentity) -> str:
+        """Compile identity into well-structured Markdown with proper heading hierarchy.
+
+        Returns:
+            Clean Markdown string suitable for documentation.
+        """
+        sections: list[str] = []
+
+        # Title
+        sections.append(f"# {identity.metadata.name}")
+        sections.append(f"_{identity.metadata.description.strip()}_")
+        sections.append(
+            f"Version {identity.metadata.version} | Status: {identity.metadata.status.value}"
+        )
+
+        # Role
+        sections.append(f"## Role: {identity.role.title}")
+        sections.append(identity.role.purpose.strip())
+
+        if identity.role.scope.primary:
+            scope_lines = ["### Scope", "", "**Primary:**"]
+            for item in identity.role.scope.primary:
+                scope_lines.append(f"- {item}")
+            if identity.role.scope.secondary:
+                scope_lines.append("\n**Secondary:**")
+                for item in identity.role.scope.secondary:
+                    scope_lines.append(f"- {item}")
+            if identity.role.scope.out_of_scope:
+                scope_lines.append("\n**Out of Scope:**")
+                for item in identity.role.scope.out_of_scope:
+                    scope_lines.append(f"- {item}")
+            sections.append("\n".join(scope_lines))
+
+        if identity.role.audience:
+            sections.append(f"### Audience\n\n{identity.role.audience.primary}")
+
+        # Personality
+        if identity.personality.profile.mode != PersonalityMode.CUSTOM:
+            computed = compute_personality_traits(identity.personality)
+            traits = computed.defined_traits()
+        else:
+            traits = identity.personality.traits.defined_traits()
+
+        if traits:
+            personality_lines = ["## Personality"]
+            for trait_name, value in sorted(traits.items()):
+                bar = _markdown_bar(value)
+                personality_lines.append(f"- **{trait_name}**: {bar} ({value:.2f})")
+            if identity.personality.notes:
+                personality_lines.append(f"\n{identity.personality.notes.strip()}")
+            sections.append("\n".join(personality_lines))
+
+        # Communication
+        comm = identity.communication
+        comm_lines = ["## Communication", f"\n**Tone:** {comm.tone.default}"]
+        if comm.tone.register:
+            comm_lines.append(f"**Register:** {comm.tone.register.value}")
+        sections.append("\n".join(comm_lines))
+
+        # Expertise
+        if identity.expertise.domains:
+            expertise_lines = ["## Expertise"]
+            for domain in identity.expertise.domains:
+                level_text = _expertise_level_text(domain.level)
+                line = f"- **{domain.name}** ({level_text}, {domain.category.value})"
+                if domain.description:
+                    line += f" -- {domain.description}"
+                expertise_lines.append(line)
+            sections.append("\n".join(expertise_lines))
+
+        # Principles
+        if identity.principles:
+            principle_lines = ["## Principles"]
+            for principle in sorted(identity.principles, key=lambda p: p.priority):
+                principle_lines.append(f"\n### {principle.priority}. {principle.statement}")
+                if principle.implications:
+                    for impl in principle.implications:
+                        principle_lines.append(f"- {impl}")
+            sections.append("\n".join(principle_lines))
+
+        # Guardrails
+        guardrails_lines = ["## Guardrails"]
+        for gr in identity.guardrails.hard:
+            severity_label = gr.severity.value.upper() if gr.severity else "MEDIUM"
+            guardrails_lines.append(f"- **[{severity_label}]** {gr.rule}")
+        sections.append("\n".join(guardrails_lines))
+
+        return "\n\n".join(sections)
+
+
+def _markdown_bar(value: float, width: int = 10) -> str:
+    """Create a simple text progress bar for markdown."""
+    filled = round(value * width)
+    return "[" + "#" * filled + "." * (width - filled) + "]"
+
+
+# ---------------------------------------------------------------------------
+# LangChain Compiler
+# ---------------------------------------------------------------------------
+
+
+class LangChainCompiler:
+    """Compiles a resolved AgentIdentity into LangChain-compatible configuration."""
+
+    def __init__(self, prompt_compiler: SystemPromptCompiler | None = None):
+        self.prompt_compiler = prompt_compiler or SystemPromptCompiler()
+
+    def compile(self, identity: AgentIdentity) -> dict[str, Any]:
+        """Compile identity into a LangChain-compatible dict.
+
+        Returns:
+            Dict with keys:
+                - system_message: The full system prompt text.
+                - human_message_prefix: A prefix for human messages.
+                - ai_message_prefix: A prefix for AI responses.
+                - metadata: Agent metadata for LangChain chain configuration.
+        """
+        system_message = self.prompt_compiler.compile(identity, format="text")
+
+        name = identity.metadata.name
+        role_title = identity.role.title
+
+        # Build a human message prefix that sets context
+        human_message_prefix = ""
+
+        # Build an AI message prefix from the agent's persona
+        ai_message_prefix = f"[{name} - {role_title}] "
+
+        metadata = {
+            "agent_id": identity.metadata.id,
+            "agent_name": name,
+            "agent_version": identity.metadata.version,
+            "role_title": role_title,
+            "tone": identity.communication.tone.default,
+            "domains": [d.name for d in identity.expertise.domains],
+            "guardrail_count": len(identity.guardrails.hard),
+            "principle_count": len(identity.principles),
+        }
+
+        return {
+            "system_message": system_message,
+            "human_message_prefix": human_message_prefix,
+            "ai_message_prefix": ai_message_prefix,
+            "metadata": metadata,
+        }
+
+
+# ---------------------------------------------------------------------------
 # Convenience function
 # ---------------------------------------------------------------------------
 
@@ -1000,16 +1351,23 @@ def compile_identity(
 
     Args:
         identity: A fully resolved AgentIdentity.
-        target: "text", "anthropic", "openai", "openclaw", "soul", or "json".
+        target: "text", "anthropic", "openai", "openclaw", "soul", "json",
+                "langchain", or "markdown".
         token_budget: Estimated token budget for system prompt.
 
     Returns:
-        String for text formats, dict for openclaw/soul/json.
+        String for text formats, dict for openclaw/soul/json/langchain.
     """
     prompt_compiler = SystemPromptCompiler(token_budget=token_budget)
 
     if target in ("text", "anthropic", "openai"):
-        return prompt_compiler.compile(identity, format=target)
+        prompt = prompt_compiler.compile(identity, format=target)
+        # If truncation occurred, append a note about omitted sections
+        if prompt_compiler._was_truncated and prompt_compiler._sections_omitted:
+            omitted_list = ", ".join(prompt_compiler._sections_omitted)
+            note = f"\n\n<!-- Note: Sections omitted to fit token budget: {omitted_list} -->"
+            prompt += note
+        return prompt
     elif target == "openclaw":
         openclaw_compiler = OpenClawCompiler(prompt_compiler)
         return openclaw_compiler.compile(identity)
@@ -1018,9 +1376,21 @@ def compile_identity(
         return soul_compiler.compile(identity)
     elif target == "json":
         prompt = prompt_compiler.compile(identity, format="text")
-        return {
+        result: dict[str, Any] = {
             "system_prompt": prompt,
             "tokens_estimated": prompt_compiler.estimate_tokens(prompt),
         }
+        # Include section tracking in JSON output
+        if prompt_compiler._sections_included:
+            result["sections_included"] = prompt_compiler._sections_included
+        if prompt_compiler._sections_omitted:
+            result["sections_omitted"] = prompt_compiler._sections_omitted
+        return result
+    elif target == "langchain":
+        langchain_compiler = LangChainCompiler(prompt_compiler)
+        return langchain_compiler.compile(identity)
+    elif target == "markdown":
+        markdown_compiler = MarkdownCompiler()
+        return markdown_compiler.compile(identity)
     else:
         raise CompilerError(f"Unknown target format: {target}")
