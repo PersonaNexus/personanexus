@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import yaml
 from rich.console import Console
 from rich.panel import Panel
-from rich.prompt import Confirm, FloatPrompt, Prompt
+from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
 console = Console()
@@ -84,13 +84,14 @@ class IdentityBuilder:
             if not raw.strip():
                 if allow_skip:
                     return None
-                self.console.print(f"  [red]A value is required.[/red]")
+                self.console.print("  [red]A value is required.[/red]")
                 continue
             try:
                 value = float(raw.strip())
             except ValueError:
                 self.console.print(
-                    f"  [red]'{raw.strip()}' is not a number. Enter a value between {low} and {high}.[/red]"
+                    f"  [red]'{raw.strip()}' is not a number. "
+                    f"Enter a value between {low} and {high}.[/red]"
                 )
                 continue
             if not (low <= value <= high):
@@ -147,7 +148,10 @@ class IdentityBuilder:
 
         name = Prompt.ask("Agent name", default="MyAgent")
         title = Prompt.ask("Role title", default=name)
-        purpose = Prompt.ask("Purpose (what does this agent do?)", default=f"Assist users with {name.lower()}-related tasks")
+        default_purpose = f"Assist users with {name.lower()}-related tasks"
+        purpose = Prompt.ask(
+            "Purpose (what does this agent do?)", default=default_purpose
+        )
         description = Prompt.ask("Description", default=f"An AI agent named {name}")
 
         # Primary scope
@@ -161,7 +165,7 @@ class IdentityBuilder:
         unique_suffix = uuid.uuid4().hex[:8]
         safe_name = name.lower().replace(" ", "_").replace("-", "_")
         agent_id = f"agt_{safe_name}_{unique_suffix}"
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         data["metadata"] = {
             "id": agent_id,
@@ -275,8 +279,7 @@ class IdentityBuilder:
         for dim, desc in ocean_dims.items():
             self.console.print(f"  [dim]{desc}[/dim]")
             value = self._prompt_float(dim, 0.0, 1.0, allow_skip=False)
-            assert value is not None
-            scores[dim] = value
+            scores[dim] = value  # type: ignore[assignment]  # allow_skip=False guarantees non-None
 
         profile = OceanProfile(**scores)
         computed = ocean_to_traits(profile)
@@ -341,8 +344,7 @@ class IdentityBuilder:
             for dim, desc in disc_dims.items():
                 self.console.print(f"  [dim]{desc}[/dim]")
                 value = self._prompt_float(dim, 0.0, 1.0, allow_skip=False)
-                assert value is not None
-                scores[dim] = value
+                scores[dim] = value  # type: ignore[assignment]  # allow_skip=False guarantees non-None
 
             disc = DiscProfile(**scores)
             computed = disc_to_traits(disc)
@@ -384,8 +386,7 @@ class IdentityBuilder:
             scores: dict[str, float] = {}
             for dim in ocean_dims:
                 value = self._prompt_float(dim, 0.0, 1.0, allow_skip=False)
-                assert value is not None
-                scores[dim] = value
+                scores[dim] = value  # type: ignore[assignment]  # allow_skip=False guarantees non-None
             profile = OceanProfile(**scores)
             computed = ocean_to_traits(profile)
             profile_data["ocean"] = scores
@@ -396,8 +397,7 @@ class IdentityBuilder:
             scores = {}
             for dim in disc_dims:
                 value = self._prompt_float(dim, 0.0, 1.0, allow_skip=False)
-                assert value is not None
-                scores[dim] = value
+                scores[dim] = value  # type: ignore[assignment]  # allow_skip=False guarantees non-None
             disc = DiscProfile(**scores)
             computed = disc_to_traits(disc)
             profile_data["disc"] = scores
@@ -481,7 +481,10 @@ class IdentityBuilder:
     def _phase_principles(self, data: dict[str, Any]) -> None:
         self.console.print("\n[bold blue]Phase 4: Core Principles[/bold blue]")
         self.console.rule()
-        self.console.print("[dim]Enter guiding principles for the agent. Empty input to finish.[/dim]\n")
+        self.console.print(
+            "[dim]Enter guiding principles for the agent."
+            " Empty input to finish.[/dim]\n"
+        )
 
         principles: list[dict[str, Any]] = []
         priority = 1
@@ -503,7 +506,10 @@ class IdentityBuilder:
 
         # Add default if empty
         if not principles:
-            self.console.print("[yellow]No principles entered. Adding default safety principle.[/yellow]")
+            self.console.print(
+                "[yellow]No principles entered."
+                " Adding default safety principle.[/yellow]"
+            )
             principles.append(
                 {
                     "id": "safety_first",
@@ -521,7 +527,10 @@ class IdentityBuilder:
     def _phase_guardrails(self, data: dict[str, Any]) -> None:
         self.console.print("\n[bold blue]Phase 5: Guardrails[/bold blue]")
         self.console.rule()
-        self.console.print("[dim]Enter hard constraints the agent must never violate. Empty to finish.[/dim]\n")
+        self.console.print(
+            "[dim]Enter hard constraints the agent must never violate."
+            " Empty to finish.[/dim]\n"
+        )
 
         guardrails: list[dict[str, Any]] = []
         counter = 1
@@ -650,7 +659,8 @@ class LLMEnhancer:
                 )
             else:
                 self.console.print(
-                    "[yellow]Anthropic SDK not installed. Using template-based enhancement.[/yellow]"
+                    "[yellow]Anthropic SDK not installed."
+                    " Using template-based enhancement.[/yellow]"
                 )
             return self._enhance_with_templates(identity)
 
@@ -673,7 +683,7 @@ Traits: {trait_desc}
 
 Respond in this exact JSON format (no markdown, just raw JSON):
 {{
-  "personality_notes": "A 2-3 sentence prose description synthesizing these personality traits into a coherent character description for {name} as a {role}.",
+  "personality_notes": "2-3 sentences synthesizing traits into a character description for {name}.",
   "greeting": "A warm greeting message from {name} introducing themselves and their role.",
   "vocabulary": {{
     "preferred": ["phrase1", "phrase2", "phrase3"],
@@ -701,7 +711,10 @@ Respond in this exact JSON format (no markdown, just raw JSON):
             text = response.content[0].text
             return json.loads(text)
         except Exception as exc:
-            self.console.print(f"[yellow]LLM enhancement failed: {exc}. Falling back to templates.[/yellow]")
+            self.console.print(
+                f"[yellow]LLM enhancement failed: {exc}."
+                " Falling back to templates.[/yellow]"
+            )
             return self._enhance_with_templates(identity)
 
     def _enhance_with_templates(self, identity: BuiltIdentity) -> dict[str, Any]:
@@ -740,8 +753,8 @@ Respond in this exact JSON format (no markdown, just raw JSON):
                 "It depends",
             ],
             "signature_phrases": [
-                f"Let's work through this together",
-                f"Here's my take on it",
+                "Let's work through this together",
+                "Here's my take on it",
             ],
         }
 
@@ -776,7 +789,7 @@ Respond in this exact JSON format (no markdown, just raw JSON):
         if "personality_notes" in enhancements:
             notes = enhancements["personality_notes"]
             if interactive:
-                self.console.print(f"\n[bold]Suggested personality notes:[/bold]")
+                self.console.print("\n[bold]Suggested personality notes:[/bold]")
                 self.console.print(f"  [dim]{notes}[/dim]")
                 if Confirm.ask("  Accept?", default=True):
                     data["personality"]["notes"] = notes
@@ -787,7 +800,7 @@ Respond in this exact JSON format (no markdown, just raw JSON):
         if "greeting" in enhancements:
             greeting = enhancements["greeting"]
             if interactive:
-                self.console.print(f"\n[bold]Suggested greeting:[/bold]")
+                self.console.print("\n[bold]Suggested greeting:[/bold]")
                 self.console.print(f"  [dim]{greeting}[/dim]")
                 if Confirm.ask("  Accept?", default=True):
                     data.setdefault("metadata", {})["greeting"] = greeting
@@ -798,7 +811,7 @@ Respond in this exact JSON format (no markdown, just raw JSON):
         if "vocabulary" in enhancements:
             vocab = enhancements["vocabulary"]
             if interactive:
-                self.console.print(f"\n[bold]Suggested vocabulary:[/bold]")
+                self.console.print("\n[bold]Suggested vocabulary:[/bold]")
                 for key, phrases in vocab.items():
                     self.console.print(f"  {key}: {', '.join(phrases)}")
                 if Confirm.ask("  Accept?", default=True):
@@ -810,7 +823,7 @@ Respond in this exact JSON format (no markdown, just raw JSON):
         if "strategies" in enhancements:
             strategies = enhancements["strategies"]
             if interactive:
-                self.console.print(f"\n[bold]Suggested behavior strategies:[/bold]")
+                self.console.print("\n[bold]Suggested behavior strategies:[/bold]")
                 for name, strategy in strategies.items():
                     self.console.print(f"  {name}: {strategy.get('approach', 'N/A')}")
                 if Confirm.ask("  Accept?", default=True):

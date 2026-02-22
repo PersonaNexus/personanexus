@@ -1,14 +1,14 @@
 """Tests for behavioral modes system."""
-import pytest
+from pathlib import Path
+
+from personanexus.compiler import SystemPromptCompiler
+from personanexus.parser import parse_identity_file
 from personanexus.types import (
     BehavioralMode,
     BehavioralModeConfig,
     BehavioralModeOverrides,
     TraitModifier,
-    AgentIdentity,
 )
-from personanexus.compiler import SystemPromptCompiler
-from personanexus.parser import parse_identity_file
 
 
 def test_mode_creation():
@@ -68,9 +68,9 @@ def test_compiler_renders_empty_modes():
 
 
 def test_example_yaml_loads():
+    examples_dir = Path(__file__).parent.parent / "examples"
     identity = parse_identity_file(
-        "examples/identities/ada-modes.yaml",
-        base_dir="/home/node/.openclaw/workspace/PersonaNexus"
+        examples_dir / "identities" / "ada-modes.yaml",
     )
     assert identity.behavioral_modes is not None
     assert len(identity.behavioral_modes.modes) >= 3

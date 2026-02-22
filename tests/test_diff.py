@@ -1,8 +1,6 @@
 """Tests for identity diff and compatibility features."""
 
-from pathlib import Path
 
-import pytest
 
 from personanexus.diff import (
     _flatten_dict,
@@ -63,15 +61,21 @@ class TestGetOceanTraits:
 class TestGetDiscTraits:
     def test_disc_present(self):
         identity = {"personality": {"profile": {"mode": "disc", "disc": {
-            "d": 0.3, "i": 0.2, "s": 0.6, "c": 0.9,
+            "dominance": 0.3, "influence": 0.2, "steadiness": 0.6, "conscientiousness": 0.9,
         }}}}
         result = _get_disc_traits(identity)
-        assert result == {"d": 0.3, "i": 0.2, "s": 0.6, "c": 0.9}
+        assert result == {
+            "dominance": 0.3, "influence": 0.2,
+            "steadiness": 0.6, "conscientiousness": 0.9,
+        }
 
     def test_disc_preset(self):
         identity = {"personality": {"profile": {"mode": "disc", "disc_preset": "the_analyst"}}}
         result = _get_disc_traits(identity)
-        assert result == {"d": 0.3, "i": 0.2, "s": 0.6, "c": 0.9}
+        assert result == {
+            "dominance": 0.3, "influence": 0.2,
+            "steadiness": 0.6, "conscientiousness": 0.9,
+        }
 
     def test_disc_missing(self):
         identity = {"personality": {"profile": {"mode": "ocean"}}}
@@ -113,14 +117,35 @@ class TestDiffIdentities:
         file1 = tmp_path / "file1.yaml"
         file2 = tmp_path / "file2.yaml"
 
-        file1.write_text('personality:\n  profile:\n    mode: ocean\n    ocean:\n      openness: 0.5\n      conscientiousness: 0.8\n      extraversion: 0.3\n      agreeableness: 0.6\n      neuroticism: 0.4\n')
-        file2.write_text('personality:\n  profile:\n    mode: ocean\n    ocean:\n      openness: 0.7\n      conscientiousness: 0.6\n      extraversion: 0.5\n      agreeableness: 0.8\n      neuroticism: 0.2\n')
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.5\n"
+            "      conscientiousness: 0.8\n"
+            "      extraversion: 0.3\n"
+            "      agreeableness: 0.6\n"
+            "      neuroticism: 0.4\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.7\n"
+            "      conscientiousness: 0.6\n"
+            "      extraversion: 0.5\n"
+            "      agreeableness: 0.8\n"
+            "      neuroticism: 0.2\n"
+        )
 
         diff = diff_identities(str(file1), str(file2))
         assert "personality_diff" in diff
         assert "ocean" in diff["personality_diff"]
         assert abs(diff["personality_diff"]["ocean"]["openness"]["delta"] - 0.2) < 0.0001
-        assert abs(diff["personality_diff"]["ocean"]["conscientiousness"]["delta"] - (-0.2)) < 0.0001
+        consc_delta = diff["personality_diff"]["ocean"]["conscientiousness"]["delta"]
+        assert abs(consc_delta - (-0.2)) < 0.0001
 
 
 class TestCompatibilityScore:
@@ -128,8 +153,28 @@ class TestCompatibilityScore:
         file1 = tmp_path / "file1.yaml"
         file2 = tmp_path / "file2.yaml"
 
-        file1.write_text('personality:\n  profile:\n    mode: ocean\n    ocean:\n      openness: 0.5\n      conscientiousness: 0.8\n      extraversion: 0.3\n      agreeableness: 0.6\n      neuroticism: 0.4\n')
-        file2.write_text('personality:\n  profile:\n    mode: ocean\n    ocean:\n      openness: 0.5\n      conscientiousness: 0.8\n      extraversion: 0.3\n      agreeableness: 0.6\n      neuroticism: 0.4\n')
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.5\n"
+            "      conscientiousness: 0.8\n"
+            "      extraversion: 0.3\n"
+            "      agreeableness: 0.6\n"
+            "      neuroticism: 0.4\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.5\n"
+            "      conscientiousness: 0.8\n"
+            "      extraversion: 0.3\n"
+            "      agreeableness: 0.6\n"
+            "      neuroticism: 0.4\n"
+        )
 
         score = compatibility_score(str(file1), str(file2))
         assert score == 100.0
@@ -138,8 +183,28 @@ class TestCompatibilityScore:
         file1 = tmp_path / "file1.yaml"
         file2 = tmp_path / "file2.yaml"
 
-        file1.write_text('personality:\n  profile:\n    mode: ocean\n    ocean:\n      openness: 0.0\n      conscientiousness: 0.0\n      extraversion: 0.0\n      agreeableness: 0.0\n      neuroticism: 0.0\n')
-        file2.write_text('personality:\n  profile:\n    mode: ocean\n    ocean:\n      openness: 1.0\n      conscientiousness: 1.0\n      extraversion: 1.0\n      agreeableness: 1.0\n      neuroticism: 1.0\n')
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.0\n"
+            "      conscientiousness: 0.0\n"
+            "      extraversion: 0.0\n"
+            "      agreeableness: 0.0\n"
+            "      neuroticism: 0.0\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 1.0\n"
+            "      conscientiousness: 1.0\n"
+            "      extraversion: 1.0\n"
+            "      agreeableness: 1.0\n"
+            "      neuroticism: 1.0\n"
+        )
 
         score = compatibility_score(str(file1), str(file2))
         # Perfectly opposite should give very low score

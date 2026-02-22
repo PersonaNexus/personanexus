@@ -1,11 +1,20 @@
 """Tests for mood/emotional state system."""
+from pathlib import Path
+
 import pytest
-from personanexus.types import (
-    MoodConfig, MoodState, MoodTransition, TraitModifier, Personality,
-    PersonalityProfile, PersonalityMode, OceanProfile
-)
+
 from personanexus.compiler import SystemPromptCompiler
 from personanexus.parser import IdentityParser
+from personanexus.types import (
+    MoodConfig,
+    MoodState,
+    MoodTransition,
+    OceanProfile,
+    Personality,
+    PersonalityMode,
+    PersonalityProfile,
+    TraitModifier,
+)
 
 
 def test_mood_state_creation():
@@ -100,9 +109,10 @@ def test_compiler_renders_mood():
 
 
 def test_example_yaml_loads():
+    examples_dir = Path(__file__).parent.parent / "examples"
     parser = IdentityParser()
     identity = parser.load_identity(
-        "/home/node/.openclaw/workspace/PersonaNexus/examples/identities/ada-mood.yaml"
+        examples_dir / "identities" / "ada-mood.yaml"
     )
     assert identity.personality.mood is not None
     assert len(identity.personality.mood.states) >= 2

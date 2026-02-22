@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 from typing import Any
 
 from personanexus.conflict import ConflictResolver
 from personanexus.parser import IdentityParser, ParseError
-from personanexus.types import AgentIdentity, CompositionConfig, ConflictResolution
+from personanexus.types import AgentIdentity, ConflictResolution
+
+logger = logging.getLogger(__name__)
 
 
 class ResolutionError(Exception):

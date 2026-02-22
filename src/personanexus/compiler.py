@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import json
+import logging
 from typing import Any
 
 from personanexus.personality import compute_personality_traits
 from personanexus.types import (
     AgentIdentity,
-    BehavioralModeConfig,
     Behavior,
+    BehavioralModeConfig,
     Communication,
     Expertise,
     ExpertiseCategory,
@@ -19,11 +19,12 @@ from personanexus.types import (
     Narrative,
     Personality,
     PersonalityMode,
-    PersonalityTraits,
     Principle,
     Role,
     Severity,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class CompilerError(Exception):
@@ -284,8 +285,16 @@ class SystemPromptCompiler:
             if personality.mood.transitions:
                 lines.append("Transitions:")
                 for transition in personality.mood.transitions:
-                    from_display = "*" if transition.from_state == "*" else f"'{transition.from_state}'"
-                    lines.append(f"- [{transition.trigger}] → '{transition.to_state}' (from: {from_display})")
+                    from_display = (
+                        "*"
+                        if transition.from_state == "*"
+                        else f"'{transition.from_state}'"
+                    )
+                    lines.append(
+                        f"- [{transition.trigger}] → "
+                        f"'{transition.to_state}' "
+                        f"(from: {from_display})"
+                    )
 
         return "\n".join(lines)
 
@@ -493,7 +502,10 @@ class SystemPromptCompiler:
             if mode.overrides.sentence_length:
                 lines.append(f"  Sentences: {mode.overrides.sentence_length}")
             if mode.overrides.trait_modifiers:
-                mods = ", ".join(f"{m.trait} {'+' if m.delta > 0 else ''}{m.delta}" for m in mode.overrides.trait_modifiers)
+                mods = ", ".join(
+                    f"{m.trait} {'+' if m.delta > 0 else ''}{m.delta}"
+                    for m in mode.overrides.trait_modifiers
+                )
                 lines.append(f"  Trait adjustments: {mods}")
             if mode.additional_guardrails:
                 lines.append(f"  Additional rules: {'; '.join(mode.additional_guardrails)}")
@@ -1006,6 +1018,9 @@ def compile_identity(
         return soul_compiler.compile(identity)
     elif target == "json":
         prompt = prompt_compiler.compile(identity, format="text")
-        return {"system_prompt": prompt, "tokens_estimated": prompt_compiler.estimate_tokens(prompt)}
+        return {
+            "system_prompt": prompt,
+            "tokens_estimated": prompt_compiler.estimate_tokens(prompt),
+        }
     else:
         raise CompilerError(f"Unknown target format: {target}")

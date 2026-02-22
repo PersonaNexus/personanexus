@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import enum
 import json
+import logging
 import math
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel, Field
 
@@ -28,6 +28,8 @@ from personanexus.types import (
     PersonalityTraits,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class AnalyzerError(Exception):
     """Raised when analysis fails."""
@@ -38,7 +40,7 @@ class AnalyzerError(Exception):
 # ---------------------------------------------------------------------------
 
 
-class SourceFormat(str, enum.Enum):
+class SourceFormat(enum.StrEnum):
     SOUL_MD = "soul_md"
     PERSONALITY_JSON = "personality_json"
     IDENTITY_YAML = "identity_yaml"
@@ -289,11 +291,10 @@ class IdentityYamlParser:
         try:
             computed = compute_personality_traits(identity.personality)
             traits_dict = computed.defined_traits()
-        except (AttributeError, Exception) as exc:
-            # Fall back to empty traits if computation fails
-            traits_dict = {}
-            # Log or handle the error if needed, but don't let it crash
-            # For now, we silently proceed with an empty dict
+        except Exception as exc:
+            raise AnalyzerError(
+                f"Failed to compute personality traits from {path}: {exc}"
+            ) from exc
 
         extractions = [
             TraitExtraction(name=k, value=v, confidence=1.0)

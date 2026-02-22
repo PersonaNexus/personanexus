@@ -1,0 +1,739 @@
+{
+  "$defs": {
+    "AdaptationRules": {
+      "description": "Rules for team self-optimization.",
+      "properties": {
+        "workflow_optimization": {
+          "additionalProperties": true,
+          "title": "Workflow Optimization",
+          "type": "object"
+        },
+        "team_composition_insights": {
+          "additionalProperties": true,
+          "title": "Team Composition Insights",
+          "type": "object"
+        }
+      },
+      "title": "AdaptationRules",
+      "type": "object"
+    },
+    "CollaborationProtocols": {
+      "description": "Protocols for agent collaboration.",
+      "properties": {
+        "handoff_standards": {
+          "$ref": "#/$defs/HandoffStandards"
+        },
+        "quality_gates": {
+          "items": {
+            "$ref": "#/$defs/QualityGate"
+          },
+          "title": "Quality Gates",
+          "type": "array"
+        },
+        "status_updates": {
+          "additionalProperties": true,
+          "title": "Status Updates",
+          "type": "object"
+        }
+      },
+      "title": "CollaborationProtocols",
+      "type": "object"
+    },
+    "ConflictResolution": {
+      "description": "Rules for resolving conflicts between agents.",
+      "properties": {
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "strategy": {
+          "$ref": "#/$defs/ConflictStrategy"
+        },
+        "process": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Process",
+          "type": "array"
+        },
+        "criteria": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Criteria",
+          "type": "array"
+        },
+        "fallback": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback"
+        },
+        "escalation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Escalation"
+        },
+        "fallback_authority": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fallback Authority"
+        }
+      },
+      "required": [
+        "strategy"
+      ],
+      "title": "ConflictResolution",
+      "type": "object"
+    },
+    "ConflictStrategy": {
+      "enum": [
+        "evidence_based_decision",
+        "authority_hierarchy",
+        "consensus_with_fallback",
+        "capability_matrix_lookup",
+        "risk_assessment_matrix"
+      ],
+      "title": "ConflictStrategy",
+      "type": "string"
+    },
+    "DecisionFramework": {
+      "description": "Framework for decision-making in a specific domain.",
+      "properties": {
+        "authority": {
+          "minLength": 1,
+          "title": "Authority",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "consultation_required": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Consultation Required",
+          "type": "array"
+        },
+        "veto_rights": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Veto Rights",
+          "type": "array"
+        },
+        "escalation_criteria": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Escalation Criteria",
+          "type": "array"
+        }
+      },
+      "required": [
+        "authority"
+      ],
+      "title": "DecisionFramework",
+      "type": "object"
+    },
+    "HandoffStandards": {
+      "description": "Standards for agent-to-agent handoffs.",
+      "properties": {
+        "context_transfer": {
+          "additionalProperties": true,
+          "title": "Context Transfer",
+          "type": "object"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Validation"
+        },
+        "timeout": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Timeout"
+        }
+      },
+      "title": "HandoffStandards",
+      "type": "object"
+    },
+    "OperationsConfig": {
+      "description": "Operational parameters for the team.",
+      "properties": {
+        "working_hours": {
+          "additionalProperties": true,
+          "title": "Working Hours",
+          "type": "object"
+        },
+        "resource_limits": {
+          "additionalProperties": true,
+          "title": "Resource Limits",
+          "type": "object"
+        },
+        "monitoring": {
+          "additionalProperties": true,
+          "title": "Monitoring",
+          "type": "object"
+        },
+        "integration": {
+          "additionalProperties": true,
+          "title": "Integration",
+          "type": "object"
+        }
+      },
+      "title": "OperationsConfig",
+      "type": "object"
+    },
+    "PerformanceMetric": {
+      "description": "A measurable performance indicator for the team.",
+      "properties": {
+        "metric": {
+          "minLength": 1,
+          "title": "Metric",
+          "type": "string"
+        },
+        "target": {
+          "minLength": 1,
+          "title": "Target",
+          "type": "string"
+        },
+        "measurement": {
+          "minLength": 1,
+          "title": "Measurement",
+          "type": "string"
+        },
+        "review_frequency": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Review Frequency"
+        }
+      },
+      "required": [
+        "metric",
+        "target",
+        "measurement"
+      ],
+      "title": "PerformanceMetric",
+      "type": "object"
+    },
+    "QualityGate": {
+      "description": "Quality gates for workflow stages.",
+      "properties": {
+        "gate": {
+          "minLength": 1,
+          "title": "Gate",
+          "type": "string"
+        },
+        "enforced_by": {
+          "minLength": 1,
+          "title": "Enforced By",
+          "type": "string"
+        },
+        "criteria": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Criteria",
+          "type": "array"
+        },
+        "auto_check": {
+          "default": false,
+          "title": "Auto Check",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "gate",
+        "enforced_by",
+        "criteria"
+      ],
+      "title": "QualityGate",
+      "type": "object"
+    },
+    "TeamAgent": {
+      "description": "Agent definition within a team context.",
+      "properties": {
+        "agent_id": {
+          "pattern": "^agt_\\w+_\\d{3}$",
+          "title": "Agent Id",
+          "type": "string"
+        },
+        "role": {
+          "minLength": 1,
+          "title": "Role",
+          "type": "string"
+        },
+        "authority_level": {
+          "maximum": 5,
+          "minimum": 1,
+          "title": "Authority Level",
+          "type": "integer"
+        },
+        "expertise_domains": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Expertise Domains",
+          "type": "array"
+        },
+        "capabilities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Capabilities",
+          "type": "array"
+        },
+        "delegation_rights": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Delegation Rights",
+          "type": "array"
+        },
+        "personality_summary": {
+          "additionalProperties": {
+            "type": "number"
+          },
+          "title": "Personality Summary",
+          "type": "object"
+        },
+        "personality_traits": {
+          "anyOf": [
+            {
+              "additionalProperties": {
+                "type": "number"
+              },
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Personality Traits"
+        },
+        "personality_profile": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Personality Profile"
+        },
+        "behavioral_settings": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Behavioral Settings"
+        }
+      },
+      "required": [
+        "agent_id",
+        "role",
+        "authority_level",
+        "expertise_domains"
+      ],
+      "title": "TeamAgent",
+      "type": "object"
+    },
+    "TeamComposition": {
+      "description": "Team composition and agent relationships.",
+      "properties": {
+        "agents": {
+          "additionalProperties": {
+            "$ref": "#/$defs/TeamAgent"
+          },
+          "minProperties": 1,
+          "title": "Agents",
+          "type": "object"
+        }
+      },
+      "required": [
+        "agents"
+      ],
+      "title": "TeamComposition",
+      "type": "object"
+    },
+    "TeamGovernance": {
+      "description": "Governance structure for multi-agent team.",
+      "properties": {
+        "decision_frameworks": {
+          "additionalProperties": {
+            "$ref": "#/$defs/DecisionFramework"
+          },
+          "title": "Decision Frameworks",
+          "type": "object"
+        },
+        "conflict_resolution": {
+          "additionalProperties": {
+            "$ref": "#/$defs/ConflictResolution"
+          },
+          "title": "Conflict Resolution",
+          "type": "object"
+        }
+      },
+      "title": "TeamGovernance",
+      "type": "object"
+    },
+    "TeamMetadata": {
+      "description": "Team-level metadata and identification.",
+      "properties": {
+        "id": {
+          "pattern": "^team_\\w+_\\d{3}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Name",
+          "type": "string"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "version": {
+          "default": "1.0.0",
+          "pattern": "^\\d+\\.\\d+\\.\\d+$",
+          "title": "Version",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "updated_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Updated At"
+        },
+        "author": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Author"
+        },
+        "tags": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Tags",
+          "type": "array"
+        },
+        "source": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Source"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "created_at"
+      ],
+      "title": "TeamMetadata",
+      "type": "object"
+    },
+    "TeamPerformanceMetrics": {
+      "description": "Performance measurement framework for the team.",
+      "properties": {
+        "team_effectiveness": {
+          "items": {
+            "$ref": "#/$defs/PerformanceMetric"
+          },
+          "title": "Team Effectiveness",
+          "type": "array"
+        },
+        "individual_contributions": {
+          "additionalProperties": {
+            "items": {
+              "$ref": "#/$defs/PerformanceMetric"
+            },
+            "type": "array"
+          },
+          "title": "Individual Contributions",
+          "type": "object"
+        }
+      },
+      "title": "TeamPerformanceMetrics",
+      "type": "object"
+    },
+    "TeamSpec": {
+      "description": "Team specification section.",
+      "properties": {
+        "metadata": {
+          "$ref": "#/$defs/TeamMetadata"
+        },
+        "composition": {
+          "$ref": "#/$defs/TeamComposition"
+        },
+        "workflow_patterns": {
+          "additionalProperties": {
+            "$ref": "#/$defs/WorkflowPattern"
+          },
+          "title": "Workflow Patterns",
+          "type": "object"
+        },
+        "governance": {
+          "$ref": "#/$defs/TeamGovernance"
+        },
+        "collaboration_protocols": {
+          "$ref": "#/$defs/CollaborationProtocols"
+        },
+        "performance_metrics": {
+          "$ref": "#/$defs/TeamPerformanceMetrics"
+        },
+        "adaptation_rules": {
+          "$ref": "#/$defs/AdaptationRules"
+        },
+        "operations": {
+          "$ref": "#/$defs/OperationsConfig"
+        }
+      },
+      "required": [
+        "metadata",
+        "composition"
+      ],
+      "title": "TeamSpec",
+      "type": "object"
+    },
+    "WorkflowPattern": {
+      "description": "A reusable workflow pattern for the team.",
+      "properties": {
+        "description": {
+          "minLength": 1,
+          "title": "Description",
+          "type": "string"
+        },
+        "estimated_duration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimated Duration"
+        },
+        "success_rate": {
+          "anyOf": [
+            {
+              "maximum": 1.0,
+              "minimum": 0.0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Success Rate"
+        },
+        "stages": {
+          "items": {
+            "$ref": "#/$defs/WorkflowStage"
+          },
+          "minItems": 1,
+          "title": "Stages",
+          "type": "array"
+        }
+      },
+      "required": [
+        "description",
+        "stages"
+      ],
+      "title": "WorkflowPattern",
+      "type": "object"
+    },
+    "WorkflowStage": {
+      "description": "A single stage in a workflow pattern.",
+      "properties": {
+        "stage": {
+          "minLength": 1,
+          "title": "Stage",
+          "type": "string"
+        },
+        "primary_agent": {
+          "minLength": 1,
+          "title": "Primary Agent",
+          "type": "string"
+        },
+        "objective": {
+          "minLength": 1,
+          "title": "Objective",
+          "type": "string"
+        },
+        "deliverables": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Deliverables",
+          "type": "array"
+        },
+        "success_criteria": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Success Criteria",
+          "type": "array"
+        },
+        "trigger_conditions": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Trigger Conditions",
+          "type": "array"
+        },
+        "input_context": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Input Context",
+          "type": "array"
+        },
+        "max_duration": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Max Duration"
+        }
+      },
+      "required": [
+        "stage",
+        "primary_agent",
+        "objective"
+      ],
+      "title": "WorkflowStage",
+      "type": "object"
+    }
+  },
+  "description": "Complete multi-agent team configuration.",
+  "properties": {
+    "schema_version": {
+      "default": "2.0",
+      "pattern": "^\\d+\\.\\d+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "team": {
+      "$ref": "#/$defs/TeamSpec"
+    }
+  },
+  "required": [
+    "team"
+  ],
+  "title": "TeamConfiguration",
+  "type": "object"
+}

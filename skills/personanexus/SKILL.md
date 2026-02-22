@@ -31,7 +31,7 @@ python scripts/openclaw-migrator.py \
   --output team-configs/openclaw-core-team.yaml
 ```
 
-### Analyze Team Performance
+### Analyze Team Performance (Planned)
 ```bash
 # Analyze collaboration effectiveness from task history
 python scripts/team-analyzer.py \
@@ -40,7 +40,7 @@ python scripts/team-analyzer.py \
   --output analytics/team-performance-report.md
 ```
 
-### Generate Workflow Patterns
+### Generate Workflow Patterns (Planned)
 ```bash
 # Extract successful workflow patterns from completed tasks
 python scripts/workflow-extractor.py \
@@ -49,7 +49,7 @@ python scripts/workflow-extractor.py \
   --output workflows/extracted-patterns.yaml
 ```
 
-### Optimize Team Configuration
+### Optimize Team Configuration (Planned)
 ```bash
 # Generate optimization recommendations based on performance data
 python scripts/team-optimizer.py \
@@ -83,7 +83,7 @@ python scripts/openclaw-migrator.py \
 # Result: Complete team YAML ready for personanexus framework
 ```
 
-### 2. Team Performance Analyzer (`team-analyzer.py`)
+### 2. Team Performance Analyzer (`team-analyzer.py`) — Planned
 **Purpose:** Analyze multi-agent collaboration effectiveness from OpenClaw operational data
 
 **Data Sources:**
@@ -111,7 +111,7 @@ python scripts/team-analyzer.py \
 # Results: Interactive dashboard showing team performance metrics
 ```
 
-### 3. Workflow Pattern Extractor (`workflow-extractor.py`)
+### 3. Workflow Pattern Extractor (`workflow-extractor.py`) — Planned
 **Purpose:** Learn successful workflow patterns from completed OpenClaw tasks
 
 **Pattern Recognition:**
@@ -135,7 +135,7 @@ python scripts/workflow-extractor.py \
   --output workflows/templates/
 ```
 
-### 4. Team Optimizer (`team-optimizer.py`)
+### 4. Team Optimizer (`team-optimizer.py`) — Planned
 **Purpose:** Generate data-driven recommendations for improving team performance
 
 **Optimization Areas:**
@@ -240,10 +240,10 @@ skills/personanexus/
 ├── requirements.txt                  # Python dependencies
 ├── scripts/
 │   ├── openclaw-migrator.py          # OpenClaw → personanexus conversion
-│   ├── team-analyzer.py              # Performance analysis
-│   ├── workflow-extractor.py         # Pattern recognition  
-│   ├── team-optimizer.py             # Optimization recommendations
-│   ├── team-compiler.py              # Cross-platform compilation
+│   ├── team-analyzer.py              # Performance analysis (planned)
+│   ├── workflow-extractor.py         # Pattern recognition (planned)
+│   ├── team-optimizer.py             # Optimization recommendations (planned)
+│   ├── team-compiler.py              # Cross-platform compilation (planned)
 │   └── utils/
 │       ├── openclaw-parser.py        # Parse OpenClaw data structures
 │       ├── performance-metrics.py    # Team performance calculations

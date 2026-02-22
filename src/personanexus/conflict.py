@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Any
 
 from personanexus.types import (
@@ -11,6 +12,8 @@ from personanexus.types import (
     ObjectConflictStrategy,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class ConflictResolver:
     """Resolves conflicts when merging identity specs during inheritance/mixin composition."""
@@ -18,7 +21,9 @@ class ConflictResolver:
     def __init__(self, config: ConflictResolution | None = None):
         self.config = config or ConflictResolution()
 
-    def merge(self, base: dict[str, Any], override: dict[str, Any], path: str = "") -> dict[str, Any]:
+    def merge(
+        self, base: dict[str, Any], override: dict[str, Any], path: str = "",
+    ) -> dict[str, Any]:
         """Deep-merge override into base using configured conflict resolution strategies."""
         result = dict(base)
 
@@ -66,6 +71,20 @@ class ConflictResolver:
         if self._is_id_keyed_list(base, override):
             return self._union_by_id(base, override)
 
+        # Warn if the list is partially id-keyed (some dicts have 'id', some don't),
+        # as this likely indicates a data error rather than intentional design.
+        all_items = base + override
+        if all_items:
+            dicts_with_id = sum(
+                1 for item in all_items if isinstance(item, dict) and "id" in item
+            )
+            if 0 < dicts_with_id < len(all_items):
+                logger.warning(
+                    "List at '%s' is partially id-keyed (%d/%d items have 'id'). "
+                    "Union-by-id merge was skipped; falling back to %s strategy.",
+                    path, dicts_with_id, len(all_items), strategy.value,
+                )
+
         if strategy == ListConflictStrategy.REPLACE:
             return override
         elif strategy == ListConflictStrategy.APPEND:
@@ -81,7 +100,9 @@ class ConflictResolver:
             return result
         return override
 
-    def _merge_objects(self, base: dict[str, Any], override: dict[str, Any], path: str) -> dict[str, Any]:
+    def _merge_objects(
+        self, base: dict[str, Any], override: dict[str, Any], path: str,
+    ) -> dict[str, Any]:
         strategy = self.config.object_fields
         if strategy == ObjectConflictStrategy.REPLACE:
             return override
@@ -97,11 +118,23 @@ class ConflictResolver:
     def _apply_explicit(self, base: Any, override: Any, strategy: str) -> Any:
         if strategy == "union" and isinstance(base, list) and isinstance(override, list):
             return self._union_by_id(base, override)
-        if strategy == "highest" and isinstance(base, (int, float)) and isinstance(override, (int, float)):
+        if (
+            strategy == "highest"
+            and isinstance(base, (int, float))
+            and isinstance(override, (int, float))
+        ):
             return max(base, override)
-        if strategy == "lowest" and isinstance(base, (int, float)) and isinstance(override, (int, float)):
+        if (
+            strategy == "lowest"
+            and isinstance(base, (int, float))
+            and isinstance(override, (int, float))
+        ):
             return min(base, override)
-        if strategy == "average" and isinstance(base, (int, float)) and isinstance(override, (int, float)):
+        if (
+            strategy == "average"
+            and isinstance(base, (int, float))
+            and isinstance(override, (int, float))
+        ):
             return (base + override) / 2
         # Default: last wins
         return override

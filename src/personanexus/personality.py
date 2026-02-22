@@ -393,18 +393,23 @@ def compute_personality_traits(personality: Personality) -> PersonalityTraits:
 
     # Compute base traits from framework
     if mode == PersonalityMode.OCEAN:
-        assert profile.ocean is not None
+        if profile.ocean is None:
+            raise ValueError("OCEAN mode requires an ocean profile to be set")
         computed = ocean_to_traits(profile.ocean)
 
     elif mode == PersonalityMode.DISC:
         disc = profile.disc
         if disc is None and profile.disc_preset:
             disc = get_disc_preset(profile.disc_preset)
-        assert disc is not None
+        if disc is None:
+            raise ValueError("DISC mode requires a disc profile or disc_preset to be set")
         computed = disc_to_traits(disc)
 
     elif mode == PersonalityMode.HYBRID:
-        # Prefer OCEAN if both are set; could be extended to blend
+        # HYBRID mode computes base traits from a framework profile, then applies
+        # explicit trait overrides on top (see override_priority below). When both
+        # OCEAN and DISC profiles are provided, OCEAN takes precedence as the base.
+        # To use DISC as the base instead, omit the OCEAN profile from the identity.
         if profile.ocean is not None:
             computed = ocean_to_traits(profile.ocean)
         elif profile.disc is not None:

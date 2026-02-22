@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,8 @@ from pydantic import ValidationError
 
 from personanexus.parser import IdentityParser, ParseError
 from personanexus.types import AgentIdentity, PersonalityMode
+
+logger = logging.getLogger(__name__)
 
 
 @dataclasses.dataclass
@@ -62,14 +65,14 @@ class IdentityValidator:
             identity = AgentIdentity.model_validate(data)
         except ValidationError as exc:
             for err in exc.errors():
-                loc = " -> ".join(str(l) for l in err["loc"])
+                loc = " -> ".join(str(part) for part in err["loc"])
                 errors.append(f"{loc}: {err['msg']}")
 
         if errors:
             return ValidationResult(valid=False, errors=errors)
 
-        assert identity is not None
-        warnings = self._check_warnings(identity)
+        # identity is guaranteed non-None: no ValidationError was raised above
+        warnings = self._check_warnings(identity)  # type: ignore[arg-type]
 
         return ValidationResult(valid=True, identity=identity, warnings=warnings)
 
@@ -107,7 +110,7 @@ class IdentityValidator:
                                 f"— potential tension"
                             ),
                             severity="medium",
-                            path=f"personality.traits",
+                            path="personality.traits",
                         )
                     )
 
@@ -131,6 +134,8 @@ class IdentityValidator:
         warnings: list[ValidationWarning] = []
         primary = set(identity.role.scope.primary)
         secondary = set(identity.role.scope.secondary)
+        out_of_scope = set(identity.role.scope.out_of_scope)
+
         overlap = primary & secondary
         if overlap:
             warnings.append(
@@ -141,6 +146,31 @@ class IdentityValidator:
                     path="role.scope",
                 )
             )
+
+        primary_out = primary & out_of_scope
+        if primary_out:
+            warnings.append(
+                ValidationWarning(
+                    type="scope_overlap",
+                    message=f"Scope items appear in both primary and out_of_scope: {primary_out}",
+                    severity="high",
+                    path="role.scope",
+                )
+            )
+
+        secondary_out = secondary & out_of_scope
+        if secondary_out:
+            warnings.append(
+                ValidationWarning(
+                    type="scope_overlap",
+                    message=(
+                        f"Scope items appear in both secondary and out_of_scope: {secondary_out}"
+                    ),
+                    severity="high",
+                    path="role.scope",
+                )
+            )
+
         return warnings
 
     def _check_personality_profile(

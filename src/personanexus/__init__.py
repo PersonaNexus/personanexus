@@ -12,7 +12,7 @@ from personanexus.compiler import (
     SystemPromptCompiler,
     compile_identity,
 )
-from personanexus.parser import IdentityParser, parse_file, parse_yaml, parse_identity_file
+from personanexus.parser import IdentityParser, parse_file, parse_identity_file, parse_yaml
 from personanexus.personality import (
     compute_personality_traits,
     disc_to_traits,
@@ -24,8 +24,8 @@ from personanexus.personality import (
 )
 from personanexus.resolver import IdentityResolver
 from personanexus.team_types import (
-    TeamConfiguration,
     TeamComposition,
+    TeamConfiguration,
     TeamSpec,
 )
 from personanexus.types import (

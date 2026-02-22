@@ -17,26 +17,26 @@ warnings.filterwarnings("ignore", message=".*Field name.*register.*shadows.*")
 # Enums
 # ---------------------------------------------------------------------------
 
-class Status(str, enum.Enum):
+class Status(enum.StrEnum):
     DRAFT = "draft"
     ACTIVE = "active"
     DEPRECATED = "deprecated"
     ARCHIVED = "archived"
 
 
-class ExpertiseCategory(str, enum.Enum):
+class ExpertiseCategory(enum.StrEnum):
     PRIMARY = "primary"
     SECONDARY = "secondary"
     TERTIARY = "tertiary"
 
 
-class OutOfExpertiseStrategy(str, enum.Enum):
+class OutOfExpertiseStrategy(enum.StrEnum):
     ATTEMPT_ANYWAY = "attempt_anyway"
     ACKNOWLEDGE_AND_REDIRECT = "acknowledge_and_redirect"
     HARD_DECLINE = "hard_decline"
 
 
-class Register(str, enum.Enum):
+class Register(enum.StrEnum):
     INTIMATE = "intimate"
     CASUAL = "casual"
     CONSULTATIVE = "consultative"
@@ -44,44 +44,44 @@ class Register(str, enum.Enum):
     FROZEN = "frozen"
 
 
-class SentenceLength(str, enum.Enum):
+class SentenceLength(enum.StrEnum):
     SHORT = "short"
     MIXED = "mixed"
     LONG = "long"
 
 
-class ParagraphLength(str, enum.Enum):
+class ParagraphLength(enum.StrEnum):
     SHORT = "short"
     MEDIUM = "medium"
     LONG = "long"
 
 
-class EmojiUsage(str, enum.Enum):
+class EmojiUsage(enum.StrEnum):
     NEVER = "never"
     SPARINGLY = "sparingly"
     FREQUENTLY = "frequently"
 
 
-class ReadingLevel(str, enum.Enum):
+class ReadingLevel(enum.StrEnum):
     SIMPLE = "simple"
     INTERMEDIATE = "intermediate"
     PROFESSIONAL = "professional"
     ACADEMIC = "academic"
 
 
-class JargonPolicy(str, enum.Enum):
+class JargonPolicy(enum.StrEnum):
     AVOID = "avoid"
     DEFINE_ON_FIRST_USE = "define_on_first_use"
     ASSUME_KNOWN = "assume_known"
 
 
-class AssumedKnowledge(str, enum.Enum):
+class AssumedKnowledge(enum.StrEnum):
     NOVICE = "novice"
     INTERMEDIATE = "intermediate"
     EXPERT = "expert"
 
 
-class Enforcement(str, enum.Enum):
+class Enforcement(enum.StrEnum):
     OUTPUT_FILTER = "output_filter"
     RUNTIME_SANDBOX = "runtime_sandbox"
     PROMPT_INSTRUCTION = "prompt_instruction"
@@ -89,69 +89,69 @@ class Enforcement(str, enum.Enum):
     OUTPUT_TRUNCATION = "output_truncation"
 
 
-class Severity(str, enum.Enum):
+class Severity(enum.StrEnum):
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
     LOW = "low"
 
 
-class OverrideLevel(str, enum.Enum):
+class OverrideLevel(enum.StrEnum):
     ADMIN = "admin"
     SUPERVISOR = "supervisor"
     NONE = "none"
 
 
-class Strictness(str, enum.Enum):
+class Strictness(enum.StrEnum):
     STRICT = "strict"
     MODERATE = "moderate"
     LOOSE = "loose"
 
 
-class MemoryBackend(str, enum.Enum):
+class MemoryBackend(enum.StrEnum):
     VECTOR_STORE = "vector_store"
     KEY_VALUE = "key_value"
     GRAPH = "graph"
     NONE = "none"
 
 
-class NumericConflictStrategy(str, enum.Enum):
+class NumericConflictStrategy(enum.StrEnum):
     LAST_WINS = "last_wins"
     HIGHEST = "highest"
     LOWEST = "lowest"
     AVERAGE = "average"
 
 
-class ListConflictStrategy(str, enum.Enum):
+class ListConflictStrategy(enum.StrEnum):
     APPEND = "append"
     REPLACE = "replace"
     UNIQUE_APPEND = "unique_append"
 
 
-class ObjectConflictStrategy(str, enum.Enum):
+class ObjectConflictStrategy(enum.StrEnum):
     DEEP_MERGE = "deep_merge"
     REPLACE = "replace"
 
 
-class MergeStrategy(str, enum.Enum):
+class MergeStrategy(enum.StrEnum):
     APPEND = "append"
     REPLACE = "replace"
     PREPEND = "prepend"
 
 
-class PersonalityMode(str, enum.Enum):
+class PersonalityMode(enum.StrEnum):
     CUSTOM = "custom"
     OCEAN = "ocean"
     DISC = "disc"
     HYBRID = "hybrid"
 
 
-class OverridePriority(str, enum.Enum):
+class OverridePriority(enum.StrEnum):
     EXPLICIT_WINS = "explicit_wins"
     FRAMEWORK_WINS = "framework_wins"
 
 
-class AvatarType(str, enum.Enum):
+class AvatarType(enum.StrEnum):
     PHOTO = "photo"
     ILLUSTRATED = "illustrated"
     THREE_D = "3d"
@@ -163,7 +163,7 @@ class AvatarType(str, enum.Enum):
 # Interaction Protocols
 # ---------------------------------------------------------------------------
 
-class InteractionEscalationTrigger(str, enum.Enum):
+class InteractionEscalationTrigger(enum.StrEnum):
     UNABLE_TO_HELP = "unable_to_help"
     USER_REQUESTS_HUMAN = "user_requests_human"
     SAFETY_CONCERN = "safety_concern"
@@ -193,38 +193,38 @@ class InteractionConfig(BaseModel):
     agent: AgentInteraction = Field(default_factory=AgentInteraction)
 
 
-class VoiceProvider(str, enum.Enum):
+class VoiceProvider(enum.StrEnum):
     ELEVENLABS = "elevenlabs"
     AZURE = "azure"
     GOOGLE = "google"
     OPENAI = "openai"
 
 
-class Pacing(str, enum.Enum):
+class Pacing(enum.StrEnum):
     RAPID = "rapid"
     MEASURED = "measured"
     DELIBERATE = "deliberate"
 
 
-class Emphasis(str, enum.Enum):
+class Emphasis(enum.StrEnum):
     NONE = "none"
     KEY_TERMS = "key_terms"
     EMOTIONAL = "emotional"
 
 
-class LengthCalibration(str, enum.Enum):
+class LengthCalibration(enum.StrEnum):
     BRIEF = "brief"
     MODERATE = "moderate"
     THOROUGH = "thorough"
     ADAPTIVE = "adaptive"
 
 
-class ClarificationBias(str, enum.Enum):
+class ClarificationBias(enum.StrEnum):
     TOWARD_ACTION = "toward_action"
     TOWARD_PRECISION = "toward_precision"
 
 
-class TestSuite(str, enum.Enum):
+class TestSuite(enum.StrEnum):
     FULL = "full"
     SMOKE = "smoke"
     AFFECTED_ONLY = "affected_only"
@@ -449,7 +449,7 @@ class ToneConfig(BaseModel):
     model_config = {"populate_by_name": True}
 
     default: str
-    register: Register | None = None  # noqa: register shadows parent — intentional
+    register: Register | None = None  # shadows BaseModel attribute — intentional
     overrides: list[ToneOverride] = Field(default_factory=list)
 
 
@@ -752,7 +752,7 @@ class UserModelField(BaseModel):
     affects: list[str] = Field(default_factory=list)
 
 
-class RelationshipDynamic(str, enum.Enum):
+class RelationshipDynamic(enum.StrEnum):
     DEFERS_TO = "defers_to"
     COLLABORATES_WITH = "collaborates_with"
     MENTORS = "mentors"

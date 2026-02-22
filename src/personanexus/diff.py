@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
-from typing import Any
 
 import yaml
+
+from personanexus.personality import DISC_PRESETS
 
 
 def _load_yaml(path: str | os.PathLike) -> dict:
     """Load a YAML file and return its contents as a dictionary."""
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
 
@@ -146,27 +146,24 @@ def _get_disc_traits(identity: dict) -> dict | None:
     personality = identity.get("personality", {})
     profile = personality.get("profile", {})
     if profile.get("mode") == "disc":
-        # DISC traits are typically D, I, S, C
         disc = profile.get("disc", {})
         if disc:
             return {
-                "d": disc.get("d"),
-                "i": disc.get("i"),
-                "s": disc.get("s"),
-                "c": disc.get("c"),
+                "dominance": disc.get("dominance"),
+                "influence": disc.get("influence"),
+                "steadiness": disc.get("steadiness"),
+                "conscientiousness": disc.get("conscientiousness"),
             }
-        # Check for preset values
+        # Check for preset values using canonical DISC_PRESETS
         disc_preset = profile.get("disc_preset")
-        if disc_preset:
-            # Map preset names to trait values
-            preset_traits = {
-                "the_analyst": {"d": 0.3, "i": 0.2, "s": 0.6, "c": 0.9},
-                "the_leader": {"d": 0.9, "i": 0.5, "s": 0.3, "c": 0.4},
-                "the_detector": {"d": 0.4, "i": 0.4, "s": 0.5, "c": 0.7},
-                "the_supporter": {"d": 0.2, "i": 0.7, "s": 0.8, "c": 0.3},
+        if disc_preset and disc_preset in DISC_PRESETS:
+            p = DISC_PRESETS[disc_preset]
+            return {
+                "dominance": p.dominance,
+                "influence": p.influence,
+                "steadiness": p.steadiness,
+                "conscientiousness": p.conscientiousness,
             }
-            if disc_preset in preset_traits:
-                return preset_traits[disc_preset]
     return None
 
 
@@ -255,7 +252,11 @@ def _calculate_ocean_compatibility(ocean1: dict, ocean2: dict) -> float:
     traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
 
     # Calculate Euclidean distance
-    distance_sq = sum((ocean1[t] - ocean2[t]) ** 2 for t in traits if ocean1.get(t) is not None and ocean2.get(t) is not None)
+    distance_sq = sum(
+        (ocean1[t] - ocean2[t]) ** 2
+        for t in traits
+        if ocean1.get(t) is not None and ocean2.get(t) is not None
+    )
 
     # Max theoretical distance is sqrt(5 * 1^2) = sqrt(5) ≈ 2.236
     max_distance = (5 ** 0.5)
@@ -268,10 +269,14 @@ def _calculate_ocean_compatibility(ocean1: dict, ocean2: dict) -> float:
 
 def _calculate_disc_compatibility(disc1: dict, disc2: dict) -> float:
     """Calculate compatibility score based on DISC trait similarity."""
-    traits = ["d", "i", "s", "c"]
+    traits = ["dominance", "influence", "steadiness", "conscientiousness"]
 
     # Calculate Euclidean distance
-    distance_sq = sum((disc1[t] - disc2[t]) ** 2 for t in traits if disc1.get(t) is not None and disc2.get(t) is not None)
+    distance_sq = sum(
+        (disc1[t] - disc2[t]) ** 2
+        for t in traits
+        if disc1.get(t) is not None and disc2.get(t) is not None
+    )
 
     # Max theoretical distance is sqrt(4 * 1^2) = 2
     max_distance = 2.0

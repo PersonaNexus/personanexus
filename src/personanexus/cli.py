@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import sys
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -17,7 +16,7 @@ from rich.markdown import Markdown
 from rich.panel import Panel
 from rich.table import Table
 
-from personanexus.analyzer import AnalyzerError, SoulAnalyzer
+from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
 from personanexus.parser import ParseError
@@ -41,8 +40,12 @@ console = Console()
 @app.command()
 def validate(
     file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file")],
-    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show extra validation details")] = False,
-    no_warnings: Annotated[bool, typer.Option("--no-warnings", help="Suppress warning messages")] = False,
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Show extra validation details")
+    ] = False,
+    no_warnings: Annotated[
+        bool, typer.Option("--no-warnings", help="Suppress warning messages")
+    ] = False,
 ) -> None:
     """Parse and validate an PersonaNexus YAML file."""
     if not file.exists():
@@ -58,7 +61,7 @@ def validate(
     try:
         result = validator.validate_file(file)
     except Exception as exc:
-        console.print(f"[red]Validation failed with unexpected error:[/red]")
+        console.print("[red]Validation failed with unexpected error:[/red]")
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1)
 
@@ -81,7 +84,10 @@ def validate(
             }.get(warning.severity, "yellow")
             prefix = f"[{warning.type}]" if verbose else ""
             location = f" ({warning.path})" if warning.path and verbose else ""
-            console.print(f"  [{severity_color}]⚠ {prefix}{location} {warning.message}[/{severity_color}]")
+            console.print(
+                f"  [{severity_color}]\u26a0 {prefix}{location}"
+                f" {warning.message}[/{severity_color}]"
+            )
         console.print()
 
     # Success
@@ -107,10 +113,15 @@ def validate(
 @app.command()
 def resolve(
     file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file to resolve")],
-    output: Annotated[str, typer.Option("--output", "-o", help="Output format: yaml or json")] = "yaml",
+    output: Annotated[
+        str, typer.Option("--output", "-o", help="Output format: yaml or json")
+    ] = "yaml",
     search_path: Annotated[
         list[Path],
-        typer.Option("--search-path", "-s", help="Additional search paths for archetypes/mixins (repeatable)"),
+        typer.Option(
+            "--search-path", "-s",
+            help="Additional search paths for archetypes/mixins (repeatable)",
+        ),
     ] = None,
 ) -> None:
     """Show fully resolved identity after inheritance and mixin composition."""
@@ -123,7 +134,10 @@ def resolve(
         raise typer.Exit(code=1)
 
     if output not in ("yaml", "json"):
-        console.print(f"[red]Error: Invalid output format '{output}'. Must be 'yaml' or 'json'[/red]")
+        console.print(
+            f"[red]Error: Invalid output format '{output}'."
+            f" Must be 'yaml' or 'json'[/red]"
+        )
         raise typer.Exit(code=1)
 
     # Build search paths
@@ -139,13 +153,13 @@ def resolve(
         console.print(f"[red]Resolution error: {exc}[/red]")
         raise typer.Exit(code=1)
     except ValidationError as exc:
-        console.print(f"[red]Validation error after resolution:[/red]")
+        console.print("[red]Validation error after resolution:[/red]")
         for error in exc.errors():
-            loc = " -> ".join(str(l) for l in error["loc"])
+            loc = " -> ".join(str(part) for part in error["loc"])
             console.print(f"  [red]• {loc}: {error['msg']}[/red]")
         raise typer.Exit(code=1)
     except Exception as exc:
-        console.print(f"[red]Resolution failed with unexpected error:[/red]")
+        console.print("[red]Resolution failed with unexpected error:[/red]")
         console.print(f"[red]{exc}[/red]")
         raise typer.Exit(code=1)
 
@@ -193,7 +207,8 @@ def init(
     """Scaffold a new PersonaNexus YAML file with sensible defaults."""
     if type not in ("minimal", "full", "archetype", "mixin"):
         console.print(
-            f"[red]Error: Invalid type '{type}'. Must be 'minimal', 'full', 'archetype', or 'mixin'[/red]"
+            f"[red]Error: Invalid type '{type}'. Must be"
+            f" 'minimal', 'full', 'archetype', or 'mixin'[/red]"
         )
         raise typer.Exit(code=1)
 
@@ -240,7 +255,9 @@ def init(
     console.print()
 
 
-def _generate_minimal_template(name: str, agent_id: str, timestamp: str, extends: str | None) -> str:
+def _generate_minimal_template(
+    name: str, agent_id: str, timestamp: str, extends: str | None
+) -> str:
     """Generate a minimal identity template."""
     lines = ["schema_version: '1.0'", ""]
 
@@ -532,11 +549,17 @@ def compile(
     file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file to compile")],
     target: Annotated[
         str,
-        typer.Option("--target", "-t", help="Target format: text, anthropic, openai, openclaw, soul, or json"),
+        typer.Option(
+            "--target", "-t",
+            help="Target format: text, anthropic, openai, openclaw, soul, or json",
+        ),
     ] = "text",
     search_path: Annotated[
         list[Path],
-        typer.Option("--search-path", "-s", help="Additional search paths for archetypes/mixins (repeatable)"),
+        typer.Option(
+            "--search-path", "-s",
+            help="Additional search paths for archetypes/mixins (repeatable)",
+        ),
     ] = None,
     output: Annotated[
         Path | None,
@@ -559,7 +582,8 @@ def compile(
     valid_targets = ("text", "anthropic", "openai", "openclaw", "soul", "json")
     if target not in valid_targets:
         console.print(
-            f"[red]Error: Invalid target '{target}'. Must be one of: {', '.join(valid_targets)}[/red]"
+            f"[red]Error: Invalid target '{target}'."
+            f" Must be one of: {', '.join(valid_targets)}[/red]"
         )
         raise typer.Exit(code=1)
 
@@ -576,9 +600,9 @@ def compile(
         console.print(f"[red]Resolution error: {exc}[/red]")
         raise typer.Exit(code=1)
     except ValidationError as exc:
-        console.print(f"[red]Validation error after resolution:[/red]")
+        console.print("[red]Validation error after resolution:[/red]")
         for error in exc.errors():
-            loc = " -> ".join(str(l) for l in error["loc"])
+            loc = " -> ".join(str(part) for part in error["loc"])
             console.print(f"  [red]• {loc}: {error['msg']}[/red]")
         raise typer.Exit(code=1)
     except Exception as exc:
@@ -594,7 +618,9 @@ def compile(
 
     # Soul target produces two files (SOUL.md + STYLE.md)
     if target == "soul":
-        assert isinstance(result, dict)
+        if not isinstance(result, dict):
+            console.print("[red]Soul compiler returned unexpected format[/red]")
+            raise typer.Exit(code=1)
         stem = file.stem
         if output:
             # If explicit output given, use it as directory
@@ -609,7 +635,7 @@ def compile(
         style_path.write_text(result["style_md"], encoding="utf-8")
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {soul_path}[/green]")
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {style_path}[/green]")
-        console.print(f"[dim]Target: soul (SOUL.md + STYLE.md)[/dim]")
+        console.print("[dim]Target: soul (SOUL.md + STYLE.md)[/dim]")
         return
 
     # Format output
@@ -651,7 +677,10 @@ def compile(
 
 @app.command()
 def analyze(
-    file: Annotated[Path, typer.Argument(help="Path to SOUL.md, personality.json, or identity YAML file")],
+    file: Annotated[
+        Path,
+        typer.Argument(help="Path to SOUL.md, personality.json, or identity YAML file"),
+    ],
     compare: Annotated[
         Path | None,
         typer.Option("--compare", "-c", help="Second file for side-by-side comparison"),
@@ -671,7 +700,10 @@ def analyze(
         raise typer.Exit(code=1)
 
     if output_format not in ("table", "json"):
-        console.print(f"[red]Error: Invalid format '{output_format}'. Must be 'table' or 'json'[/red]")
+        console.print(
+            f"[red]Error: Invalid format '{output_format}'."
+            f" Must be 'table' or 'json'[/red]"
+        )
         raise typer.Exit(code=1)
 
     analyzer = SoulAnalyzer()
@@ -717,15 +749,21 @@ def analyze(
         _print_comparison(result, result_b, analyzer)
 
 
-def _print_analysis(result: "AnalysisResult") -> None:
+def _print_analysis(result: AnalysisResult) -> None:
     """Render a full analysis result to the console."""
-    from personanexus.analyzer import AnalysisResult
 
     name = result.agent_name or "Unknown Agent"
     fmt = result.source_format.value.replace("_", " ").title()
-    conf_color = "green" if result.confidence >= 0.8 else "yellow" if result.confidence >= 0.5 else "red"
+    conf_color = (
+        "green" if result.confidence >= 0.8
+        else "yellow" if result.confidence >= 0.5
+        else "red"
+    )
 
-    console.print(f"\n[bold]{name}[/bold]  [dim]({fmt} — confidence: [{conf_color}]{result.confidence:.0%}[/{conf_color}])[/dim]")
+    console.print(
+        f"\n[bold]{name}[/bold]  [dim]({fmt} — confidence:"
+        f" [{conf_color}]{result.confidence:.0%}[/{conf_color}])[/dim]"
+    )
 
     # Traits table
     traits = result.traits.defined_traits()
@@ -782,8 +820,8 @@ def _print_analysis(result: "AnalysisResult") -> None:
 
 
 def _print_comparison(
-    result_a: "AnalysisResult",
-    result_b: "AnalysisResult",
+    result_a: AnalysisResult,
+    result_b: AnalysisResult,
     analyzer: SoulAnalyzer,
 ) -> None:
     """Render a comparison table."""
@@ -872,7 +910,10 @@ def personality_ocean_to_traits(
 def personality_disc_to_traits(
     preset: Annotated[
         str | None,
-        typer.Option(help="DISC preset name (e.g. the_commander) - overrides individual values if provided"),
+        typer.Option(
+            help="DISC preset name (e.g. the_commander)"
+            " - overrides individual values if provided",
+        ),
     ] = None,
     dominance: Annotated[float | None, typer.Option(help="Dominance (0-1)")] = None,
     influence: Annotated[float | None, typer.Option(help="Influence (0-1)")] = None,
@@ -887,8 +928,14 @@ def personality_disc_to_traits(
         if preset:
             profile = get_disc_preset(preset)
         else:
-            if dominance is None or influence is None or steadiness is None or conscientiousness is None:
-                console.print("[red]Error: All DISC values required when --preset not provided[/red]")
+            if (
+                dominance is None or influence is None
+                or steadiness is None or conscientiousness is None
+            ):
+                console.print(
+                    "[red]Error: All DISC values required"
+                    " when --preset not provided[/red]"
+                )
                 raise typer.Exit(code=1)
             profile = DiscProfile(
                 dominance=dominance,
@@ -1065,7 +1112,7 @@ def build(
     ] = None,
 ) -> None:
     """Interactively build a new PersonaNexus with a step-by-step wizard."""
-    from personanexus.builder import BuiltIdentity, IdentityBuilder, LLMEnhancer
+    from personanexus.builder import IdentityBuilder, LLMEnhancer
 
     builder = IdentityBuilder(console=console)
     identity = builder.run()
@@ -1092,9 +1139,9 @@ def build(
     try:
         result = validator.validate_file(output_path)
         if result.valid:
-            console.print(f"[green]✓ Validation passed[/green]")
+            console.print("[green]✓ Validation passed[/green]")
         else:
-            console.print(f"[yellow]⚠ Validation warnings:[/yellow]")
+            console.print("[yellow]⚠ Validation warnings:[/yellow]")
             for error in result.errors:
                 console.print(f"  [yellow]• {error}[/yellow]")
     except Exception as exc:
@@ -1123,14 +1170,15 @@ def migrate(
 
     # Currently only v1.0 is supported
     if from_version == "1.0" and to_version == "1.0":
-        console.print(f"[green]✓ File is already at schema version 1.0[/green]")
+        console.print("[green]✓ File is already at schema version 1.0[/green]")
         console.print(f"[dim]No migration needed: {file}[/dim]")
         return
 
     # Placeholder for future migration logic
     console.print(
         Panel(
-            f"[yellow]Migration from {from_version} to {to_version} is not yet implemented.[/yellow]\n\n"
+            f"[yellow]Migration from {from_version} to"
+            f" {to_version} is not yet implemented.[/yellow]\n\n"
             f"Current schema version: 1.0\n"
             f"File: {file}\n\n"
             "This command is reserved for future schema evolution.",
@@ -1149,7 +1197,10 @@ def migrate(
 def diff(
     file1: Annotated[Path, typer.Argument(help="Path to the first identity YAML file")],
     file2: Annotated[Path, typer.Argument(help="Path to the second identity YAML file")],
-    format: Annotated[str, typer.Option("--format", "-f", help="Output format: text, json, markdown")] = "text",
+    format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: text, json, markdown"),
+    ] = "text",
 ) -> None:
     """Compare two PersonaNexus files and show differences."""
     if not file1.exists():
@@ -1230,13 +1281,25 @@ def compat(
 
         # Interpret the score
         if score >= 80:
-            console.print("\n[yellow]Interpretation: Very high alignment - agents will likely work well together![/yellow]")
+            console.print(
+                "\n[yellow]Interpretation: Very high alignment"
+                " - agents will likely work well together![/yellow]"
+            )
         elif score >= 60:
-            console.print("\n[yellow]Interpretation: Good alignment - minor adjustments may help.[/yellow]")
+            console.print(
+                "\n[yellow]Interpretation: Good alignment"
+                " - minor adjustments may help.[/yellow]"
+            )
         elif score >= 40:
-            console.print("\n[yellow]Interpretation: Moderate alignment - some compatibility but differences present.[/yellow]")
+            console.print(
+                "\n[yellow]Interpretation: Moderate alignment"
+                " - some compatibility but differences present.[/yellow]"
+            )
         else:
-            console.print("\n[yellow]Interpretation: Low alignment - significant personality differences detected.[/yellow]")
+            console.print(
+                "\n[yellow]Interpretation: Low alignment"
+                " - significant personality differences detected.[/yellow]"
+            )
 
     except Exception as e:
         console.print(f"[red]Error calculating compatibility: {e}[/red]")
@@ -1251,7 +1314,9 @@ def compat(
 @app.command("validate-team")
 def validate_team(
     file: Annotated[Path, typer.Argument(help="Path to team configuration YAML file")],
-    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show extra validation details")] = False,
+    verbose: Annotated[
+        bool, typer.Option("--verbose", "-v", help="Show extra validation details")
+    ] = False,
 ) -> None:
     """Parse and validate a team configuration YAML file (schema v2.0)."""
     if not file.exists():
@@ -1264,7 +1329,7 @@ def validate_team(
 
     try:
         # Parse YAML content
-        with open(file, "r", encoding="utf-8") as f:
+        with open(file, encoding="utf-8") as f:
             content = yaml.safe_load(f)
 
         if not content:
@@ -1273,17 +1338,17 @@ def validate_team(
 
         # Validate against team schema
         team_config = TeamConfiguration.model_validate(content)
-        
+
         # Success
         console.print(f"[green]✓ Team validation successful: {file}[/green]")
-        
+
         if verbose:
             # Show team composition summary
             agents = team_config.team.composition.agents
             console.print(f"[dim]Team: {team_config.team.metadata.name}[/dim]")
             console.print(f"[dim]Schema version: {team_config.schema_version}[/dim]")
             console.print(f"[dim]Agents: {len(agents)} ({', '.join(agents.keys())})[/dim]")
-            
+
             if team_config.team.workflow_patterns:
                 workflows = list(team_config.team.workflow_patterns.keys())
                 console.print(f"[dim]Workflows: {len(workflows)} ({', '.join(workflows)})[/dim]")
@@ -1297,17 +1362,17 @@ def validate_team(
     except ValidationError as e:
         console.print(f"[red]✗ Team validation failed: {file}[/red]")
         console.print()
-        
+
         # Show validation errors in a structured way
         errors_table = Table(title="Validation Errors", show_header=True, header_style="bold red")
         errors_table.add_column("Field", style="cyan")
         errors_table.add_column("Error", style="red")
-        
+
         for error in e.errors():
             field_path = " → ".join(str(loc) for loc in error["loc"])
             error_msg = error["msg"]
             errors_table.add_row(field_path, error_msg)
-        
+
         console.print(errors_table)
         raise typer.Exit(code=1)
     except Exception as e:
