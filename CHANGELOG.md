@@ -23,6 +23,15 @@ All notable changes to this project will be documented in this file.
 ### Changed
 
 - Documentation cleanup: removed internal strategy docs, updated CONTRIBUTING.md tooling references
+- README trimmed from 967 to ~313 lines — removed duplicated sections, stale OpenClaw skill references, phantom `analyze-team` command, and version labels from feature headings
+- Added `--search-path` notes to Quick Start examples
+- Fixed `__version__` in `__init__.py` (was still 1.3.0)
+- Synced CI coverage threshold to 82% (was 85%, mismatched pyproject.toml)
+- Fixed README badges: schema version v1.0 (was v2.0), test count 558 (was 405)
+- Extracted `TRAIT_ORDER` constant in `types.py` — replaces hardcoded lists in cli, builder, analyzer (DRY)
+- Extracted `_collect_jungian_input()` helper in builder — eliminates 100-line duplication between Jungian and hybrid modes
+- Normalized DISC preset case in validator (now uses `.lower()` like Jungian)
+- Added `SECURITY.md` with vulnerability disclosure policy
 
 ## [1.3.0] - 2026-02-16
 

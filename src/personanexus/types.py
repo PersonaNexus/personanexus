@@ -359,6 +359,22 @@ class PersonalityTraits(BaseModel):
         }
 
 
+# Canonical ordering of the 10 standard personality traits.
+# Import this instead of hardcoding the list.
+TRAIT_ORDER: list[str] = [
+    "warmth",
+    "verbosity",
+    "assertiveness",
+    "humor",
+    "empathy",
+    "directness",
+    "rigor",
+    "creativity",
+    "epistemic_humility",
+    "patience",
+]
+
+
 class TraitModifier(BaseModel):
     """Modifier to apply to a personality trait in a given mood state."""
 

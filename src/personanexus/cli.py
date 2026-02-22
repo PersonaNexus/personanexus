@@ -22,6 +22,7 @@ from personanexus.diff import compatibility_score, diff_identities, format_diff
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
 from personanexus.team_types import TeamConfiguration
+from personanexus.types import TRAIT_ORDER
 from personanexus.validator import IdentityValidator
 
 app = typer.Typer(
@@ -806,19 +807,7 @@ def _print_analysis(result: AnalysisResult) -> None:
     table.add_column("Level", style="dim")
     table.add_column("Confidence", justify="right")
 
-    trait_order = [
-        "warmth",
-        "verbosity",
-        "assertiveness",
-        "humor",
-        "empathy",
-        "directness",
-        "rigor",
-        "creativity",
-        "epistemic_humility",
-        "patience",
-    ]
-    for trait_name in trait_order:
+    for trait_name in TRAIT_ORDER:
         if trait_name in traits:
             val = traits[trait_name]
             level = _level_label(val)
@@ -1218,19 +1207,7 @@ def _print_traits_table(title: str, traits: dict[str, float]) -> None:
     table.add_column("Value", justify="right")
     table.add_column("Level", style="dim")
 
-    trait_order = [
-        "warmth",
-        "verbosity",
-        "assertiveness",
-        "humor",
-        "empathy",
-        "directness",
-        "rigor",
-        "creativity",
-        "epistemic_humility",
-        "patience",
-    ]
-    for trait_name in trait_order:
+    for trait_name in TRAIT_ORDER:
         if trait_name in traits:
             val = traits[trait_name]
             if val >= 0.8:

@@ -14,6 +14,8 @@ from rich.panel import Panel
 from rich.prompt import Confirm, Prompt
 from rich.table import Table
 
+from personanexus.types import TRAIT_ORDER
+
 console = Console()
 
 # ---------------------------------------------------------------------------
@@ -32,8 +34,6 @@ _TRAIT_DESCRIPTIONS: dict[str, str] = {
     "epistemic_humility": "How transparent about uncertainty vs confident and decisive",
     "patience": "How patient and unhurried vs efficient and fast-paced",
 }
-
-_TRAIT_ORDER = list(_TRAIT_DESCRIPTIONS.keys())
 
 
 # ---------------------------------------------------------------------------
@@ -279,7 +279,7 @@ class IdentityBuilder:
         self.console.print()
 
         traits: dict[str, float] = {}
-        for trait_name in _TRAIT_ORDER:
+        for trait_name in TRAIT_ORDER:
             value = self._prompt_float(trait_name, 0.0, 1.0, allow_skip=True)
             if value is not None:
                 traits[trait_name] = value
@@ -394,8 +394,13 @@ class IdentityBuilder:
             "profile": disc_data,
         }
 
-    def _phase_personality_jungian(self, data: dict[str, Any]) -> None:
-        """Collect Jungian 16-type data (preset, role-based, or manual) and compute traits."""
+    def _collect_jungian_input(self) -> tuple[dict[str, float], dict[str, Any]]:
+        """Interactive 3-path Jungian type collection.
+
+        Returns:
+            (computed_traits, profile_fragment) where profile_fragment contains
+            either ``jungian_preset`` or ``jungian`` dimension scores.
+        """
         from personanexus.personality import (
             JUNGIAN_ROLE_RECOMMENDATIONS,
             get_jungian_preset,
@@ -403,9 +408,6 @@ class IdentityBuilder:
             list_jungian_presets,
         )
         from personanexus.types import JungianProfile
-
-        self.console.print("\n[bold blue]Phase 2b: Jungian 16-Type Profile[/bold blue]")
-        self.console.rule()
 
         self.console.print(
             "[dim]Choose how to specify your Jungian type:\n"
@@ -417,7 +419,6 @@ class IdentityBuilder:
         path = self._prompt_choice("Input path", ["1", "2", "3"], default="1")
 
         if path == "1":
-            # Path 1: User enters a 4-letter code
             valid_types = set(list_jungian_presets().keys())
             while True:
                 code = Prompt.ask("  Jungian type code (e.g. INTJ, ENFP)")
@@ -431,13 +432,9 @@ class IdentityBuilder:
 
             jungian = get_jungian_preset(code_lower)
             computed = jungian_to_traits(jungian)
-            jungian_data: dict[str, Any] = {
-                "mode": "jungian",
-                "jungian_preset": code_lower,
-            }
+            profile_fragment: dict[str, Any] = {"jungian_preset": code_lower}
 
         elif path == "2":
-            # Path 2: Recommend based on role
             self.console.print("\n[bold]Role Categories:[/bold]")
             table = Table(show_header=True, header_style="bold")
             table.add_column("#", style="dim", width=3)
@@ -485,13 +482,9 @@ class IdentityBuilder:
             chosen_code = recommendations[rec_idx][0]
             jungian = get_jungian_preset(chosen_code)
             computed = jungian_to_traits(jungian)
-            jungian_data = {
-                "mode": "jungian",
-                "jungian_preset": chosen_code,
-            }
+            profile_fragment = {"jungian_preset": chosen_code}
 
         else:
-            # Path 3: Enter dimensions manually
             self.console.print("\n[dim]Enter each Jungian dimension from 0.0 to 1.0.[/dim]\n")
             jungian_dims = {
                 "ei": "Extraversion (0) ←→ Introversion (1)",
@@ -507,10 +500,17 @@ class IdentityBuilder:
 
             jungian = JungianProfile(**scores)
             computed = jungian_to_traits(jungian)
-            jungian_data = {
-                "mode": "jungian",
-                "jungian": scores,
-            }
+            profile_fragment = {"jungian": scores}
+
+        return computed, profile_fragment
+
+    def _phase_personality_jungian(self, data: dict[str, Any]) -> None:
+        """Collect Jungian 16-type data (preset, role-based, or manual) and compute traits."""
+        self.console.print("\n[bold blue]Phase 2b: Jungian 16-Type Profile[/bold blue]")
+        self.console.rule()
+
+        computed, profile_fragment = self._collect_jungian_input()
+        jungian_data = {"mode": "jungian", **profile_fragment}
 
         self._show_computed_traits_preview(computed)
 
@@ -521,8 +521,8 @@ class IdentityBuilder:
 
     def _phase_personality_hybrid(self, data: dict[str, Any]) -> None:
         """Compute traits from a framework, then allow manual overrides."""
-        from personanexus.personality import disc_to_traits, jungian_to_traits, ocean_to_traits
-        from personanexus.types import DiscProfile, JungianProfile, OceanProfile
+        from personanexus.personality import disc_to_traits, ocean_to_traits
+        from personanexus.types import DiscProfile, OceanProfile
 
         self.console.print("\n[bold blue]Phase 2b: Hybrid Personality[/bold blue]")
         self.console.rule()
@@ -567,105 +567,8 @@ class IdentityBuilder:
             computed = disc_to_traits(disc)
             profile_data["disc"] = scores
         else:
-            # Jungian — collect via the same 3-path flow
-            from personanexus.personality import (
-                JUNGIAN_ROLE_RECOMMENDATIONS,
-                get_jungian_preset,
-                list_jungian_presets,
-            )
-
-            self.console.print(
-                "\n[dim]Choose how to specify your Jungian type:\n"
-                "  1  — I know my type (enter a 4-letter code)\n"
-                "  2  — Recommend based on role\n"
-                "  3  — Enter dimensions manually[/dim]\n"
-            )
-
-            path = self._prompt_choice("Input path", ["1", "2", "3"], default="1")
-
-            if path == "1":
-                valid_types = set(list_jungian_presets().keys())
-                while True:
-                    code = Prompt.ask("  Jungian type code (e.g. INTJ, ENFP)")
-                    code_lower = code.strip().lower()
-                    if code_lower in valid_types:
-                        break
-                    self.console.print(
-                        f"  [red]'{code.strip()}' is not a valid Jungian type. "
-                        f"Valid types: {', '.join(sorted(t.upper() for t in valid_types))}[/red]"
-                    )
-                jungian = get_jungian_preset(code_lower)
-                computed = jungian_to_traits(jungian)
-                profile_data["jungian_preset"] = code_lower
-
-            elif path == "2":
-                self.console.print("\n[bold]Role Categories:[/bold]")
-                table = Table(show_header=True, header_style="bold")
-                table.add_column("#", style="dim", width=3)
-                table.add_column("Category", style="cyan")
-                categories = sorted(JUNGIAN_ROLE_RECOMMENDATIONS.keys())
-                for idx, cat in enumerate(categories, 1):
-                    table.add_row(str(idx), cat.replace("_", " ").title())
-                self.console.print(table)
-                self.console.print()
-
-                while True:
-                    cat_input = Prompt.ask("  Category number")
-                    if cat_input.strip().isdigit():
-                        cat_idx = int(cat_input.strip()) - 1
-                        if 0 <= cat_idx < len(categories):
-                            break
-                    self.console.print(
-                        f"  [red]Enter a number between 1 and {len(categories)}.[/red]"
-                    )
-
-                selected_category = categories[cat_idx]
-                recommendations = JUNGIAN_ROLE_RECOMMENDATIONS[selected_category]
-
-                self.console.print(
-                    f"\n[bold]Recommended types for "
-                    f"{selected_category.replace('_', ' ').title()}:[/bold]"
-                )
-                rec_table = Table(show_header=True, header_style="bold")
-                rec_table.add_column("#", style="dim", width=3)
-                rec_table.add_column("Type", style="cyan")
-                rec_table.add_column("Description")
-                for idx, (type_code, desc) in enumerate(recommendations, 1):
-                    rec_table.add_row(str(idx), type_code.upper(), desc)
-                self.console.print(rec_table)
-                self.console.print()
-
-                while True:
-                    rec_input = Prompt.ask("  Pick a type number")
-                    if rec_input.strip().isdigit():
-                        rec_idx = int(rec_input.strip()) - 1
-                        if 0 <= rec_idx < len(recommendations):
-                            break
-                    self.console.print(
-                        f"  [red]Enter a number between 1 and {len(recommendations)}.[/red]"
-                    )
-
-                chosen_code = recommendations[rec_idx][0]
-                jungian = get_jungian_preset(chosen_code)
-                computed = jungian_to_traits(jungian)
-                profile_data["jungian_preset"] = chosen_code
-
-            else:
-                self.console.print("\n[dim]Enter each Jungian dimension from 0.0 to 1.0.[/dim]\n")
-                jungian_dims = {
-                    "ei": "Extraversion (0) ←→ Introversion (1)",
-                    "sn": "Sensing (0) ←→ iNtuition (1)",
-                    "tf": "Thinking (0) ←→ Feeling (1)",
-                    "jp": "Judging (0) ←→ Perceiving (1)",
-                }
-                scores = {}
-                for dim, desc in jungian_dims.items():
-                    self.console.print(f"  [dim]{desc}[/dim]")
-                    value = self._prompt_float(dim, 0.0, 1.0, allow_skip=False)
-                    scores[dim] = value  # type: ignore[assignment]  # allow_skip=False guarantees non-None
-                jungian = JungianProfile(**scores)
-                computed = jungian_to_traits(jungian)
-                profile_data["jungian"] = scores
+            computed, jungian_fragment = self._collect_jungian_input()
+            profile_data.update(jungian_fragment)
 
         self.console.print("\n[bold]Computed base traits:[/bold]")
         self._show_computed_traits_preview(computed)
@@ -673,7 +576,7 @@ class IdentityBuilder:
         # Now allow overrides
         self.console.print("\n[dim]Override specific traits (Enter to keep computed value):[/dim]")
         overrides: dict[str, float] = {}
-        for trait_name in _TRAIT_ORDER:
+        for trait_name in TRAIT_ORDER:
             current = computed.get(trait_name, 0.5)
             self.console.print(f"  [dim]Current {trait_name}: {current}[/dim]")
             value = self._prompt_float(f"{trait_name} override", 0.0, 1.0, allow_skip=True)
@@ -695,7 +598,7 @@ class IdentityBuilder:
         table.add_column("Trait", style="cyan")
         table.add_column("Value", justify="right")
         table.add_column("Level", style="dim")
-        for trait_name in _TRAIT_ORDER:
+        for trait_name in TRAIT_ORDER:
             if trait_name in traits:
                 val = traits[trait_name]
                 if val >= 0.8:

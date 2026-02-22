@@ -219,7 +219,7 @@ class IdentityValidator:
         if profile.disc_preset is not None:
             from personanexus.personality import DISC_PRESETS
 
-            if profile.disc_preset not in DISC_PRESETS:
+            if profile.disc_preset.lower() not in DISC_PRESETS:
                 available = ", ".join(sorted(DISC_PRESETS.keys()))
                 warnings.append(
                     ValidationWarning(

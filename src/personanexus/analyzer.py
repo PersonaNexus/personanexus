@@ -25,6 +25,7 @@ from personanexus.personality import (
 )
 from personanexus.resolver import IdentityResolver
 from personanexus.types import (
+    TRAIT_ORDER,
     DiscProfile,
     JungianProfile,
     OceanProfile,
@@ -119,18 +120,8 @@ class ComparisonResult(BaseModel):
 # Constants
 # ---------------------------------------------------------------------------
 
-STANDARD_TRAITS = [
-    "warmth",
-    "verbosity",
-    "assertiveness",
-    "humor",
-    "empathy",
-    "directness",
-    "rigor",
-    "creativity",
-    "epistemic_humility",
-    "patience",
-]
+# Re-export for backward compatibility
+STANDARD_TRAITS = TRAIT_ORDER
 
 # Level boundaries match _trait_to_language() in compiler.py:
 # value < 0.2 → level 0, < 0.4 → level 1, < 0.6 → level 2, < 0.8 → level 3, >= 0.8 → level 4

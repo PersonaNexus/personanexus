@@ -1,6 +1,6 @@
 """AI PersonaNexus Framework — define, validate, and compose AI agent identities."""
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 
 from personanexus.analyzer import (
     AnalysisResult,
@@ -34,6 +34,7 @@ from personanexus.team_types import (
     TeamSpec,
 )
 from personanexus.types import (
+    TRAIT_ORDER,
     AgentIdentity,
     DiscProfile,
     JungianProfile,
@@ -62,6 +63,7 @@ __all__ = [
     "SystemPromptCompiler",
     "TeamComposition",
     "TeamConfiguration",
+    "TRAIT_ORDER",
     "TeamSpec",
     "ValidationResult",
     "compile_identity",
