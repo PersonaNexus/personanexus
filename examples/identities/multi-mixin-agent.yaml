@@ -28,8 +28,8 @@ mixins:
 
 # --- Metadata --------------------------------------------------------------
 metadata:
-  id: "agt_multi_mixin_001"
-  name: "Clarity"
+  id: "agt_prism_001"
+  name: "Prism"
   version: "1.0.0"
   description: |
     A data analyst that combines empathetic communication with structured

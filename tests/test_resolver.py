@@ -14,25 +14,25 @@ def resolver(examples_dir):
 class TestResolveFile:
     def test_resolve_minimal_no_inheritance(self, resolver, minimal_path):
         identity = resolver.resolve_file(minimal_path)
-        assert identity.metadata.name == "Helper"
+        assert identity.metadata.name == "Pip"
 
-    def test_resolve_ada_with_inheritance(self, resolver, ada_path):
-        identity = resolver.resolve_file(ada_path)
+    def test_resolve_ada_with_inheritance(self, resolver, mira_path):
+        identity = resolver.resolve_file(mira_path)
         # Ada's own values should be preserved
-        assert identity.metadata.name == "Ada"
-        assert identity.metadata.id == "agt_01H8X9K2M3N4P5Q6R7S8T9U0"
+        assert identity.metadata.name == "Mira"
+        assert identity.metadata.id == "agt_mira_001"
         assert identity.metadata.version == "2.4.1"
 
-    def test_resolve_ada_personality_traits(self, resolver, ada_path):
-        identity = resolver.resolve_file(ada_path)
+    def test_resolve_ada_personality_traits(self, resolver, mira_path):
+        identity = resolver.resolve_file(mira_path)
         traits = identity.personality.traits
         # Ada's own trait values should override archetype/mixin
         assert traits.rigor == 0.9  # Ada's value
         assert traits.warmth == 0.7  # Ada's value (also in mixin)
         assert traits.empathy == 0.7  # Ada's value overrides mixin's 0.8
 
-    def test_resolve_ada_principles(self, resolver, ada_path):
-        identity = resolver.resolve_file(ada_path)
+    def test_resolve_ada_principles(self, resolver, mira_path):
+        identity = resolver.resolve_file(mira_path)
         principle_ids = {p.id for p in identity.principles}
         # Should have Ada's principles plus empathy_first from mixin
         assert "accuracy_first" in principle_ids
@@ -40,8 +40,8 @@ class TestResolveFile:
         assert "empathy_first" in principle_ids
         assert "respect_for_time" in principle_ids
 
-    def test_resolve_ada_guardrails_union(self, resolver, ada_path):
-        identity = resolver.resolve_file(ada_path)
+    def test_resolve_ada_guardrails_union(self, resolver, mira_path):
+        identity = resolver.resolve_file(mira_path)
         guardrail_ids = {g.id for g in identity.guardrails.hard}
         # Should be union of all sources
         assert "no_impersonation" in guardrail_ids

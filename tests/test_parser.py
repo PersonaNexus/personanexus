@@ -44,10 +44,10 @@ class TestParseFile:
         with pytest.raises(ParseError, match="Not a file"):
             parser.parse_file(tmp_path)
 
-    def test_valid_file(self, parser, ada_path):
-        data = parser.parse_file(ada_path)
+    def test_valid_file(self, parser, mira_path):
+        data = parser.parse_file(mira_path)
         assert data["schema_version"] == "1.0"
-        assert data["metadata"]["name"] == "Ada"
+        assert data["metadata"]["name"] == "Mira"
 
     def test_all_example_files_parse(self, parser, examples_dir):
         yaml_files = list(examples_dir.rglob("*.yaml"))
@@ -60,15 +60,15 @@ class TestParseFile:
 
 
 class TestLoadIdentity:
-    def test_load_ada(self, parser, ada_path):
-        identity = parser.load_identity(ada_path)
-        assert identity.metadata.name == "Ada"
-        assert identity.metadata.id == "agt_01H8X9K2M3N4P5Q6R7S8T9U0"
+    def test_load_ada(self, parser, mira_path):
+        identity = parser.load_identity(mira_path)
+        assert identity.metadata.name == "Mira"
+        assert identity.metadata.id == "agt_mira_001"
         assert identity.personality.traits.rigor == 0.9
 
     def test_load_minimal(self, parser, minimal_path):
         identity = parser.load_identity(minimal_path)
-        assert identity.metadata.name == "Helper"
+        assert identity.metadata.name == "Pip"
         assert len(identity.principles) >= 1
         assert len(identity.guardrails.hard) >= 1
 

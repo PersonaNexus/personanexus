@@ -126,6 +126,6 @@ def test_compiler_renders_mood():
 def test_example_yaml_loads():
     examples_dir = Path(__file__).parent.parent / "examples"
     parser = IdentityParser()
-    identity = parser.load_identity(examples_dir / "identities" / "ada-mood.yaml")
+    identity = parser.load_identity(examples_dir / "identities" / "mira-mood.yaml")
     assert identity.personality.mood is not None
     assert len(identity.personality.mood.states) >= 2

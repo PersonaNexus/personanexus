@@ -105,8 +105,8 @@ $ personanexus compile agents/my-agent.yaml --target soul
 
 > **Note:** If your agent uses archetype inheritance (`extends:`), add `--search-path` to compilation and analysis commands so archetypes/mixins can be resolved:
 > ```bash
-> personanexus compile agents/ada.yaml --search-path examples
-> personanexus analyze agents/ada.yaml --search-path examples
+> personanexus compile agents/mira.yaml --search-path examples
+> personanexus analyze agents/mira.yaml --search-path examples
 > ```
 
 ### Analyze any personality file
@@ -229,7 +229,7 @@ personanexus personality disc-to-traits --dominance 0.9 ...
 personanexus personality jungian-to-traits --preset intj
 personanexus personality list-jungian-presets
 personanexus personality jungian-recommend strategic_analysis
-personanexus personality show-profile examples/identities/ada.yaml --search-path examples
+personanexus personality show-profile examples/identities/mira.yaml --search-path examples
 ```
 
 Run `personanexus --help` for full options.
@@ -247,14 +247,14 @@ from personanexus import (
 
 # Parse and validate
 parser = IdentityParser()
-identity = parser.load_identity("agents/ada.yaml")
+identity = parser.load_identity("agents/mira.yaml")
 
 validator = IdentityValidator()
 result = validator.validate_identity(identity)
 
 # Resolve inheritance
 resolver = IdentityResolver(search_paths=["examples/"])
-resolved = resolver.resolve_file("agents/ada.yaml")
+resolved = resolver.resolve_file("agents/mira.yaml")
 
 # Compile
 prompt = compile_identity(resolved, target="text")
@@ -276,8 +276,26 @@ The [`examples/`](examples/) directory contains production-ready configurations:
 ```
 examples/
 ├── archetypes/          # Analyst, Tutor, Support, Strategic Analyst
-├── mixins/              # Empathetic communication trait bundle
-├── identities/          # Full examples: custom, OCEAN, DISC, Jungian, hybrid, mood, modes
+├── mixins/              # Empathetic communication, Structured output
+├── identities/
+│   ├── mira.yaml              # Custom traits + inheritance + evaluation config
+│   ├── mira-ocean.yaml        # OCEAN (Big Five) personality
+│   ├── mira-disc.yaml         # DISC preset (the_analyst)
+│   ├── mira-jungian.yaml      # Jungian preset (INTJ)
+│   ├── disc-detailed.yaml     # DISC with explicit numeric values
+│   ├── jungian-detailed.yaml  # Jungian with explicit numeric values
+│   ├── hybrid-example.yaml    # OCEAN base + trait overrides
+│   ├── hybrid-jungian.yaml    # Jungian base + trait overrides
+│   ├── mira-mood.yaml         # Dynamic mood states
+│   ├── mira-modes.yaml        # Behavioral modes (formal, crisis, etc.)
+│   ├── composition-example.yaml  # Overrides + composition conflict resolution
+│   ├── voice-and-memory.yaml  # Voice settings + detailed memory config
+│   ├── storyteller.yaml       # Narrative identity + voice examples
+│   ├── legal-advisor.yaml     # Domain-specific guardrails + behavioral modes
+│   ├── support-team.yaml      # Agent relationships + escalation paths
+│   ├── crisis-responder.yaml  # Mood transitions + escalation channels
+│   ├── executive-assistant.yaml  # Autonomy thresholds + interaction config
+│   └── ...                    # + minimal, builder-generated, multi-mixin, etc.
 └── teams/               # Multi-agent team with governance
 ```
 

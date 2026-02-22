@@ -74,7 +74,7 @@ def test_compiler_renders_empty_modes():
 def test_example_yaml_loads():
     examples_dir = Path(__file__).parent.parent / "examples"
     identity = parse_identity_file(
-        examples_dir / "identities" / "ada-modes.yaml",
+        examples_dir / "identities" / "mira-modes.yaml",
     )
     assert identity.behavioral_modes is not None
     assert len(identity.behavioral_modes.modes) >= 3

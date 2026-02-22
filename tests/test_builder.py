@@ -396,7 +396,7 @@ class TestLLMEnhancer:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "TestBot"},
-                "role": {"title": "Helper", "purpose": "Help users"},
+                "role": {"title": "Pip", "purpose": "Help users"},
                 "personality": {"traits": {"warmth": 0.8, "rigor": 0.7}},
             }
         )
@@ -427,7 +427,7 @@ class TestLLMEnhancer:
         identity = BuiltIdentity(
             {
                 "schema_version": "1.0",
-                "metadata": {"name": "Ada"},
+                "metadata": {"name": "Mira"},
                 "role": {"title": "Analyst", "purpose": "Analyze things"},
                 "personality": {"traits": {"warmth": 0.7, "rigor": 0.8}},
             }
@@ -435,14 +435,14 @@ class TestLLMEnhancer:
         enhancer = LLMEnhancer(api_key=None)
         result = enhancer.enhance(identity)
 
-        assert "Ada" in result["greeting"]
+        assert "Mira" in result["greeting"]
 
     def test_template_high_warmth_notes(self):
         identity = BuiltIdentity(
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "WarmBot"},
-                "role": {"title": "Helper", "purpose": "Help"},
+                "role": {"title": "Pip", "purpose": "Help"},
                 "personality": {"traits": {"warmth": 0.9, "rigor": 0.5}},
             }
         )
@@ -456,7 +456,7 @@ class TestLLMEnhancer:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "TestBot"},
-                "role": {"title": "Helper", "purpose": "Help"},
+                "role": {"title": "Pip", "purpose": "Help"},
                 "personality": {"traits": {"warmth": 0.7, "rigor": 0.5}},
                 "communication": {"tone": {"default": "friendly"}},
             }
@@ -486,7 +486,7 @@ class TestLLMEnhancer:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "Bot"},
-                "role": {"title": "Helper", "purpose": "Help"},
+                "role": {"title": "Pip", "purpose": "Help"},
                 "personality": {"traits": {"warmth": 0.5, "rigor": 0.5}},
             }
         )
@@ -756,7 +756,7 @@ class TestLLMEnhancerClient:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "Bot"},
-                "role": {"title": "Helper", "purpose": "Help"},
+                "role": {"title": "Pip", "purpose": "Help"},
                 "personality": {"traits": {"warmth": 0.5}},
             }
         )
@@ -796,7 +796,7 @@ class TestLLMEnhancerLLMPath:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "TestBot"},
-                "role": {"title": "Helper", "purpose": "Help users"},
+                "role": {"title": "Pip", "purpose": "Help users"},
                 "personality": {"traits": {"warmth": 0.8}},
             }
         )
@@ -815,7 +815,7 @@ class TestLLMEnhancerLLMPath:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "Bot"},
-                "role": {"title": "Helper", "purpose": "Help"},
+                "role": {"title": "Pip", "purpose": "Help"},
                 "personality": {"traits": {"warmth": 0.5}},
             }
         )
@@ -837,7 +837,7 @@ class TestLLMEnhancerTemplates:
             {
                 "schema_version": "1.0",
                 "metadata": {"name": "TestBot"},
-                "role": {"title": "Helper", "purpose": "Help users"},
+                "role": {"title": "Pip", "purpose": "Help users"},
                 "personality": {"traits": traits},
             }
         )

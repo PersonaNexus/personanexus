@@ -22,6 +22,12 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 
+- **Examples overhaul** — renamed all agents from personal names to clearly-fictional example names (Ada→Mira, Maven→Finch, Saga→Fable, Sentinel→Beacon, Parker→Reed, Dr. Lena→Dr. Voss, Juris→Lex, Clarity→Prism, Harbor→Coral, Helper→Pip); renamed 6 files (ada*.yaml → mira*.yaml)
+- Fixed storyteller `voice:` section to use correct schema location `communication.voice_examples` with proper field names
+- Added 4 new example files: `disc-detailed.yaml` (DISC explicit values), `jungian-detailed.yaml` (Jungian explicit values), `composition-example.yaml` (overrides + composition config), `voice-and-memory.yaml` (voice settings + detailed memory)
+- Added detailed evaluation config to mira.yaml (test generators, scoring rubrics, regression diff report)
+- Added autonomy threshold to executive-assistant.yaml
+- Added escalation channels to crisis-responder.yaml
 - Documentation cleanup: removed internal strategy docs, updated CONTRIBUTING.md tooling references
 - README trimmed from 967 to ~313 lines — removed duplicated sections, stale OpenClaw skill references, phantom `analyze-team` command, and version labels from feature headings
 - Added `--search-path` notes to Quick Start examples

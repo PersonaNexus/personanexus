@@ -33,7 +33,7 @@ class TestFlattenDict:
 
 
 class TestGetOceanTraits:
-    def test_ocean_present(self, ada_ocean_path):
+    def test_ocean_present(self, mira_ocean_path):
         identity = {
             "personality": {
                 "profile": {
@@ -105,14 +105,14 @@ class TestGetDiscTraits:
 
 
 class TestDiffIdentities:
-    def test_identical_files(self, ada_ocean_path):
-        diff = diff_identities(str(ada_ocean_path), str(ada_ocean_path))
+    def test_identical_files(self, mira_ocean_path):
+        diff = diff_identities(str(mira_ocean_path), str(mira_ocean_path))
         assert diff["changed_fields"] == []
         assert diff["added_fields"] == []
         assert diff["removed_fields"] == []
 
-    def test_different_files(self, ada_path, ada_ocean_path):
-        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+    def test_different_files(self, mira_path, mira_ocean_path):
+        diff = diff_identities(str(mira_path), str(mira_ocean_path))
         assert len(diff["changed_fields"]) > 0
 
     def test_added_fields(self, tmp_path):
@@ -244,21 +244,21 @@ class TestCompatibilityScore:
 
 
 class TestFormatDiff:
-    def test_text_format(self, ada_path, ada_ocean_path):
-        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+    def test_text_format(self, mira_path, mira_ocean_path):
+        diff = diff_identities(str(mira_path), str(mira_ocean_path))
         formatted = format_diff(diff, "text")
         assert "IDENTITY DIFF REPORT" in formatted
         assert "CHANGED FIELDS:" in formatted
         assert "PERSONALITY DIFFERENCES:" in formatted
 
-    def test_json_format(self, ada_path, ada_ocean_path):
-        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+    def test_json_format(self, mira_path, mira_ocean_path):
+        diff = diff_identities(str(mira_path), str(mira_ocean_path))
         formatted = format_diff(diff, "json")
         assert '"changed_fields"' in formatted
         assert '"added_fields"' in formatted
 
-    def test_empty_diff(self, ada_path):
-        diff = diff_identities(str(ada_path), str(ada_path))
+    def test_empty_diff(self, mira_path):
+        diff = diff_identities(str(mira_path), str(mira_path))
         formatted = format_diff(diff, "text")
         assert "CHANGED FIELDS: (none)" in formatted
         assert "ADDED FIELDS: (none)" in formatted
@@ -449,14 +449,14 @@ class TestFormatDiffDisc:
 
 
 class TestFormatDiffMarkdown:
-    def test_markdown_empty_diff(self, ada_path):
-        diff = diff_identities(str(ada_path), str(ada_path))
+    def test_markdown_empty_diff(self, mira_path):
+        diff = diff_identities(str(mira_path), str(mira_path))
         md = format_diff_markdown(diff)
         assert "# Identity Diff Report" in md
         assert "*None*" in md
 
-    def test_markdown_with_changes(self, ada_path, ada_ocean_path):
-        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+    def test_markdown_with_changes(self, mira_path, mira_ocean_path):
+        diff = diff_identities(str(mira_path), str(mira_ocean_path))
         md = format_diff_markdown(diff)
         assert "# Identity Diff Report" in md
         assert "## Changed Fields" in md
@@ -539,9 +539,9 @@ class TestFormatDiffMarkdown:
         assert "### DISC Traits" in md
         assert "dominance" in md
 
-    def test_markdown_format_standalone(self, ada_path, ada_ocean_path):
+    def test_markdown_format_standalone(self, mira_path, mira_ocean_path):
         """format_diff_markdown produces valid markdown output."""
-        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+        diff = diff_identities(str(mira_path), str(mira_ocean_path))
         md = format_diff_markdown(diff)
         assert "# Identity Diff Report" in md
         assert "## Changed Fields" in md

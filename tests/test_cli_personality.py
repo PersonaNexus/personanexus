@@ -155,22 +155,22 @@ class TestPresetCommand:
 
 
 class TestShowProfileCommand:
-    def test_show_custom_profile(self, ada_path, examples_dir):
+    def test_show_custom_profile(self, mira_path, examples_dir):
         result = runner.invoke(
             app,
-            ["personality", "show-profile", str(ada_path), "--search-path", str(examples_dir)],
+            ["personality", "show-profile", str(mira_path), "--search-path", str(examples_dir)],
         )
         assert result.exit_code == 0
-        assert "Ada" in result.output
+        assert "Mira" in result.output
         assert "Mode: custom" in result.output
 
-    def test_show_ocean_profile(self, ada_ocean_path, examples_dir):
+    def test_show_ocean_profile(self, mira_ocean_path, examples_dir):
         result = runner.invoke(
             app,
             [
                 "personality",
                 "show-profile",
-                str(ada_ocean_path),
+                str(mira_ocean_path),
                 "--search-path",
                 str(examples_dir),
             ],
@@ -179,10 +179,16 @@ class TestShowProfileCommand:
         assert "Mode: ocean" in result.output
         assert "OCEAN:" in result.output
 
-    def test_show_disc_profile(self, ada_disc_path, examples_dir):
+    def test_show_disc_profile(self, mira_disc_path, examples_dir):
         result = runner.invoke(
             app,
-            ["personality", "show-profile", str(ada_disc_path), "--search-path", str(examples_dir)],
+            [
+                "personality",
+                "show-profile",
+                str(mira_disc_path),
+                "--search-path",
+                str(examples_dir),
+            ],
         )
         assert result.exit_code == 0
         assert "Mode: disc" in result.output
@@ -204,23 +210,23 @@ class TestShowProfileCommand:
         assert result.exit_code == 1
         assert "not found" in result.output.lower()
 
-    def test_show_profile_includes_reverse_mapping(self, ada_path, examples_dir):
+    def test_show_profile_includes_reverse_mapping(self, mira_path, examples_dir):
         result = runner.invoke(
             app,
-            ["personality", "show-profile", str(ada_path), "--search-path", str(examples_dir)],
+            ["personality", "show-profile", str(mira_path), "--search-path", str(examples_dir)],
         )
         assert result.exit_code == 0
         assert "Reverse Mapping" in result.output
         assert "OCEAN:" in result.output
         assert "DISC:" in result.output
 
-    def test_show_jungian_profile(self, ada_jungian_path, examples_dir):
+    def test_show_jungian_profile(self, mira_jungian_path, examples_dir):
         result = runner.invoke(
             app,
             [
                 "personality",
                 "show-profile",
-                str(ada_jungian_path),
+                str(mira_jungian_path),
                 "--search-path",
                 str(examples_dir),
             ],
@@ -244,10 +250,10 @@ class TestShowProfileCommand:
         assert "Mode: hybrid" in result.output
         assert "Jungian" in result.output
 
-    def test_show_profile_includes_jungian_reverse_mapping(self, ada_path, examples_dir):
+    def test_show_profile_includes_jungian_reverse_mapping(self, mira_path, examples_dir):
         result = runner.invoke(
             app,
-            ["personality", "show-profile", str(ada_path), "--search-path", str(examples_dir)],
+            ["personality", "show-profile", str(mira_path), "--search-path", str(examples_dir)],
         )
         assert result.exit_code == 0
         assert "Jungian:" in result.output

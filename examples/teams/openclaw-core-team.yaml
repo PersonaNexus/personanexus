@@ -14,8 +14,8 @@ team:
     
   composition:
     agents:
-      atlas:
-        agent_id: "agt_atlas_001"
+      nova:
+        agent_id: "agt_nova_001"
         role: "research_coordinator"
         authority_level: 4
         expertise_domains: ["research", "data_gathering", "methodology", "web_search", "source_validation"]
@@ -30,8 +30,8 @@ team:
           curiosity: 0.90
           analytical_rigor: 0.92
           
-      annie:
-        agent_id: "agt_annie_001"
+      quinn:
+        agent_id: "agt_quinn_001"
         role: "senior_data_analyst"
         authority_level: 3
         expertise_domains: ["data_analysis", "statistics", "business_intelligence", "health_analytics", "financial_analysis"]
@@ -46,8 +46,8 @@ team:
           wit: 0.72
           skepticism: 0.68  # "Numbers don't lie, but they have a sense of humor"
           
-      forge:
-        agent_id: "agt_forge_001"  
+      bolt:
+        agent_id: "agt_bolt_001"  
         role: "technical_lead"
         authority_level: 3
         expertise_domains: ["software_development", "system_architecture", "debugging", "deployment", "code_review"]
@@ -62,8 +62,8 @@ team:
           pragmatism: 0.88
           directness: 0.75
           
-      ink:
-        agent_id: "agt_ink_001"
+      wren:
+        agent_id: "agt_wren_001"
         role: "content_strategist"
         authority_level: 2
         expertise_domains: ["writing", "documentation", "communication", "storytelling", "content_strategy"]
@@ -84,7 +84,7 @@ team:
       estimated_duration: "4-8 hours"
       stages:
         - stage: "research_phase"
-          primary_agent: atlas
+          primary_agent: nova
           objective: "Gather comprehensive data on market/topic with source validation"
           deliverables: ["research_brief", "source_inventory", "methodology_notes"]
           success_criteria: 
@@ -94,7 +94,7 @@ team:
           max_duration: "2 hours"
           
         - stage: "analysis_phase"
-          primary_agent: annie
+          primary_agent: quinn
           trigger_conditions: ["research_phase.source_count >= 5"]
           input_context: ["research_brief", "raw_data", "methodology_notes"]
           objective: "Statistical analysis and insight extraction"
@@ -106,7 +106,7 @@ team:
           max_duration: "3 hours"
           
         - stage: "implementation_phase"
-          primary_agent: forge
+          primary_agent: bolt
           trigger_conditions: ["analysis_phase.insights_count >= 3"]
           input_context: ["analysis_report", "requirements_derived", "technical_constraints"]
           objective: "Build/deploy solution based on research and analysis"
@@ -118,7 +118,7 @@ team:
           max_duration: "4 hours"
           
         - stage: "communication_phase"
-          primary_agent: ink
+          primary_agent: wren
           trigger_conditions: ["implementation_phase.deployment_successful == true"]
           input_context: ["all_previous_deliverables", "target_audience", "key_messages"]
           objective: "Create comprehensive documentation and stakeholder communication"
@@ -135,20 +135,20 @@ team:
       estimated_duration: "1-3 hours"
       stages:
         - stage: "quick_research"
-          primary_agent: atlas
+          primary_agent: nova
           objective: "Focused research on specific question"
           success_criteria: ["core_question_answered", "key_sources_identified"]
           max_duration: "45 minutes"
           
         - stage: "rapid_analysis" 
-          primary_agent: annie
+          primary_agent: quinn
           trigger_conditions: ["quick_research.core_question_answered == true"]
           objective: "High-level analysis with clear recommendation"
           success_criteria: ["recommendation_clear", "confidence_stated"]
           max_duration: "1 hour"
           
         - stage: "executive_summary"
-          primary_agent: ink
+          primary_agent: wren
           trigger_conditions: ["rapid_analysis.recommendation_clear == true"]  
           objective: "Concise executive summary with action items"
           success_criteria: ["summary_length < 500_words", "action_items_clear"]
@@ -159,60 +159,60 @@ team:
       description: "Research → Requirements → Implementation → Documentation"
       stages:
         - stage: "requirements_research"
-          primary_agent: atlas
+          primary_agent: nova
           objective: "Research technical requirements, constraints, and best practices"
           
         - stage: "technical_specification"
-          primary_agent: forge
+          primary_agent: bolt
           trigger_conditions: ["requirements_research.completeness_score > 0.8"]
           objective: "Create detailed technical specification and architecture"
           
         - stage: "implementation"
-          primary_agent: forge
+          primary_agent: bolt
           trigger_conditions: ["technical_specification.approved == true"]
           objective: "Implement solution with full testing"
           
         - stage: "documentation_and_handoff"
-          primary_agent: ink
+          primary_agent: wren
           trigger_conditions: ["implementation.tests_passing == true"]
           objective: "Create user documentation and technical handoff materials"
 
   governance:
     decision_frameworks:
       research_methodology:
-        authority: atlas
+        authority: nova
         description: "Atlas has final say on research approaches and source validation"
         consultation_required: []
         veto_rights: []
         escalation_criteria: ["ethical_concerns", "budget_exceeded"]
         
       technical_architecture:
-        authority: forge
+        authority: bolt
         description: "Forge leads all technical decisions"
-        consultation_required: [atlas]  # For feasibility input
-        veto_rights: [atlas]  # Can veto if requirements misunderstood
+        consultation_required: [nova]  # For feasibility input
+        veto_rights: [nova]  # Can veto if requirements misunderstood
         escalation_criteria: ["security_implications", "major_breaking_changes"]
         
       data_analysis_methodology:
-        authority: annie
+        authority: quinn
         description: "Annie owns statistical rigor and analysis approach"
-        consultation_required: [atlas]  # For data source validation
+        consultation_required: [nova]  # For data source validation
         escalation_criteria: ["statistical_significance < 0.05", "data_quality_concerns"]
         
       external_communications:
-        authority: ink
+        authority: wren
         description: "Ink approves all external-facing content"
-        consultation_required: [atlas, annie, forge]  # For technical accuracy
+        consultation_required: [nova, quinn, bolt]  # For technical accuracy
         escalation_criteria: ["legal_implications", "brand_risk"]
         
       resource_prioritization:
         authority: consensus
         voting_weights:
-          atlas: 0.35    # Research coordination role
-          annie: 0.25
-          forge: 0.25  
-          ink: 0.15
-        fallback_authority: atlas
+          nova: 0.35    # Research coordination role
+          quinn: 0.25
+          bolt: 0.25  
+          wren: 0.15
+        fallback_authority: nova
         timeout: "1_hour"
         escalation_path: "human_intervention"  # Jim makes final call
         
@@ -243,7 +243,7 @@ team:
           - "cost_of_quality_reduction" 
           - "stakeholder_priorities"
           - "reversibility_of_decision"
-        fallback_authority: atlas  # Project coordination role
+        fallback_authority: nova  # Project coordination role
 
   collaboration_protocols:
     handoff_standards:
@@ -265,7 +265,7 @@ team:
         
       quality_gates:
         - gate: "research_completeness"
-          enforced_by: atlas
+          enforced_by: nova
           criteria: 
             - "primary_sources >= 3"
             - "methodology_documented == true" 
@@ -273,7 +273,7 @@ team:
           auto_check: true
           
         - gate: "analysis_statistical_rigor"
-          enforced_by: annie
+          enforced_by: quinn
           criteria:
             - "sample_size_adequate == true"
             - "statistical_tests_appropriate == true"  
@@ -282,7 +282,7 @@ team:
           auto_check: false  # Requires human judgment
           
         - gate: "implementation_quality"
-          enforced_by: forge
+          enforced_by: bolt
           criteria:
             - "tests_written == true"
             - "tests_passing == true"
@@ -291,7 +291,7 @@ team:
           auto_check: true
           
         - gate: "communication_clarity"
-          enforced_by: ink
+          enforced_by: wren
           criteria:
             - "target_audience_appropriate == true"
             - "key_messages_clear == true"
@@ -333,7 +333,7 @@ team:
         review_frequency: "monthly"
         
     individual_contributions:
-      atlas:
+      nova:
         - metric: "research_depth_score"
           measurement: "source_count * avg_source_reliability * methodology_completeness"
           target: "> 75th_percentile_historical"
@@ -342,7 +342,7 @@ team:
           measurement: "receiving_agent_understanding_score"
           target: "> 0.85"
           
-      annie:
+      quinn:
         - metric: "analysis_actionability"
           measurement: "actionable_insights_per_analysis"
           target: "> 3"
@@ -351,7 +351,7 @@ team:
           measurement: "methodology_appropriateness * confidence_accuracy"
           target: "> 0.90"
           
-      forge:  
+      bolt:  
         - metric: "implementation_reliability"
           measurement: "deployed_solutions_with_zero_critical_bugs / total_deployments"
           target: "> 0.95"
@@ -360,7 +360,7 @@ team:
           measurement: "future_modification_ease_rating"
           target: "> 0.80"
           
-      ink:
+      wren:
         - metric: "content_clarity_score"
           measurement: "stakeholder_comprehension_rating"
           target: "> 0.85"
@@ -387,13 +387,13 @@ team:
       track_patterns: true
       analyze_frequency: "weekly"
       optimization_suggestions:
-        - pattern: "forge_bottleneck_during_implementation"
+        - pattern: "bolt_bottleneck_during_implementation"
           suggestion: "consider_parallel_implementation_tracks"
           
-        - pattern: "atlas_over_researching_simple_questions"  
+        - pattern: "nova_over_researching_simple_questions"  
           suggestion: "define_research_scope_limits_by_complexity"
           
-        - pattern: "annie_analysis_blocked_by_data_quality"
+        - pattern: "quinn_analysis_blocked_by_data_quality"
           suggestion: "add_data_validation_stage_before_analysis"
 
 # Real-world operational parameters

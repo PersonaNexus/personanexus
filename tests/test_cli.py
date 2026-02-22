@@ -8,8 +8,8 @@ runner = CliRunner()
 
 
 class TestValidateCommand:
-    def test_validate_valid_file(self, ada_path):
-        result = runner.invoke(app, ["validate", str(ada_path)])
+    def test_validate_valid_file(self, mira_path):
+        result = runner.invoke(app, ["validate", str(mira_path)])
         assert result.exit_code == 0
         assert "Validation successful" in result.output
 
@@ -34,10 +34,10 @@ class TestValidateCommand:
         result = runner.invoke(app, ["validate", str(incomplete)])
         assert result.exit_code == 1
 
-    def test_validate_verbose(self, ada_path):
-        result = runner.invoke(app, ["validate", str(ada_path), "--verbose"])
+    def test_validate_verbose(self, mira_path):
+        result = runner.invoke(app, ["validate", str(mira_path), "--verbose"])
         assert result.exit_code == 0
-        assert "Ada" in result.output
+        assert "Mira" in result.output
 
     def test_validate_all_examples(self, examples_dir):
         for path in examples_dir.rglob("*.yaml"):
@@ -52,17 +52,17 @@ class TestResolveCommand:
     def test_resolve_minimal(self, minimal_path):
         result = runner.invoke(app, ["resolve", str(minimal_path)])
         assert result.exit_code == 0
-        assert "Helper" in result.output
+        assert "Pip" in result.output
 
-    def test_resolve_ada_with_search_path(self, ada_path, examples_dir):
-        result = runner.invoke(app, ["resolve", str(ada_path), "--search-path", str(examples_dir)])
+    def test_resolve_ada_with_search_path(self, mira_path, examples_dir):
+        result = runner.invoke(app, ["resolve", str(mira_path), "--search-path", str(examples_dir)])
         assert result.exit_code == 0
-        assert "Ada" in result.output
+        assert "Mira" in result.output
 
     def test_resolve_json_output(self, minimal_path):
         result = runner.invoke(app, ["resolve", str(minimal_path), "--output", "json"])
         assert result.exit_code == 0
-        assert '"name": "Helper"' in result.output
+        assert '"name": "Pip"' in result.output
 
     def test_resolve_nonexistent(self):
         result = runner.invoke(app, ["resolve", "/nonexistent.yaml"])
@@ -134,39 +134,39 @@ class TestInitCommand:
 
 
 class TestMigrateCommand:
-    def test_migrate_same_version(self, ada_path):
-        result = runner.invoke(app, ["migrate", "1.0", "1.0", str(ada_path)])
+    def test_migrate_same_version(self, mira_path):
+        result = runner.invoke(app, ["migrate", "1.0", "1.0", str(mira_path)])
         assert result.exit_code == 0
         assert "already" in result.output.lower()
 
-    def test_migrate_unsupported_version(self, ada_path):
-        result = runner.invoke(app, ["migrate", "1.0", "2.0", str(ada_path)])
+    def test_migrate_unsupported_version(self, mira_path):
+        result = runner.invoke(app, ["migrate", "1.0", "2.0", str(mira_path)])
         assert result.exit_code == 0  # Just shows info panel
         assert "not yet implemented" in result.output.lower()
 
 
 class TestDiffCommand:
-    def test_diff_identical(self, ada_path):
-        result = runner.invoke(app, ["diff", str(ada_path), str(ada_path)])
+    def test_diff_identical(self, mira_path):
+        result = runner.invoke(app, ["diff", str(mira_path), str(mira_path)])
         assert result.exit_code == 0
         assert "CHANGED FIELDS: (none)" in result.output
 
-    def test_diff_different(self, ada_path, ada_ocean_path):
-        result = runner.invoke(app, ["diff", str(ada_path), str(ada_ocean_path)])
+    def test_diff_different(self, mira_path, mira_ocean_path):
+        result = runner.invoke(app, ["diff", str(mira_path), str(mira_ocean_path)])
         assert result.exit_code == 0
         assert "IDENTITY DIFF REPORT" in result.output
 
-    def test_diff_json_format(self, ada_path, ada_ocean_path):
+    def test_diff_json_format(self, mira_path, mira_ocean_path):
         result = runner.invoke(
-            app, ["diff", str(ada_path), str(ada_ocean_path), "--format", "json"]
+            app, ["diff", str(mira_path), str(mira_ocean_path), "--format", "json"]
         )
         assert result.exit_code == 0
         assert '"changed_fields"' in result.output
 
-    def test_diff_markdown_format(self, ada_path, ada_ocean_path):
+    def test_diff_markdown_format(self, mira_path, mira_ocean_path):
         result = runner.invoke(
             app,
-            ["diff", str(ada_path), str(ada_ocean_path), "--format", "markdown"],
+            ["diff", str(mira_path), str(mira_ocean_path), "--format", "markdown"],
         )
         assert result.exit_code == 0
         assert "IDENTITY DIFF" in result.output or "REPORT" in result.output
@@ -177,13 +177,13 @@ class TestDiffCommand:
 
 
 class TestCompatCommand:
-    def test_compat_same_identity(self, ada_path):
-        result = runner.invoke(app, ["compat", str(ada_path), str(ada_path)])
+    def test_compat_same_identity(self, mira_path):
+        result = runner.invoke(app, ["compat", str(mira_path), str(mira_path)])
         assert result.exit_code == 0
         assert "100.0%" in result.output
 
-    def test_compat_different_ocean(self, ada_ocean_path, ada_disc_path):
-        result = runner.invoke(app, ["compat", str(ada_ocean_path), str(ada_disc_path)])
+    def test_compat_different_ocean(self, mira_ocean_path, mira_disc_path):
+        result = runner.invoke(app, ["compat", str(mira_ocean_path), str(mira_disc_path)])
         assert result.exit_code == 0
         assert "Compatibility Score" in result.output
 

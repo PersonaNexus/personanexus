@@ -130,11 +130,11 @@ class TestPrincipleOrderingWarning:
 
 
 class TestValidateFile:
-    def test_validate_ada(self, validator, ada_path):
-        result = validator.validate_file(ada_path)
+    def test_validate_ada(self, validator, mira_path):
+        result = validator.validate_file(mira_path)
         assert result.valid is True
         assert result.identity is not None
-        assert result.identity.metadata.name == "Ada"
+        assert result.identity.metadata.name == "Mira"
 
     def test_validate_minimal(self, validator, minimal_path):
         result = validator.validate_file(minimal_path)

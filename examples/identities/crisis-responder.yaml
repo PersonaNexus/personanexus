@@ -1,8 +1,8 @@
 schema_version: "1.0"
 
 metadata:
-  id: "agt_crisis_001"
-  name: "Sentinel"
+  id: "agt_beacon_001"
+  name: "Beacon"
   version: "1.0.0"
   description: "Crisis management agent that adapts communication style based on incident severity"
   created_at: "2026-02-20T00:00:00Z"
@@ -142,3 +142,35 @@ guardrails:
       rule: "Never minimize incident severity to stakeholders"
       enforcement: output_filter
       severity: critical
+  escalation:
+    triggers:
+      - condition: "severity_p0"
+        action: "page_on_call"
+        notify: "incident-commander"
+        priority: "immediate"
+        message: "P0 incident detected — paging on-call engineer"
+      - condition: "severity_p1"
+        action: "alert_team"
+        notify: "engineering-leads"
+        priority: "high"
+        message: "P1 incident — team alert sent"
+      - condition: "customer_impact_confirmed"
+        action: "notify_stakeholders"
+        notify: "executive-team"
+        priority: "high"
+        message: "Customer-facing impact confirmed — executive notification sent"
+        threshold: 100
+        window: "5m"
+        resources: ["status_page", "customer_comms_template"]
+    channels:
+      slack:
+        method: "webhook"
+        url: "https://hooks.slack.com/services/EXAMPLE/WEBHOOK"
+        channel: "#incidents"
+      pagerduty:
+        method: "api"
+        url: "https://events.pagerduty.com/v2/enqueue"
+        service_id: "P_EXAMPLE"
+      email:
+        method: "smtp"
+        channel: "incident-response@example.com"

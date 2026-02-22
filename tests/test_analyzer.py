@@ -205,12 +205,12 @@ class TestSoulMdParserExact:
         traits, extractions = parser.parse(content)
         assert traits["warmth"] == 0.1
 
-    def test_all_traits_from_generated_soul_md(self, ada_path, examples_dir):
+    def test_all_traits_from_generated_soul_md(self, mira_path, examples_dir):
         """Generate SOUL.md from ada.yaml, then parse it back."""
         from personanexus.resolver import IdentityResolver
 
         resolver = IdentityResolver(search_paths=[examples_dir])
-        identity = resolver.resolve_file(ada_path)
+        identity = resolver.resolve_file(mira_path)
 
         compiler = SoulCompiler()
         result = compiler.compile(identity)
@@ -225,13 +225,13 @@ class TestSoulMdParserExact:
         exact_matches = [e for e in extractions if e.confidence == 1.0]
         assert len(exact_matches) >= 8
 
-    def test_round_trip_accuracy(self, ada_path, examples_dir):
+    def test_round_trip_accuracy(self, mira_path, examples_dir):
         """Compile to SOUL.md, parse back, verify values are close."""
         from personanexus.personality import compute_personality_traits
         from personanexus.resolver import IdentityResolver
 
         resolver = IdentityResolver(search_paths=[examples_dir])
-        identity = resolver.resolve_file(ada_path)
+        identity = resolver.resolve_file(mira_path)
         original_traits = compute_personality_traits(identity.personality).defined_traits()
 
         compiler = SoulCompiler()
@@ -332,8 +332,8 @@ class TestDiscPresetMatching:
 
 
 class TestSoulAnalyzer:
-    def test_analyze_yaml_file(self, analyzer, ada_path, examples_dir):
-        result = analyzer.analyze(ada_path, search_paths=[examples_dir])
+    def test_analyze_yaml_file(self, analyzer, mira_path, examples_dir):
+        result = analyzer.analyze(mira_path, search_paths=[examples_dir])
         assert result.source_format == SourceFormat.IDENTITY_YAML
         assert result.confidence == 1.0
         assert result.agent_name is not None
@@ -365,16 +365,16 @@ class TestSoulAnalyzer:
         assert result.confidence == 1.0
         assert result.traits.warmth == 0.8
 
-    def test_analyze_soul_md(self, analyzer, ada_path, examples_dir, tmp_path):
+    def test_analyze_soul_md(self, analyzer, mira_path, examples_dir, tmp_path):
         """Compile to SOUL.md then analyze it."""
         from personanexus.resolver import IdentityResolver
 
         resolver = IdentityResolver(search_paths=[examples_dir])
-        identity = resolver.resolve_file(ada_path)
+        identity = resolver.resolve_file(mira_path)
 
         compiler = SoulCompiler()
         result = compiler.compile(identity)
-        soul_path = tmp_path / "ada.SOUL.md"
+        soul_path = tmp_path / "mira.SOUL.md"
         soul_path.write_text(result["soul_md"])
 
         analysis = analyzer.analyze(soul_path)
@@ -386,14 +386,14 @@ class TestSoulAnalyzer:
         with pytest.raises(AnalyzerError, match="File not found"):
             analyzer.analyze(Path("/nonexistent/file.yaml"))
 
-    def test_analyze_ocean_mode_identity(self, analyzer, ada_ocean_path, examples_dir):
-        result = analyzer.analyze(ada_ocean_path, search_paths=[examples_dir])
+    def test_analyze_ocean_mode_identity(self, analyzer, mira_ocean_path, examples_dir):
+        result = analyzer.analyze(mira_ocean_path, search_paths=[examples_dir])
         assert result.source_format == SourceFormat.IDENTITY_YAML
         traits = result.traits.defined_traits()
         assert len(traits) == 10
 
-    def test_analyze_disc_mode_identity(self, analyzer, ada_disc_path, examples_dir):
-        result = analyzer.analyze(ada_disc_path, search_paths=[examples_dir])
+    def test_analyze_disc_mode_identity(self, analyzer, mira_disc_path, examples_dir):
+        result = analyzer.analyze(mira_disc_path, search_paths=[examples_dir])
         assert result.source_format == SourceFormat.IDENTITY_YAML
         traits = result.traits.defined_traits()
         assert len(traits) == 10
@@ -490,16 +490,16 @@ personality:
 
 
 class TestComparison:
-    def test_compare_identical(self, analyzer, ada_path, examples_dir):
-        result = analyzer.analyze(ada_path, search_paths=[examples_dir])
+    def test_compare_identical(self, analyzer, mira_path, examples_dir):
+        result = analyzer.analyze(mira_path, search_paths=[examples_dir])
         comparison = analyzer.compare(result, result)
         assert comparison.similarity_score > 0.99
         for delta in comparison.trait_deltas:
             assert delta.delta == 0.0
 
-    def test_compare_different(self, analyzer, ada_path, ada_ocean_path, examples_dir):
-        result_a = analyzer.analyze(ada_path, search_paths=[examples_dir])
-        result_b = analyzer.analyze(ada_ocean_path, search_paths=[examples_dir])
+    def test_compare_different(self, analyzer, mira_path, mira_ocean_path, examples_dir):
+        result_a = analyzer.analyze(mira_path, search_paths=[examples_dir])
+        result_b = analyzer.analyze(mira_ocean_path, search_paths=[examples_dir])
         comparison = analyzer.compare(result_a, result_b)
         assert 0.0 <= comparison.similarity_score <= 1.0
         assert len(comparison.trait_deltas) > 0
@@ -558,7 +558,7 @@ class TestComparison:
 
 
 class TestAnalyzeCommand:
-    def test_analyze_yaml_cli(self, ada_path, examples_dir):
+    def test_analyze_yaml_cli(self, mira_path, examples_dir):
         from typer.testing import CliRunner
 
         from personanexus.cli import app
@@ -568,7 +568,7 @@ class TestAnalyzeCommand:
             app,
             [
                 "analyze",
-                str(ada_path),
+                str(mira_path),
                 "--search-path",
                 str(examples_dir),
             ],
@@ -578,7 +578,7 @@ class TestAnalyzeCommand:
         assert "OCEAN" in result.output
         assert "DISC" in result.output
 
-    def test_analyze_json_output(self, ada_path, examples_dir):
+    def test_analyze_json_output(self, mira_path, examples_dir):
         from typer.testing import CliRunner
 
         from personanexus.cli import app
@@ -588,7 +588,7 @@ class TestAnalyzeCommand:
             app,
             [
                 "analyze",
-                str(ada_path),
+                str(mira_path),
                 "--search-path",
                 str(examples_dir),
                 "--format",
@@ -610,7 +610,7 @@ class TestAnalyzeCommand:
         result = runner.invoke(app, ["analyze", "/nonexistent/file.yaml"])
         assert result.exit_code == 1
 
-    def test_analyze_with_comparison(self, ada_path, ada_ocean_path, examples_dir):
+    def test_analyze_with_comparison(self, mira_path, mira_ocean_path, examples_dir):
         from typer.testing import CliRunner
 
         from personanexus.cli import app
@@ -620,9 +620,9 @@ class TestAnalyzeCommand:
             app,
             [
                 "analyze",
-                str(ada_path),
+                str(mira_path),
                 "--compare",
-                str(ada_ocean_path),
+                str(mira_ocean_path),
                 "--search-path",
                 str(examples_dir),
             ],

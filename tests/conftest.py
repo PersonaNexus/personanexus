@@ -19,8 +19,8 @@ def fixtures_dir() -> Path:
 
 
 @pytest.fixture
-def ada_path(examples_dir: Path) -> Path:
-    return examples_dir / "identities" / "ada.yaml"
+def mira_path(examples_dir: Path) -> Path:
+    return examples_dir / "identities" / "mira.yaml"
 
 
 @pytest.fixture
@@ -39,13 +39,13 @@ def empathetic_mixin_path(examples_dir: Path) -> Path:
 
 
 @pytest.fixture
-def ada_ocean_path(examples_dir: Path) -> Path:
-    return examples_dir / "identities" / "ada-ocean.yaml"
+def mira_ocean_path(examples_dir: Path) -> Path:
+    return examples_dir / "identities" / "mira-ocean.yaml"
 
 
 @pytest.fixture
-def ada_disc_path(examples_dir: Path) -> Path:
-    return examples_dir / "identities" / "ada-disc.yaml"
+def mira_disc_path(examples_dir: Path) -> Path:
+    return examples_dir / "identities" / "mira-disc.yaml"
 
 
 @pytest.fixture
@@ -54,8 +54,8 @@ def hybrid_path(examples_dir: Path) -> Path:
 
 
 @pytest.fixture
-def ada_jungian_path(examples_dir: Path) -> Path:
-    return examples_dir / "identities" / "ada-jungian.yaml"
+def mira_jungian_path(examples_dir: Path) -> Path:
+    return examples_dir / "identities" / "mira-jungian.yaml"
 
 
 @pytest.fixture
