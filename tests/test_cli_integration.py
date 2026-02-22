@@ -1,5 +1,6 @@
 """Integration tests for new CLI commands (analyze, validate-team)."""
 
+import contextlib
 import json
 import tempfile
 from pathlib import Path
@@ -453,10 +454,8 @@ class TestCLIIntegration:
         finally:
             base_name = yaml_file.replace('.yaml', '')
             for file_to_clean in [yaml_file, f"{base_name}.SOUL.md", f"{base_name}.STYLE.md"]:
-                try:
+                with contextlib.suppress(FileNotFoundError):
                     Path(file_to_clean).unlink()
-                except FileNotFoundError:
-                    pass
 
     def test_validate_then_analyze_workflow(self, sample_identity_yaml):
         """Test validating an identity then analyzing it."""

@@ -38,40 +38,39 @@ def soul_compiler():
 
 
 class TestFormatDetector:
-    def test_yaml_extension(self, tmp_path):
-        f = tmp_path / "test.yaml"
-        f.write_text("schema_version: '1.0'")
-        assert detect_format(f) == SourceFormat.IDENTITY_YAML
-
-    def test_yml_extension(self, tmp_path):
-        f = tmp_path / "test.yml"
-        f.write_text("schema_version: '1.0'")
-        assert detect_format(f) == SourceFormat.IDENTITY_YAML
-
-    def test_json_extension(self, tmp_path):
-        f = tmp_path / "test.json"
-        f.write_text('{"personality_traits": {}}')
-        assert detect_format(f) == SourceFormat.PERSONALITY_JSON
-
-    def test_md_extension(self, tmp_path):
-        f = tmp_path / "test.md"
-        f.write_text("# Agent Name\n\nSome description")
-        assert detect_format(f) == SourceFormat.SOUL_MD
-
-    def test_content_based_yaml(self, tmp_path):
-        f = tmp_path / "test.txt"
-        f.write_text("schema_version: '1.0'\nmetadata:\n  id: agt_test")
-        assert detect_format(f) == SourceFormat.IDENTITY_YAML
-
-    def test_content_based_json(self, tmp_path):
-        f = tmp_path / "test.txt"
-        f.write_text('{"personality_traits": {"warmth": 0.7}}')
-        assert detect_format(f) == SourceFormat.PERSONALITY_JSON
-
-    def test_content_based_markdown(self, tmp_path):
-        f = tmp_path / "test.txt"
-        f.write_text("# Some Agent\n\n## Who I Am\n\nI help people.")
-        assert detect_format(f) == SourceFormat.SOUL_MD
+    @pytest.mark.parametrize(
+        "filename,content,expected",
+        [
+            ("test.yaml", "schema_version: '1.0'", SourceFormat.IDENTITY_YAML),
+            ("test.yml", "schema_version: '1.0'", SourceFormat.IDENTITY_YAML),
+            ("test.json", '{"personality_traits": {}}', SourceFormat.PERSONALITY_JSON),
+            ("test.md", "# Agent Name\n\nSome description", SourceFormat.SOUL_MD),
+            # Content-based detection (unknown extension)
+            (
+                "test.txt",
+                "schema_version: '1.0'\nmetadata:\n  id: agt_test",
+                SourceFormat.IDENTITY_YAML,
+            ),
+            (
+                "test.txt",
+                '{"personality_traits": {"warmth": 0.7}}',
+                SourceFormat.PERSONALITY_JSON,
+            ),
+            (
+                "test.txt",
+                "# Some Agent\n\n## Who I Am\n\nI help people.",
+                SourceFormat.SOUL_MD,
+            ),
+        ],
+        ids=[
+            "yaml-ext", "yml-ext", "json-ext", "md-ext",
+            "content-yaml", "content-json", "content-md",
+        ],
+    )
+    def test_format_detection(self, tmp_path, filename, content, expected):
+        f = tmp_path / filename
+        f.write_text(content)
+        assert detect_format(f) == expected
 
     def test_unknown_format_raises(self, tmp_path):
         f = tmp_path / "test.bin"

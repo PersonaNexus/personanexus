@@ -1,14 +1,16 @@
 """Tests for identity diff and compatibility features."""
 
 
-
 from personanexus.diff import (
+    _calculate_disc_compatibility,
+    _calculate_traits_compatibility,
     _flatten_dict,
     _get_disc_traits,
     _get_ocean_traits,
     compatibility_score,
     diff_identities,
     format_diff,
+    format_diff_markdown,
 )
 
 
@@ -241,3 +243,285 @@ class TestFormatDiff:
         assert "CHANGED FIELDS: (none)" in formatted
         assert "ADDED FIELDS: (none)" in formatted
         assert "REMOVED FIELDS: (none)" in formatted
+
+
+# ---------------------------------------------------------------------------
+# DISC diff & compatibility (covers lines 107-116, 196, 272-287)
+# ---------------------------------------------------------------------------
+
+
+class TestDiscDiff:
+    def test_personality_diff_disc(self, tmp_path):
+        file1 = tmp_path / "disc1.yaml"
+        file2 = tmp_path / "disc2.yaml"
+
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.3\n"
+            "      influence: 0.2\n"
+            "      steadiness: 0.6\n"
+            "      conscientiousness: 0.9\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.7\n"
+            "      influence: 0.5\n"
+            "      steadiness: 0.4\n"
+            "      conscientiousness: 0.8\n"
+        )
+
+        diff = diff_identities(str(file1), str(file2))
+        assert "personality_diff" in diff
+        assert "disc" in diff["personality_diff"]
+        dom_delta = diff["personality_diff"]["disc"]["dominance"]["delta"]
+        assert abs(dom_delta - 0.4) < 0.0001
+
+    def test_disc_compatibility_identical(self, tmp_path):
+        file1 = tmp_path / "disc1.yaml"
+        file2 = tmp_path / "disc2.yaml"
+
+        content = (
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.5\n"
+            "      influence: 0.5\n"
+            "      steadiness: 0.5\n"
+            "      conscientiousness: 0.5\n"
+        )
+        file1.write_text(content)
+        file2.write_text(content)
+
+        score = compatibility_score(str(file1), str(file2))
+        assert score == 100.0
+
+    def test_disc_compatibility_opposite(self, tmp_path):
+        file1 = tmp_path / "disc1.yaml"
+        file2 = tmp_path / "disc2.yaml"
+
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.0\n"
+            "      influence: 0.0\n"
+            "      steadiness: 0.0\n"
+            "      conscientiousness: 0.0\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 1.0\n"
+            "      influence: 1.0\n"
+            "      steadiness: 1.0\n"
+            "      conscientiousness: 1.0\n"
+        )
+
+        score = compatibility_score(str(file1), str(file2))
+        assert score < 5.0  # Nearly zero
+
+
+class TestCalculateDiscCompatibility:
+    def test_perfect_match(self):
+        disc = {
+            "dominance": 0.5, "influence": 0.5,
+            "steadiness": 0.5, "conscientiousness": 0.5,
+        }
+        assert _calculate_disc_compatibility(disc, disc) == 100.0
+
+    def test_complete_mismatch(self):
+        disc1 = {
+            "dominance": 0.0, "influence": 0.0,
+            "steadiness": 0.0, "conscientiousness": 0.0,
+        }
+        disc2 = {
+            "dominance": 1.0, "influence": 1.0,
+            "steadiness": 1.0, "conscientiousness": 1.0,
+        }
+        score = _calculate_disc_compatibility(disc1, disc2)
+        assert score == 0.0
+
+    def test_partial_difference(self):
+        disc1 = {
+            "dominance": 0.3, "influence": 0.2,
+            "steadiness": 0.6, "conscientiousness": 0.9,
+        }
+        disc2 = {
+            "dominance": 0.5, "influence": 0.4,
+            "steadiness": 0.5, "conscientiousness": 0.8,
+        }
+        score = _calculate_disc_compatibility(disc1, disc2)
+        assert 50 < score < 100
+
+
+class TestCalculateTraitsCompatibility:
+    def test_no_common_traits(self):
+        """Returns 50.0 when no traits in common."""
+        traits1 = {"warmth": 0.8, "humor": 0.6}
+        traits2 = {"rigor": 0.9, "patience": 0.7}
+        assert _calculate_traits_compatibility(traits1, traits2) == 50.0
+
+    def test_identical_traits(self):
+        traits = {"warmth": 0.8, "rigor": 0.7, "humor": 0.6}
+        assert _calculate_traits_compatibility(traits, traits) == 100.0
+
+
+# ---------------------------------------------------------------------------
+# Text format with DISC (covers lines 352-368)
+# ---------------------------------------------------------------------------
+
+
+class TestFormatDiffDisc:
+    def test_text_format_with_disc(self, tmp_path):
+        file1 = tmp_path / "disc1.yaml"
+        file2 = tmp_path / "disc2.yaml"
+
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.3\n"
+            "      influence: 0.2\n"
+            "      steadiness: 0.6\n"
+            "      conscientiousness: 0.9\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.7\n"
+            "      influence: 0.5\n"
+            "      steadiness: 0.4\n"
+            "      conscientiousness: 0.8\n"
+        )
+
+        diff = diff_identities(str(file1), str(file2))
+        formatted = format_diff(diff, "text")
+        assert "DISC Traits:" in formatted
+        assert "dominance:" in formatted
+
+
+# ---------------------------------------------------------------------------
+# Markdown format (covers lines 378-451)
+# ---------------------------------------------------------------------------
+
+
+class TestFormatDiffMarkdown:
+    def test_markdown_empty_diff(self, ada_path):
+        diff = diff_identities(str(ada_path), str(ada_path))
+        md = format_diff_markdown(diff)
+        assert "# Identity Diff Report" in md
+        assert "*None*" in md
+
+    def test_markdown_with_changes(self, ada_path, ada_ocean_path):
+        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+        md = format_diff_markdown(diff)
+        assert "# Identity Diff Report" in md
+        assert "## Changed Fields" in md
+        assert "**Old:**" in md
+        assert "**New:**" in md
+
+    def test_markdown_with_added_removed(self, tmp_path):
+        file1 = tmp_path / "file1.yaml"
+        file2 = tmp_path / "file2.yaml"
+
+        file1.write_text(
+            'schema_version: "1.0"\n'
+            "metadata:\n"
+            '  id: "test"\n'
+            '  version: "1.0.0"\n'
+        )
+        file2.write_text(
+            'schema_version: "1.0"\n'
+            "metadata:\n"
+            '  id: "test"\n'
+            '  status: "active"\n'
+        )
+
+        diff = diff_identities(str(file1), str(file2))
+        md = format_diff_markdown(diff)
+        assert "## Added Fields" in md
+        assert "## Removed Fields" in md
+        assert "`+ " in md
+        assert "`- " in md
+
+    def test_markdown_with_ocean_personality(self, tmp_path):
+        file1 = tmp_path / "ocean1.yaml"
+        file2 = tmp_path / "ocean2.yaml"
+
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.5\n"
+            "      conscientiousness: 0.8\n"
+            "      extraversion: 0.3\n"
+            "      agreeableness: 0.6\n"
+            "      neuroticism: 0.4\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: ocean\n"
+            "    ocean:\n"
+            "      openness: 0.8\n"
+            "      conscientiousness: 0.6\n"
+            "      extraversion: 0.5\n"
+            "      agreeableness: 0.7\n"
+            "      neuroticism: 0.2\n"
+        )
+
+        diff = diff_identities(str(file1), str(file2))
+        md = format_diff_markdown(diff)
+        assert "### OCEAN Traits" in md
+        assert "openness" in md
+
+    def test_markdown_with_disc_personality(self, tmp_path):
+        file1 = tmp_path / "disc1.yaml"
+        file2 = tmp_path / "disc2.yaml"
+
+        file1.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.3\n"
+            "      influence: 0.2\n"
+            "      steadiness: 0.6\n"
+            "      conscientiousness: 0.9\n"
+        )
+        file2.write_text(
+            "personality:\n"
+            "  profile:\n"
+            "    mode: disc\n"
+            "    disc:\n"
+            "      dominance: 0.7\n"
+            "      influence: 0.4\n"
+            "      steadiness: 0.5\n"
+            "      conscientiousness: 0.8\n"
+        )
+
+        diff = diff_identities(str(file1), str(file2))
+        md = format_diff_markdown(diff)
+        assert "### DISC Traits" in md
+        assert "dominance" in md
+
+    def test_markdown_format_standalone(self, ada_path, ada_ocean_path):
+        """format_diff_markdown produces valid markdown output."""
+        diff = diff_identities(str(ada_path), str(ada_ocean_path))
+        md = format_diff_markdown(diff)
+        assert "# Identity Diff Report" in md
+        assert "## Changed Fields" in md

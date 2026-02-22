@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import json
+import os
 from unittest.mock import MagicMock, patch
 
+import pytest
 import yaml
 
 from personanexus.builder import BuiltIdentity, IdentityBuilder, LLMEnhancer
@@ -481,3 +484,384 @@ class TestLLMEnhancer:
         # Should still produce valid output via templates
         assert isinstance(result["personality_notes"], str)
         assert isinstance(result["greeting"], str)
+
+
+# ---------------------------------------------------------------------------
+# IdentityBuilder.run() orchestration (covers lines 118-139)
+# ---------------------------------------------------------------------------
+
+
+class TestIdentityBuilderRun:
+    @patch("personanexus.builder.Prompt.ask")
+    @patch("personanexus.builder.Confirm.ask")
+    def test_run_returns_built_identity(self, mock_confirm, mock_ask):
+        """Full wizard run with custom personality mode (default)."""
+        mock_ask.side_effect = [
+            # Phase 1: Basics
+            "TestBot", "Test Assistant", "Help users", "A test bot", "testing",
+            # Phase 2a: Mode — default "custom" accepted
+            "custom",
+            # Phase 2b: Custom personality — 10 traits (skip most)
+            "0.8", "", "0.6", "", "", "0.7", "", "", "", "",
+            # Phase 3: Communication
+            "professional", "consultative", "sparingly",
+            # Phase 4: Principles
+            "Be safe", "",
+            # Phase 5: Guardrails
+            "Never harm", "",
+        ]
+        mock_confirm.return_value = False  # skip expertise
+
+        builder = IdentityBuilder(console=MagicMock())
+        result = builder.run()
+
+        assert isinstance(result, BuiltIdentity)
+        assert result.data["schema_version"] == "1.0"
+        assert result.data["metadata"]["name"] == "TestBot"
+        assert "personality" in result.data
+        assert "principles" in result.data
+        assert "guardrails" in result.data
+
+
+# ---------------------------------------------------------------------------
+# Personality mode phases (covers lines 192-207, 218-223, 261-296, 300-362,
+# 365-426, 430-449)
+# ---------------------------------------------------------------------------
+
+
+class TestPersonalityModes:
+    def _make_builder(self):
+        return IdentityBuilder(console=MagicMock())
+
+    @pytest.mark.parametrize("mode", ["ocean", "disc", "hybrid", "custom"])
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_mode_sets_mode(self, mock_ask, mode):
+        mock_ask.return_value = mode
+        builder = self._make_builder()
+        data: dict = {}
+        builder._phase_personality_mode(data)
+        assert data["_personality_mode"] == mode
+
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_dispatches_ocean(self, mock_ask):
+        """When mode is ocean, _phase_personality calls _phase_personality_ocean."""
+        # 5 OCEAN dimensions (all required, no skip)
+        mock_ask.side_effect = ["0.7", "0.8", "0.6", "0.5", "0.3"]
+        builder = self._make_builder()
+        data: dict = {"_personality_mode": "ocean"}
+        builder._phase_personality(data)
+
+        assert "profile" in data["personality"]
+        assert data["personality"]["profile"]["mode"] == "ocean"
+        assert data["personality"]["profile"]["ocean"]["openness"] == 0.7
+
+    @patch("personanexus.builder.Confirm.ask")
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_dispatches_disc_preset(self, mock_ask, mock_confirm):
+        """When mode is disc with preset, uses a preset."""
+        mock_confirm.return_value = True  # use preset
+        mock_ask.return_value = "the_analyst"
+        builder = self._make_builder()
+        data: dict = {"_personality_mode": "disc"}
+        builder._phase_personality(data)
+
+        assert data["personality"]["profile"]["mode"] == "disc"
+        assert data["personality"]["profile"]["disc_preset"] == "the_analyst"
+        assert "traits" in data["personality"]
+
+    @patch("personanexus.builder.Confirm.ask")
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_disc_manual(self, mock_ask, mock_confirm):
+        """When mode is disc without preset, collects 4 manual scores."""
+        mock_confirm.return_value = False  # don't use preset
+        # 4 DISC dimensions
+        mock_ask.side_effect = ["0.7", "0.6", "0.5", "0.8"]
+        builder = self._make_builder()
+        data: dict = {"_personality_mode": "disc"}
+        builder._phase_personality(data)
+
+        assert data["personality"]["profile"]["mode"] == "disc"
+        assert data["personality"]["profile"]["disc"]["dominance"] == 0.7
+        assert "traits" in data["personality"]
+
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_hybrid_ocean_base(self, mock_ask):
+        """Hybrid mode with OCEAN base and no overrides."""
+        mock_ask.side_effect = [
+            "ocean",  # framework choice
+            # 5 OCEAN dimensions
+            "0.7", "0.8", "0.6", "0.5", "0.3",
+            # 10 trait overrides (all skipped)
+            "", "", "", "", "", "", "", "", "", "",
+        ]
+        builder = self._make_builder()
+        data: dict = {"_personality_mode": "hybrid"}
+        builder._phase_personality(data)
+
+        assert data["personality"]["profile"]["mode"] == "hybrid"
+        assert "ocean" in data["personality"]["profile"]
+        assert data["personality"]["profile"]["override_priority"] == "explicit_wins"
+
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_hybrid_disc_base(self, mock_ask):
+        """Hybrid mode with DISC base and no overrides."""
+        mock_ask.side_effect = [
+            "disc",  # framework choice
+            # 4 DISC dimensions
+            "0.7", "0.6", "0.5", "0.8",
+            # 10 trait overrides (all skipped)
+            "", "", "", "", "", "", "", "", "", "",
+        ]
+        builder = self._make_builder()
+        data: dict = {"_personality_mode": "hybrid"}
+        builder._phase_personality(data)
+
+        assert data["personality"]["profile"]["mode"] == "hybrid"
+        assert "disc" in data["personality"]["profile"]
+
+    @patch("personanexus.builder.Prompt.ask")
+    def test_phase_personality_hybrid_with_overrides(self, mock_ask):
+        """Hybrid mode with OCEAN base and some trait overrides."""
+        mock_ask.side_effect = [
+            "ocean",  # framework choice
+            # 5 OCEAN dimensions
+            "0.7", "0.8", "0.6", "0.5", "0.3",
+            # 10 trait overrides: override warmth=0.9, skip rest
+            "0.9", "", "", "", "", "", "", "", "", "",
+        ]
+        builder = self._make_builder()
+        data: dict = {"_personality_mode": "hybrid"}
+        builder._phase_personality(data)
+
+        # With an override, traits dict should contain the override
+        assert data["personality"]["traits"]["warmth"] == 0.9
+
+    def test_show_computed_traits_preview(self):
+        """Verify _show_computed_traits_preview runs without errors."""
+        builder = self._make_builder()
+        traits = {"warmth": 0.85, "rigor": 0.55, "humor": 0.15, "patience": 0.4}
+        # Should not raise
+        builder._show_computed_traits_preview(traits)
+        # Verify console.print was called (for the table)
+        assert builder.console.print.call_count >= 2
+
+
+# ---------------------------------------------------------------------------
+# LLMEnhancer - client & LLM paths (covers lines 630-639, 654, 661, 669-718)
+# ---------------------------------------------------------------------------
+
+
+class TestLLMEnhancerClient:
+    def test_get_client_cached(self):
+        enhancer = LLMEnhancer(api_key="test_key")
+        mock_client = MagicMock()
+        enhancer._client = mock_client
+        result = enhancer._get_client()
+        assert result is mock_client
+
+    def test_get_client_no_api_key(self):
+        enhancer = LLMEnhancer(api_key=None)
+        # Ensure env var is not set
+        with patch.dict(os.environ, {"ANTHROPIC_API_KEY": ""}, clear=False):
+            enhancer.api_key = None
+            result = enhancer._get_client()
+            assert result is None
+
+    def test_get_client_success_with_mock_anthropic(self):
+        """When anthropic is importable, _get_client returns a client."""
+        import sys
+
+        mock_anthropic = MagicMock()
+        mock_client = MagicMock()
+        mock_anthropic.Anthropic.return_value = mock_client
+        sys.modules["anthropic"] = mock_anthropic
+        try:
+            enhancer = LLMEnhancer(api_key="test_key")
+            result = enhancer._get_client()
+            assert result is mock_client
+        finally:
+            del sys.modules["anthropic"]
+
+    def test_enhance_with_api_key_but_no_sdk(self):
+        """When API key set but anthropic not installed, falls back to templates."""
+        enhancer = LLMEnhancer(api_key="fake_key", console=MagicMock())
+        identity = BuiltIdentity({
+            "schema_version": "1.0",
+            "metadata": {"name": "Bot"},
+            "role": {"title": "Helper", "purpose": "Help"},
+            "personality": {"traits": {"warmth": 0.5}},
+        })
+        # _get_client will return None (no anthropic installed)
+        result = enhancer.enhance(identity)
+        assert isinstance(result, dict)
+        assert "personality_notes" in result
+
+
+class TestLLMEnhancerLLMPath:
+    def test_enhance_with_llm_success(self):
+        mock_client = MagicMock()
+        mock_response = MagicMock()
+        mock_response.content = [MagicMock(text=json.dumps({
+            "personality_notes": "Test bot is great.",
+            "greeting": "Hi there!",
+            "vocabulary": {
+                "preferred": ["great"],
+                "avoided": ["bad"],
+                "signature_phrases": ["you bet"],
+            },
+            "strategies": {
+                "uncertainty": {"approach": "transparent"},
+                "disagreement": {"approach": "respectful"},
+            },
+        }))]
+        mock_client.messages.create.return_value = mock_response
+
+        enhancer = LLMEnhancer(api_key="test_key", console=MagicMock())
+        identity = BuiltIdentity({
+            "schema_version": "1.0",
+            "metadata": {"name": "TestBot"},
+            "role": {"title": "Helper", "purpose": "Help users"},
+            "personality": {"traits": {"warmth": 0.8}},
+        })
+
+        result = enhancer._enhance_with_llm(mock_client, identity)
+        assert result["personality_notes"] == "Test bot is great."
+        assert result["greeting"] == "Hi there!"
+        mock_client.messages.create.assert_called_once()
+
+    def test_enhance_with_llm_error_falls_back(self):
+        mock_client = MagicMock()
+        mock_client.messages.create.side_effect = Exception("API error")
+
+        enhancer = LLMEnhancer(api_key="test_key", console=MagicMock())
+        identity = BuiltIdentity({
+            "schema_version": "1.0",
+            "metadata": {"name": "Bot"},
+            "role": {"title": "Helper", "purpose": "Help"},
+            "personality": {"traits": {"warmth": 0.5}},
+        })
+
+        result = enhancer._enhance_with_llm(mock_client, identity)
+        # Falls back to templates
+        assert isinstance(result, dict)
+        assert "personality_notes" in result
+
+
+# ---------------------------------------------------------------------------
+# LLMEnhancer templates - trait-based conditionals (covers lines 733, 737)
+# ---------------------------------------------------------------------------
+
+
+class TestLLMEnhancerTemplates:
+    def _make_identity(self, **traits):
+        return BuiltIdentity({
+            "schema_version": "1.0",
+            "metadata": {"name": "TestBot"},
+            "role": {"title": "Helper", "purpose": "Help users"},
+            "personality": {"traits": traits},
+        })
+
+    def test_template_low_warmth(self):
+        identity = self._make_identity(warmth=0.2, rigor=0.5)
+        enhancer = LLMEnhancer(api_key=None)
+        result = enhancer._enhance_with_templates(identity)
+        assert "reserved" in result["personality_notes"].lower()
+
+    def test_template_high_rigor(self):
+        identity = self._make_identity(warmth=0.5, rigor=0.9)
+        enhancer = LLMEnhancer(api_key=None)
+        result = enhancer._enhance_with_templates(identity)
+        notes = result["personality_notes"]
+        assert "precision" in notes.lower() or "thoroughness" in notes.lower()
+
+    def test_template_high_humor(self):
+        identity = self._make_identity(warmth=0.5, humor=0.7)
+        enhancer = LLMEnhancer(api_key=None)
+        result = enhancer._enhance_with_templates(identity)
+        assert "humor" in result["personality_notes"].lower()
+
+    def test_template_vocabulary_structure(self):
+        identity = self._make_identity(warmth=0.5, rigor=0.5)
+        enhancer = LLMEnhancer(api_key=None)
+        result = enhancer._enhance_with_templates(identity)
+        vocab = result["vocabulary"]
+        assert "preferred" in vocab
+        assert "avoided" in vocab
+        assert "signature_phrases" in vocab
+
+    def test_template_strategies_structure(self):
+        identity = self._make_identity(warmth=0.5, rigor=0.5)
+        enhancer = LLMEnhancer(api_key=None)
+        result = enhancer._enhance_with_templates(identity)
+        strategies = result["strategies"]
+        assert "uncertainty" in strategies
+        assert "disagreement" in strategies
+
+
+# ---------------------------------------------------------------------------
+# apply_enhancements interactive path (covers lines 792-830)
+# ---------------------------------------------------------------------------
+
+
+class TestApplyEnhancementsInteractive:
+    def _make_identity(self):
+        return BuiltIdentity({
+            "schema_version": "1.0",
+            "metadata": {"name": "TestBot"},
+            "personality": {"traits": {"warmth": 0.5}},
+        })
+
+    @patch("personanexus.builder.Confirm.ask")
+    def test_accept_personality_notes(self, mock_confirm):
+        mock_confirm.return_value = True
+        enhancer = LLMEnhancer(api_key=None, console=MagicMock())
+        result = enhancer.apply_enhancements(
+            self._make_identity(),
+            {"personality_notes": "Bot is great."},
+            interactive=True,
+        )
+        assert result.data["personality"]["notes"] == "Bot is great."
+
+    @patch("personanexus.builder.Confirm.ask")
+    def test_reject_personality_notes(self, mock_confirm):
+        mock_confirm.return_value = False
+        enhancer = LLMEnhancer(api_key=None, console=MagicMock())
+        result = enhancer.apply_enhancements(
+            self._make_identity(),
+            {"personality_notes": "Bot is great."},
+            interactive=True,
+        )
+        assert "notes" not in result.data["personality"]
+
+    @patch("personanexus.builder.Confirm.ask")
+    def test_accept_greeting(self, mock_confirm):
+        mock_confirm.return_value = True
+        enhancer = LLMEnhancer(api_key=None, console=MagicMock())
+        result = enhancer.apply_enhancements(
+            self._make_identity(),
+            {"greeting": "Hello!"},
+            interactive=True,
+        )
+        assert result.data["metadata"]["greeting"] == "Hello!"
+
+    @patch("personanexus.builder.Confirm.ask")
+    def test_accept_vocabulary(self, mock_confirm):
+        mock_confirm.return_value = True
+        enhancer = LLMEnhancer(api_key=None, console=MagicMock())
+        result = enhancer.apply_enhancements(
+            self._make_identity(),
+            {"vocabulary": {"preferred": ["great"], "avoided": ["bad"], "signature_phrases": []}},
+            interactive=True,
+        )
+        assert result.data["communication"]["vocabulary"]["preferred"] == ["great"]
+
+    @patch("personanexus.builder.Confirm.ask")
+    def test_accept_strategies(self, mock_confirm):
+        mock_confirm.return_value = True
+        enhancer = LLMEnhancer(api_key=None, console=MagicMock())
+        result = enhancer.apply_enhancements(
+            self._make_identity(),
+            {"strategies": {"uncertainty": {"approach": "transparent"}}},
+            interactive=True,
+        )
+        assert result.data["behavior"]["strategies"]["uncertainty"]["approach"] == "transparent"

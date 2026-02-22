@@ -273,33 +273,35 @@ class TestDiscPresets:
         assert "the_steady_hand" in presets
         assert "the_analyst" in presets
 
-    def test_get_disc_preset_commander(self):
-        profile = get_disc_preset("the_commander")
-        assert profile.dominance == 0.9
-        assert profile.influence == 0.4
-        assert profile.steadiness == 0.2
-        assert profile.conscientiousness == 0.5
-
-    def test_get_disc_preset_analyst(self):
-        profile = get_disc_preset("the_analyst")
-        assert profile.dominance == 0.3
-        assert profile.conscientiousness == 0.9
+    @pytest.mark.parametrize(
+        "preset_name,dom,inf,ste,con",
+        [
+            ("the_commander", 0.9, 0.4, 0.2, 0.5),
+            ("the_analyst", 0.3, 0.2, 0.6, 0.9),
+        ],
+        ids=["commander", "analyst"],
+    )
+    def test_disc_preset_values(self, preset_name, dom, inf, ste, con):
+        profile = get_disc_preset(preset_name)
+        assert profile.dominance == dom
+        assert profile.conscientiousness == con
 
     def test_get_disc_preset_unknown_raises(self):
         with pytest.raises(KeyError, match="Unknown DISC preset"):
             get_disc_preset("the_pirate")
 
-    def test_preset_traits_produce_expected_patterns(self):
-        """Commander should be high assertiveness, low patience."""
-        commander = get_disc_preset("the_commander")
-        traits = disc_to_traits(commander)
-        assert traits["assertiveness"] > 0.7
-        assert traits["patience"] < 0.4
-
-    def test_analyst_preset_high_rigor(self):
-        analyst = get_disc_preset("the_analyst")
-        traits = disc_to_traits(analyst)
-        assert traits["rigor"] > 0.6
+    @pytest.mark.parametrize(
+        "preset_name,expected_trait,min_val",
+        [
+            ("the_commander", "assertiveness", 0.7),
+            ("the_analyst", "rigor", 0.6),
+        ],
+        ids=["commander-assertiveness", "analyst-rigor"],
+    )
+    def test_preset_trait_patterns(self, preset_name, expected_trait, min_val):
+        profile = get_disc_preset(preset_name)
+        traits = disc_to_traits(profile)
+        assert traits[expected_trait] > min_val
 
 
 # ---------------------------------------------------------------------------

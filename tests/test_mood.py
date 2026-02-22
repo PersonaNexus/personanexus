@@ -81,9 +81,9 @@ def test_personality_without_mood():
 
 
 def test_trait_modifier_bounds():
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         TraitModifier(trait="x", delta=1.5)
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         TraitModifier(trait="x", delta=-1.5)
 
 

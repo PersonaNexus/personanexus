@@ -181,8 +181,11 @@ class IdentityValidator:
         profile = identity.personality.profile
 
         # Enterprise recommendation: neuroticism > 0.6 may cause inconsistent behavior
-        if profile.mode in (PersonalityMode.OCEAN, PersonalityMode.HYBRID):
-            if profile.ocean is not None and profile.ocean.neuroticism > 0.6:
+        if (
+            profile.mode in (PersonalityMode.OCEAN, PersonalityMode.HYBRID)
+            and profile.ocean is not None
+            and profile.ocean.neuroticism > 0.6
+        ):
                 warnings.append(
                     ValidationWarning(
                         type="personality_profile",
@@ -196,8 +199,10 @@ class IdentityValidator:
                 )
 
         # Enterprise recommendation for customer-facing agents
-        if profile.mode in (PersonalityMode.OCEAN, PersonalityMode.HYBRID):
-            if profile.ocean is not None:
+        if (
+            profile.mode in (PersonalityMode.OCEAN, PersonalityMode.HYBRID)
+            and profile.ocean is not None
+        ):
                 combined = (
                     profile.ocean.conscientiousness + profile.ocean.agreeableness
                 )

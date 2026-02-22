@@ -250,29 +250,27 @@ class TestOpenClawCompiler:
 
 
 class TestCompileIdentity:
-    def test_text_target(self, ada_identity):
-        result = compile_identity(ada_identity, target="text")
-        assert isinstance(result, str)
-        assert "# Ada" in result
+    @pytest.mark.parametrize(
+        "target,result_type,expected_content",
+        [
+            ("text", str, "# Ada"),
+            ("anthropic", str, "<identity>"),
+            ("openai", str, "Ada"),
+            ("openclaw", dict, "agent_name"),
+            ("json", dict, "system_prompt"),
+        ],
+        ids=["text", "anthropic", "openai", "openclaw", "json"],
+    )
+    def test_compile_targets(self, ada_identity, target, result_type, expected_content):
+        result = compile_identity(ada_identity, target=target)
+        assert isinstance(result, result_type)
+        if isinstance(result, str):
+            assert expected_content in result
+        else:
+            assert expected_content in result
 
-    def test_anthropic_target(self, ada_identity):
-        result = compile_identity(ada_identity, target="anthropic")
-        assert isinstance(result, str)
-        assert "<identity>" in result
-
-    def test_openai_target(self, ada_identity):
-        result = compile_identity(ada_identity, target="openai")
-        assert isinstance(result, str)
-
-    def test_openclaw_target(self, ada_identity):
-        result = compile_identity(ada_identity, target="openclaw")
-        assert isinstance(result, dict)
-        assert "agent_name" in result
-
-    def test_json_target(self, ada_identity):
+    def test_json_target_has_token_estimate(self, ada_identity):
         result = compile_identity(ada_identity, target="json")
-        assert isinstance(result, dict)
-        assert "system_prompt" in result
         assert "tokens_estimated" in result
 
     def test_unknown_target_raises(self, ada_identity):
