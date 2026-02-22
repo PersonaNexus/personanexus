@@ -51,3 +51,13 @@ def ada_disc_path(examples_dir: Path) -> Path:
 @pytest.fixture
 def hybrid_path(examples_dir: Path) -> Path:
     return examples_dir / "identities" / "hybrid-example.yaml"
+
+
+@pytest.fixture
+def ada_jungian_path(examples_dir: Path) -> Path:
+    return examples_dir / "identities" / "ada-jungian.yaml"
+
+
+@pytest.fixture
+def hybrid_jungian_path(examples_dir: Path) -> Path:
+    return examples_dir / "identities" / "hybrid-jungian.yaml"

@@ -7,7 +7,7 @@ import os
 
 import yaml
 
-from personanexus.personality import DISC_PRESETS
+from personanexus.personality import DISC_PRESETS, JUNGIAN_PRESETS
 
 
 def _load_yaml(path: str | os.PathLike) -> dict:
@@ -635,6 +635,22 @@ def _extract_personality_diff(id1: dict, id2: dict) -> dict:
                 }
         personality_diff["disc"] = disc_diff
 
+    # Check Jungian traits
+    jungian1 = _get_jungian_traits(id1)
+    jungian2 = _get_jungian_traits(id2)
+
+    if jungian1 and jungian2:
+        jungian_diff = {}
+        for trait in jungian1:
+            if trait in jungian2 and jungian1[trait] is not None and jungian2[trait] is not None:
+                delta = jungian2[trait] - jungian1[trait]
+                jungian_diff[trait] = {
+                    "val1": jungian1[trait],
+                    "val2": jungian2[trait],
+                    "delta": delta,
+                }
+        personality_diff["jungian"] = jungian_diff
+
     return personality_diff
 
 
@@ -683,6 +699,35 @@ def _get_disc_traits(identity: dict) -> dict | None:
                 "influence": p.influence,
                 "steadiness": p.steadiness,
                 "conscientiousness": p.conscientiousness,
+            }
+    return None
+
+
+def _get_jungian_traits(identity: dict) -> dict | None:
+    """Extract Jungian traits from an identity dictionary.
+
+    Returns None if Jungian personality is not present.
+    """
+    personality = identity.get("personality", {})
+    profile = personality.get("profile", {})
+    if profile.get("mode") == "jungian":
+        jungian = profile.get("jungian", {})
+        if jungian:
+            return {
+                "ei": jungian.get("ei"),
+                "sn": jungian.get("sn"),
+                "tf": jungian.get("tf"),
+                "jp": jungian.get("jp"),
+            }
+        # Check for preset values using canonical JUNGIAN_PRESETS
+        jungian_preset = profile.get("jungian_preset")
+        if jungian_preset and jungian_preset.lower() in JUNGIAN_PRESETS:
+            p = JUNGIAN_PRESETS[jungian_preset.lower()]
+            return {
+                "ei": p.ei,
+                "sn": p.sn,
+                "tf": p.tf,
+                "jp": p.jp,
             }
     return None
 
@@ -941,6 +986,13 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
                 delta = data["delta"]
                 sign = "+" if delta >= 0 else ""
                 lines.append(f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})")
+
+        if "jungian" in personality:
+            lines.append("Jungian Profile:")
+            for trait, data in personality["jungian"].items():
+                delta = data["delta"]
+                sign = "+" if delta >= 0 else ""
+                lines.append(f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})")
         lines.append("")
     else:
         lines.append("PERSONALITY DIFFERENCES: (none)")
@@ -1107,6 +1159,15 @@ def format_diff_markdown(diff: dict) -> str:
             lines.append("### DISC Traits")
             lines.append("")
             for trait, data in personality["disc"].items():
+                delta = data["delta"]
+                sign = "+" if delta >= 0 else ""
+                lines.append(f"- **{trait}:** {data['val1']} -> {data['val2']} ({sign}{delta})")
+            lines.append("")
+
+        if "jungian" in personality:
+            lines.append("### Jungian Profile")
+            lines.append("")
+            for trait, data in personality["jungian"].items():
                 delta = data["delta"]
                 sign = "+" if delta >= 0 else ""
                 lines.append(f"- **{trait}:** {data['val1']} -> {data['val2']} ({sign}{delta})")

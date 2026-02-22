@@ -918,6 +918,23 @@ Contributions are welcome! Whether it's a new archetype, a compiler target, a bu
 4. Run `uv run pytest && uv run ruff check src/ tests/`
 5. Open a PR
 
+## Trademark Notice
+
+PersonaNexus uses established public-domain personality frameworks:
+
+- **OCEAN (Big Five)** is based on the Five Factor Model, which is public-domain
+  academic research. The IPIP scales are explicitly free for all use.
+
+- **DISC** refers to the behavioral model by William Moulton Marston (1928),
+  which is in the public domain. "DiSC" (stylized) is a registered trademark of
+  Wiley. PersonaNexus is not affiliated with or endorsed by Wiley.
+
+- **Jungian types** refers to Carl Jung's typological theory (1921), which is in
+  the public domain. The four-letter type codes (e.g. INTJ, ENFP) are descriptive
+  abbreviations used widely in academic and popular literature. "MBTI" and
+  "Myers-Briggs" are registered trademarks of The Myers-Briggs Company.
+  PersonaNexus is not affiliated with or endorsed by The Myers-Briggs Company.
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

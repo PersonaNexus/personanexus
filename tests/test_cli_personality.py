@@ -213,3 +213,154 @@ class TestShowProfileCommand:
         assert "Reverse Mapping" in result.output
         assert "OCEAN:" in result.output
         assert "DISC:" in result.output
+
+    def test_show_jungian_profile(self, ada_jungian_path, examples_dir):
+        result = runner.invoke(
+            app,
+            [
+                "personality",
+                "show-profile",
+                str(ada_jungian_path),
+                "--search-path",
+                str(examples_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Mode: jungian" in result.output
+        assert "Jungian Preset: intj" in result.output
+
+    def test_show_hybrid_jungian_profile(self, hybrid_jungian_path, examples_dir):
+        result = runner.invoke(
+            app,
+            [
+                "personality",
+                "show-profile",
+                str(hybrid_jungian_path),
+                "--search-path",
+                str(examples_dir),
+            ],
+        )
+        assert result.exit_code == 0
+        assert "Mode: hybrid" in result.output
+        assert "Jungian" in result.output
+
+    def test_show_profile_includes_jungian_reverse_mapping(self, ada_path, examples_dir):
+        result = runner.invoke(
+            app,
+            ["personality", "show-profile", str(ada_path), "--search-path", str(examples_dir)],
+        )
+        assert result.exit_code == 0
+        assert "Jungian:" in result.output
+        assert "closest:" in result.output
+
+
+# ---------------------------------------------------------------------------
+# jungian-to-traits command
+# ---------------------------------------------------------------------------
+
+
+class TestJungianToTraits:
+    def test_with_preset(self):
+        result = runner.invoke(
+            app,
+            ["personality", "jungian-to-traits", "--preset", "intj"],
+        )
+        assert result.exit_code == 0
+        assert "rigor" in result.output
+        assert "warmth" in result.output
+
+    def test_with_preset_case_insensitive(self):
+        result = runner.invoke(
+            app,
+            ["personality", "jungian-to-traits", "--preset", "ENFP"],
+        )
+        assert result.exit_code == 0
+
+    def test_with_manual_dimensions(self):
+        result = runner.invoke(
+            app,
+            [
+                "personality",
+                "jungian-to-traits",
+                "--ei",
+                "0.8",
+                "--sn",
+                "0.7",
+                "--tf",
+                "0.3",
+                "--jp",
+                "0.2",
+            ],
+        )
+        assert result.exit_code == 0
+        assert "rigor" in result.output
+
+    def test_missing_dimensions_fails(self):
+        result = runner.invoke(
+            app,
+            [
+                "personality",
+                "jungian-to-traits",
+                "--ei",
+                "0.8",
+                "--sn",
+                "0.7",
+            ],
+        )
+        assert result.exit_code == 1
+
+    def test_invalid_preset_fails(self):
+        result = runner.invoke(
+            app,
+            ["personality", "jungian-to-traits", "--preset", "xxxx"],
+        )
+        assert result.exit_code == 1
+
+
+# ---------------------------------------------------------------------------
+# list-jungian-presets command
+# ---------------------------------------------------------------------------
+
+
+class TestListJungianPresets:
+    def test_lists_all_16(self):
+        result = runner.invoke(
+            app,
+            ["personality", "list-jungian-presets"],
+        )
+        assert result.exit_code == 0
+        assert "INTJ" in result.output
+        assert "ENFP" in result.output
+        assert "ESFJ" in result.output
+        assert "ISTP" in result.output
+
+
+# ---------------------------------------------------------------------------
+# jungian-recommend command
+# ---------------------------------------------------------------------------
+
+
+class TestJungianRecommend:
+    def test_list_categories(self):
+        result = runner.invoke(
+            app,
+            ["personality", "jungian-recommend"],
+        )
+        assert result.exit_code == 0
+        assert "data_science" in result.output
+        assert "creative_writing" in result.output
+
+    def test_specific_category(self):
+        result = runner.invoke(
+            app,
+            ["personality", "jungian-recommend", "strategic_analysis"],
+        )
+        assert result.exit_code == 0
+        assert "INTJ" in result.output
+
+    def test_unknown_category_fails(self):
+        result = runner.invoke(
+            app,
+            ["personality", "jungian-recommend", "underwater_basket_weaving"],
+        )
+        assert result.exit_code == 1

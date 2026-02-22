@@ -911,7 +911,7 @@ def _level_label(val: float) -> str:
 
 personality_app = typer.Typer(
     name="personality",
-    help="OCEAN/DISC personality mapping utilities",
+    help="OCEAN/DISC/Jungian personality mapping utilities",
     add_completion=False,
 )
 app.add_typer(personality_app, name="personality")
@@ -1029,6 +1029,105 @@ def personality_list_disc_presets() -> None:
         )
 
 
+@personality_app.command("jungian-to-traits")
+def personality_jungian_to_traits(
+    preset: Annotated[
+        str | None,
+        typer.Option(
+            help="Jungian type code (e.g. intj) - overrides individual values if provided",
+        ),
+    ] = None,
+    ei: Annotated[float | None, typer.Option(help="Extraversion (0) vs Introversion (1)")] = None,
+    sn: Annotated[float | None, typer.Option(help="Sensing (0) vs iNtuition (1)")] = None,
+    tf: Annotated[float | None, typer.Option(help="Thinking (0) vs Feeling (1)")] = None,
+    jp: Annotated[float | None, typer.Option(help="Judging (0) vs Perceiving (1)")] = None,
+) -> None:
+    """Map Jungian 16-type scores to personality traits."""
+    from personanexus.personality import get_jungian_preset, jungian_to_traits
+    from personanexus.types import JungianProfile
+
+    try:
+        if preset:
+            profile = get_jungian_preset(preset)
+        else:
+            if ei is None or sn is None or tf is None or jp is None:
+                console.print(
+                    "[red]Error: All Jungian dimensions required when --preset not provided[/red]"
+                )
+                raise typer.Exit(code=1)
+            profile = JungianProfile(ei=ei, sn=sn, tf=tf, jp=jp)
+    except Exception as exc:
+        console.print(f"[red]Invalid Jungian values: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    traits = jungian_to_traits(profile)
+    _print_traits_table("Jungian → Traits", traits)
+
+
+@personality_app.command("list-jungian-presets")
+def personality_list_jungian_presets() -> None:
+    """List all available Jungian 16-type presets."""
+    from personanexus.personality import list_jungian_presets
+
+    presets = list_jungian_presets()
+    table = Table(title="Jungian 16-Type Presets", show_header=True, header_style="bold")
+    table.add_column("Type", style="cyan")
+    table.add_column("E/I", justify="right")
+    table.add_column("S/N", justify="right")
+    table.add_column("T/F", justify="right")
+    table.add_column("J/P", justify="right")
+
+    for name, profile in sorted(presets.items()):
+        table.add_row(
+            name.upper(),
+            f"{profile.ei:.2f}",
+            f"{profile.sn:.2f}",
+            f"{profile.tf:.2f}",
+            f"{profile.jp:.2f}",
+        )
+
+    console.print(table)
+
+
+@personality_app.command("jungian-recommend")
+def personality_jungian_recommend(
+    role_category: Annotated[
+        str | None,
+        typer.Argument(help="Role category (e.g. data_science, creative_writing)"),
+    ] = None,
+) -> None:
+    """Show recommended Jungian types for an agent role category."""
+    from personanexus.personality import (
+        JUNGIAN_ROLE_RECOMMENDATIONS,
+        get_jungian_role_recommendations,
+    )
+
+    if role_category is None:
+        console.print("[bold]Available Role Categories:[/bold]\n")
+        for category in sorted(JUNGIAN_ROLE_RECOMMENDATIONS.keys()):
+            console.print(f"  - {category}")
+        return
+
+    try:
+        recommendations = get_jungian_role_recommendations(role_category)
+    except KeyError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    table = Table(
+        title=f"Jungian Recommendations for '{role_category}'",
+        show_header=True,
+        header_style="bold",
+    )
+    table.add_column("Type", style="cyan")
+    table.add_column("Description")
+
+    for type_code, description in recommendations:
+        table.add_row(type_code.upper(), description)
+
+    console.print(table)
+
+
 @personality_app.command("show-profile")
 def personality_show_profile(
     file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file")],
@@ -1039,8 +1138,10 @@ def personality_show_profile(
 ) -> None:
     """Show the personality profile and computed traits for an identity file."""
     from personanexus.personality import (
+        closest_jungian_type,
         compute_personality_traits,
         traits_to_disc,
+        traits_to_jungian,
         traits_to_ocean,
     )
 
@@ -1074,6 +1175,13 @@ def personality_show_profile(
         )
     if profile.disc_preset:
         console.print(f"[dim]DISC Preset: {profile.disc_preset}[/dim]")
+    if profile.jungian:
+        console.print(
+            f"[dim]Jungian: E/I={profile.jungian.ei}, S/N={profile.jungian.sn}, "
+            f"T/F={profile.jungian.tf}, J/P={profile.jungian.jp}[/dim]"
+        )
+    if profile.jungian_preset:
+        console.print(f"[dim]Jungian Preset: {profile.jungian_preset}[/dim]")
 
     # Compute final traits
     computed = compute_personality_traits(identity.personality)
@@ -1092,6 +1200,13 @@ def personality_show_profile(
     console.print(
         f"  DISC:  D={disc_approx.dominance:.3f}, I={disc_approx.influence:.3f}, "
         f"S={disc_approx.steadiness:.3f}, C={disc_approx.conscientiousness:.3f}"
+    )
+    jungian_approx = traits_to_jungian(computed)
+    jungian_type = closest_jungian_type(jungian_approx)
+    console.print(
+        f"  Jungian: E/I={jungian_approx.ei:.3f}, S/N={jungian_approx.sn:.3f}, "
+        f"T/F={jungian_approx.tf:.3f}, J/P={jungian_approx.jp:.3f}"
+        f"  (closest: {jungian_type})"
     )
     console.print()
 

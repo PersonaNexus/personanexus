@@ -144,6 +144,7 @@ class PersonalityMode(enum.StrEnum):
     CUSTOM = "custom"
     OCEAN = "ocean"
     DISC = "disc"
+    JUNGIAN = "jungian"
     HYBRID = "hybrid"
 
 
@@ -300,8 +301,25 @@ class DiscProfile(BaseModel):
     conscientiousness: float = Field(..., ge=0.0, le=1.0)
 
 
+class JungianProfile(BaseModel):
+    """Jungian 16-type personality profile with four preference dimensions scaled 0-1.
+
+    Based on Carl Jung's typological theory (1921, public domain).
+    Each dimension represents a preference spectrum:
+      ei: 0=Extraversion, 1=Introversion
+      sn: 0=Sensing, 1=iNtuition
+      tf: 0=Thinking, 1=Feeling
+      jp: 0=Judging, 1=Perceiving
+    """
+
+    ei: float = Field(..., ge=0.0, le=1.0, description="Extraversion (0) vs Introversion (1)")
+    sn: float = Field(..., ge=0.0, le=1.0, description="Sensing (0) vs iNtuition (1)")
+    tf: float = Field(..., ge=0.0, le=1.0, description="Thinking (0) vs Feeling (1)")
+    jp: float = Field(..., ge=0.0, le=1.0, description="Judging (0) vs Perceiving (1)")
+
+
 class PersonalityProfile(BaseModel):
-    """Personality framework configuration for OCEAN/DISC/hybrid modes."""
+    """Personality framework configuration for OCEAN/DISC/Jungian/hybrid modes."""
 
     mode: PersonalityMode = PersonalityMode.CUSTOM
     ocean: OceanProfile | None = None
@@ -309,6 +327,11 @@ class PersonalityProfile(BaseModel):
     disc_preset: str | None = Field(
         None,
         description="Named DISC preset (e.g. 'the_commander', 'the_analyst')",
+    )
+    jungian: JungianProfile | None = None
+    jungian_preset: str | None = Field(
+        None,
+        description="Jungian type preset (e.g. 'intj', 'enfp')",
     )
     override_priority: OverridePriority = OverridePriority.EXPLICIT_WINS
 
@@ -424,15 +447,23 @@ class Personality(BaseModel):
             if self.profile.disc is None and self.profile.disc_preset is None:
                 raise ValueError("DISC profile or disc_preset is required when mode is 'disc'")
 
+        elif mode == PersonalityMode.JUNGIAN:
+            if self.profile.jungian is None and self.profile.jungian_preset is None:
+                raise ValueError(
+                    "Jungian profile or jungian_preset is required when mode is 'jungian'"
+                )
+
         elif mode == PersonalityMode.HYBRID:
             has_framework = (
                 self.profile.ocean is not None
                 or self.profile.disc is not None
                 or self.profile.disc_preset is not None
+                or self.profile.jungian is not None
+                or self.profile.jungian_preset is not None
             )
             if not has_framework:
                 raise ValueError(
-                    "At least one framework profile (ocean/disc) is required in hybrid mode"
+                    "At least one framework profile (ocean/disc/jungian) is required in hybrid mode"
                 )
             has_overrides = len(self.traits.defined_traits()) > 0
             if not has_overrides:

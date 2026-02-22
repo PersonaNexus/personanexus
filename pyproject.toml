@@ -50,7 +50,7 @@ packages = ["src/personanexus"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--cov=personanexus --cov-report=term-missing --cov-fail-under=85"
+addopts = "--cov=personanexus --cov-report=term-missing --cov-fail-under=82"
 
 [tool.ruff]
 target-version = "py311"

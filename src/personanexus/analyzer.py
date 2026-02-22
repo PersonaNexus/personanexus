@@ -17,13 +17,16 @@ from pydantic import BaseModel, Field
 from personanexus.compiler import _TRAIT_TEMPLATES
 from personanexus.personality import (
     DISC_PRESETS,
+    JUNGIAN_PRESETS,
     compute_personality_traits,
     traits_to_disc,
+    traits_to_jungian,
     traits_to_ocean,
 )
 from personanexus.resolver import IdentityResolver
 from personanexus.types import (
     DiscProfile,
+    JungianProfile,
     OceanProfile,
     PersonalityTraits,
 )
@@ -63,6 +66,14 @@ class DiscPresetMatch(BaseModel):
     profile: DiscProfile
 
 
+class JungianPresetMatch(BaseModel):
+    """Closest Jungian 16-type preset match with Euclidean distance."""
+
+    preset_name: str
+    distance: float
+    profile: JungianProfile
+
+
 class AnalysisResult(BaseModel):
     """Complete result of analyzing an agent personality source."""
 
@@ -75,6 +86,8 @@ class AnalysisResult(BaseModel):
     ocean: OceanProfile
     disc: DiscProfile
     closest_preset: DiscPresetMatch | None = None
+    jungian: JungianProfile | None = None
+    closest_jungian_preset: JungianPresetMatch | None = None
 
     confidence: float = Field(..., ge=0.0, le=1.0)
 
@@ -98,6 +111,7 @@ class ComparisonResult(BaseModel):
     trait_deltas: list[TraitDelta]
     ocean_deltas: dict[str, float]
     disc_deltas: dict[str, float]
+    jungian_deltas: dict[str, float] | None = None
     similarity_score: float = Field(..., ge=0.0, le=1.0)
 
 
@@ -428,6 +442,34 @@ def find_closest_preset(disc: DiscProfile) -> DiscPresetMatch:
 
 
 # ---------------------------------------------------------------------------
+# Jungian Preset Matching
+# ---------------------------------------------------------------------------
+
+
+def find_closest_jungian_preset(profile: JungianProfile) -> JungianPresetMatch:
+    """Find the closest Jungian 16-type preset by Euclidean distance."""
+    best_name = ""
+    best_dist = float("inf")
+
+    for name, preset in JUNGIAN_PRESETS.items():
+        dist = math.sqrt(
+            (profile.ei - preset.ei) ** 2
+            + (profile.sn - preset.sn) ** 2
+            + (profile.tf - preset.tf) ** 2
+            + (profile.jp - preset.jp) ** 2
+        )
+        if dist < best_dist:
+            best_dist = dist
+            best_name = name
+
+    return JungianPresetMatch(
+        preset_name=best_name,
+        distance=round(best_dist, 4),
+        profile=JUNGIAN_PRESETS[best_name],
+    )
+
+
+# ---------------------------------------------------------------------------
 # Main Analyzer
 # ---------------------------------------------------------------------------
 
@@ -482,6 +524,10 @@ class SoulAnalyzer:
         disc = traits_to_disc(traits)
         closest = find_closest_preset(disc)
 
+        # Jungian reverse mapping
+        jungian = traits_to_jungian(traits)
+        closest_jungian = find_closest_jungian_preset(jungian)
+
         # Overall confidence
         avg_conf = sum(e.confidence for e in extractions) / len(extractions) if extractions else 0.0
 
@@ -493,6 +539,8 @@ class SoulAnalyzer:
             ocean=ocean,
             disc=disc,
             closest_preset=closest,
+            jungian=jungian,
+            closest_jungian_preset=closest_jungian,
             confidence=round(avg_conf, 2),
             agent_name=agent_name,
         )
@@ -531,6 +579,13 @@ class SoulAnalyzer:
         db = result_b.disc.model_dump()
         disc_deltas = {k: round(db[k] - da[k], 4) for k in da}
 
+        # Jungian deltas (both results will have jungian since analyze() always computes it)
+        jungian_deltas: dict[str, float] | None = None
+        if result_a.jungian is not None and result_b.jungian is not None:
+            ja = result_a.jungian.model_dump()
+            jb = result_b.jungian.model_dump()
+            jungian_deltas = {k: round(jb[k] - ja[k], 4) for k in ja}
+
         # Similarity score (cosine similarity on trait vectors)
         similarity = _cosine_similarity(
             [traits_a.get(t, 0.5) for t in STANDARD_TRAITS],
@@ -543,6 +598,7 @@ class SoulAnalyzer:
             trait_deltas=deltas,
             ocean_deltas=ocean_deltas,
             disc_deltas=disc_deltas,
+            jungian_deltas=jungian_deltas,
             similarity_score=round(similarity, 4),
         )
 

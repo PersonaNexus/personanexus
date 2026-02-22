@@ -232,4 +232,22 @@ class IdentityValidator:
                     )
                 )
 
+        # Jungian preset validation (soft check — preset may not exist)
+        if profile.jungian_preset is not None:
+            from personanexus.personality import JUNGIAN_PRESETS
+
+            if profile.jungian_preset.lower() not in JUNGIAN_PRESETS:
+                available = ", ".join(sorted(JUNGIAN_PRESETS.keys()))
+                warnings.append(
+                    ValidationWarning(
+                        type="personality_profile",
+                        message=(
+                            f"Unknown Jungian preset '{profile.jungian_preset}'. "
+                            f"Available: {available}"
+                        ),
+                        severity="high",
+                        path="personality.profile.jungian_preset",
+                    )
+                )
+
         return warnings

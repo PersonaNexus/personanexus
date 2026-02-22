@@ -5,6 +5,7 @@ from pydantic import ValidationError
 
 from personanexus.types import (
     DiscProfile,
+    JungianProfile,
     OceanProfile,
     OverridePriority,
     Personality,
@@ -281,3 +282,93 @@ class TestPersonalityValidation:
         }
         p = Personality.model_validate(data)
         assert p.profile.mode == PersonalityMode.CUSTOM
+
+
+# ---------------------------------------------------------------------------
+# JungianProfile
+# ---------------------------------------------------------------------------
+
+
+class TestJungianProfile:
+    def test_valid_profile(self):
+        profile = JungianProfile(ei=0.8, sn=0.7, tf=0.3, jp=0.2)
+        assert profile.ei == 0.8
+        assert profile.sn == 0.7
+        assert profile.tf == 0.3
+        assert profile.jp == 0.2
+
+    def test_boundary_values(self):
+        profile = JungianProfile(ei=0.0, sn=1.0, tf=0.0, jp=1.0)
+        assert profile.ei == 0.0
+        assert profile.sn == 1.0
+
+    def test_out_of_range_high(self):
+        with pytest.raises(ValidationError):
+            JungianProfile(ei=1.5, sn=0.5, tf=0.5, jp=0.5)
+
+    def test_out_of_range_low(self):
+        with pytest.raises(ValidationError):
+            JungianProfile(ei=-0.1, sn=0.5, tf=0.5, jp=0.5)
+
+    def test_missing_field_raises(self):
+        with pytest.raises(ValidationError):
+            JungianProfile(ei=0.5, sn=0.5, tf=0.5)  # missing jp
+
+
+# ---------------------------------------------------------------------------
+# Jungian in PersonalityProfile and Personality validation
+# ---------------------------------------------------------------------------
+
+
+class TestJungianValidation:
+    def test_jungian_mode_requires_profile_or_preset(self):
+        with pytest.raises(ValidationError, match="Jungian profile or jungian_preset"):
+            Personality(
+                traits=PersonalityTraits(),
+                profile=PersonalityProfile(mode=PersonalityMode.JUNGIAN),
+            )
+
+    def test_jungian_mode_valid_with_profile(self):
+        p = Personality(
+            traits=PersonalityTraits(),
+            profile=PersonalityProfile(
+                mode=PersonalityMode.JUNGIAN,
+                jungian=JungianProfile(ei=0.8, sn=0.8, tf=0.2, jp=0.2),
+            ),
+        )
+        assert p.profile.mode == PersonalityMode.JUNGIAN
+
+    def test_jungian_mode_valid_with_preset(self):
+        p = Personality(
+            traits=PersonalityTraits(),
+            profile=PersonalityProfile(
+                mode=PersonalityMode.JUNGIAN,
+                jungian_preset="intj",
+            ),
+        )
+        assert p.profile.jungian_preset == "intj"
+
+    def test_hybrid_mode_valid_with_jungian(self):
+        p = Personality(
+            traits=PersonalityTraits(warmth=0.85),
+            profile=PersonalityProfile(
+                mode=PersonalityMode.HYBRID,
+                jungian_preset="enfp",
+            ),
+        )
+        assert p.profile.mode == PersonalityMode.HYBRID
+
+    def test_hybrid_mode_valid_with_jungian_profile(self):
+        p = Personality(
+            traits=PersonalityTraits(rigor=0.9),
+            profile=PersonalityProfile(
+                mode=PersonalityMode.HYBRID,
+                jungian=JungianProfile(ei=0.5, sn=0.5, tf=0.5, jp=0.5),
+            ),
+        )
+        assert p.profile.mode == PersonalityMode.HYBRID
+
+    def test_personality_profile_default_has_no_jungian(self):
+        profile = PersonalityProfile()
+        assert profile.jungian is None
+        assert profile.jungian_preset is None

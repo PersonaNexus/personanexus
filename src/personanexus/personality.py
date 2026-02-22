@@ -1,7 +1,7 @@
-"""OCEAN/DISC personality framework mapping.
+"""OCEAN/DISC/Jungian personality framework mapping.
 
-Provides forward mapping (OCEAN/DISC → custom traits), reverse mapping
-(custom traits → OCEAN/DISC), DISC presets, and the main
+Provides forward mapping (OCEAN/DISC/Jungian → custom traits), reverse mapping
+(custom traits → OCEAN/DISC/Jungian), DISC and Jungian presets, and the main
 ``compute_personality_traits`` entry-point used by the compiler and CLI.
 
 All formulas are pure Python weighted sums — no external dependencies.
@@ -10,8 +10,11 @@ Weights are sourced from the AgentGov Multi-Agent Spec (Deliverable 2).
 
 from __future__ import annotations
 
+import math
+
 from personanexus.types import (
     DiscProfile,
+    JungianProfile,
     OceanProfile,
     OverridePriority,
     Personality,
@@ -233,6 +236,183 @@ DISC_PRESETS: dict[str, DiscProfile] = {
     "the_analyst": DiscProfile(dominance=0.3, influence=0.2, steadiness=0.6, conscientiousness=0.9),
 }
 
+# ---------------------------------------------------------------------------
+# Weight tables — Jungian → custom traits
+# ---------------------------------------------------------------------------
+# Based on Carl Jung's typological theory (1921, public domain).
+# Dimensions: ei (Extraversion/Introversion), sn (Sensing/iNtuition),
+#             tf (Thinking/Feeling), jp (Judging/Perceiving)
+
+JUNGIAN_WEIGHTS: dict[str, list[tuple[str, float, bool]]] = {
+    "warmth": [
+        ("tf", 0.4, False),
+        ("ei", 0.35, True),
+        ("sn", 0.15, False),
+        ("jp", 0.1, False),
+    ],
+    "verbosity": [
+        ("ei", 0.4, True),
+        ("sn", 0.25, False),
+        ("jp", 0.2, False),
+        ("tf", 0.15, False),
+    ],
+    "assertiveness": [
+        ("ei", 0.35, True),
+        ("tf", 0.3, True),
+        ("jp", 0.2, True),
+        ("sn", 0.15, True),
+    ],
+    "humor": [
+        ("ei", 0.3, True),
+        ("jp", 0.3, False),
+        ("sn", 0.2, False),
+        ("tf", 0.2, False),
+    ],
+    "empathy": [
+        ("tf", 0.5, False),
+        ("ei", 0.2, True),
+        ("sn", 0.15, False),
+        ("jp", 0.15, False),
+    ],
+    "directness": [
+        ("tf", 0.4, True),
+        ("ei", 0.25, True),
+        ("jp", 0.2, True),
+        ("sn", 0.15, True),
+    ],
+    "rigor": [
+        ("jp", 0.35, True),
+        ("tf", 0.25, True),
+        ("sn", 0.25, True),
+        ("ei", 0.15, False),
+    ],
+    "creativity": [
+        ("sn", 0.4, False),
+        ("jp", 0.3, False),
+        ("ei", 0.15, True),
+        ("tf", 0.15, False),
+    ],
+    "epistemic_humility": [
+        ("jp", 0.3, False),
+        ("sn", 0.25, False),
+        ("tf", 0.25, False),
+        ("ei", 0.2, False),
+    ],
+    "patience": [
+        ("jp", 0.3, False),
+        ("ei", 0.25, False),
+        ("tf", 0.25, False),
+        ("sn", 0.2, True),
+    ],
+}
+
+# ---------------------------------------------------------------------------
+# Weight tables — reverse mapping (traits → Jungian)
+# ---------------------------------------------------------------------------
+
+REVERSE_JUNGIAN_WEIGHTS: dict[str, list[tuple[str, float, bool]]] = {
+    "ei": [
+        ("warmth", 0.25, True),
+        ("assertiveness", 0.25, True),
+        ("verbosity", 0.25, True),
+        ("humor", 0.25, True),
+    ],
+    "sn": [
+        ("creativity", 0.4, False),
+        ("epistemic_humility", 0.2, False),
+        ("rigor", 0.2, True),
+        ("humor", 0.2, False),
+    ],
+    "tf": [
+        ("empathy", 0.4, False),
+        ("warmth", 0.3, False),
+        ("directness", 0.3, True),
+    ],
+    "jp": [
+        ("creativity", 0.25, False),
+        ("patience", 0.25, False),
+        ("rigor", 0.25, True),
+        ("humor", 0.25, False),
+    ],
+}
+
+# ---------------------------------------------------------------------------
+# Jungian 16-type presets
+# ---------------------------------------------------------------------------
+# Preset keys are lowercase 4-letter type codes. Values use 0.2/0.8 (not 0/1)
+# to model preference strength realistically.
+
+JUNGIAN_PRESETS: dict[str, JungianProfile] = {
+    # Analysts (IN_T/P)
+    "intj": JungianProfile(ei=0.8, sn=0.8, tf=0.2, jp=0.2),
+    "intp": JungianProfile(ei=0.8, sn=0.8, tf=0.2, jp=0.8),
+    "entj": JungianProfile(ei=0.2, sn=0.8, tf=0.2, jp=0.2),
+    "entp": JungianProfile(ei=0.2, sn=0.8, tf=0.2, jp=0.8),
+    # Diplomats (IN_F/P)
+    "infj": JungianProfile(ei=0.8, sn=0.8, tf=0.8, jp=0.2),
+    "infp": JungianProfile(ei=0.8, sn=0.8, tf=0.8, jp=0.8),
+    "enfj": JungianProfile(ei=0.2, sn=0.8, tf=0.8, jp=0.2),
+    "enfp": JungianProfile(ei=0.2, sn=0.8, tf=0.8, jp=0.8),
+    # Sentinels (IS_T/F)
+    "istj": JungianProfile(ei=0.8, sn=0.2, tf=0.2, jp=0.2),
+    "isfj": JungianProfile(ei=0.8, sn=0.2, tf=0.8, jp=0.2),
+    "estj": JungianProfile(ei=0.2, sn=0.2, tf=0.2, jp=0.2),
+    "esfj": JungianProfile(ei=0.2, sn=0.2, tf=0.8, jp=0.2),
+    # Explorers (IS_T/P)
+    "istp": JungianProfile(ei=0.8, sn=0.2, tf=0.2, jp=0.8),
+    "isfp": JungianProfile(ei=0.8, sn=0.2, tf=0.8, jp=0.8),
+    "estp": JungianProfile(ei=0.2, sn=0.2, tf=0.2, jp=0.8),
+    "esfp": JungianProfile(ei=0.2, sn=0.2, tf=0.8, jp=0.8),
+}
+
+# ---------------------------------------------------------------------------
+# Jungian role recommendations
+# ---------------------------------------------------------------------------
+# Maps agent role categories to recommended Jungian types with descriptions.
+
+JUNGIAN_ROLE_RECOMMENDATIONS: dict[str, list[tuple[str, str]]] = {
+    "strategic_analysis": [
+        ("intj", "Strategic, independent, long-range planning"),
+        ("entj", "Decisive leadership, systems thinking"),
+    ],
+    "data_science": [
+        ("intp", "Analytical, theory-driven exploration"),
+        ("intj", "Methodical, pattern recognition"),
+    ],
+    "creative_writing": [
+        ("infp", "Imaginative, value-driven storytelling"),
+        ("enfp", "Enthusiastic, idea-rich brainstorming"),
+    ],
+    "customer_support": [
+        ("esfj", "Warm, attentive, detail-oriented care"),
+        ("isfj", "Patient, reliable, thorough help"),
+    ],
+    "project_management": [
+        ("entj", "Organized, goal-driven leadership"),
+        ("estj", "Process-oriented, dependable execution"),
+    ],
+    "legal_compliance": [
+        ("istj", "Rule-following, precise, thorough"),
+        ("intj", "Strategic risk assessment"),
+    ],
+    "teaching_tutoring": [
+        ("enfj", "Inspiring, empathetic guidance"),
+        ("infj", "Insightful, personalized mentoring"),
+    ],
+    "engineering": [
+        ("istp", "Hands-on problem solving, pragmatic"),
+        ("intp", "Systematic debugging, first-principles"),
+    ],
+    "sales_persuasion": [
+        ("entp", "Quick-thinking, persuasive debater"),
+        ("estp", "Action-oriented, adaptable closer"),
+    ],
+    "counseling_coaching": [
+        ("infj", "Deep empathy, pattern insight"),
+        ("enfp", "Enthusiastic encouragement, possibility-focused"),
+    ],
+}
+
 
 # ---------------------------------------------------------------------------
 # Forward mapping functions
@@ -291,6 +471,17 @@ def disc_to_traits(profile: DiscProfile) -> dict[str, float]:
     return _apply_weights(DISC_WEIGHTS, values)
 
 
+def jungian_to_traits(profile: JungianProfile) -> dict[str, float]:
+    """Map a Jungian 16-type profile to the 10 custom personality traits."""
+    values = {
+        "ei": profile.ei,
+        "sn": profile.sn,
+        "tf": profile.tf,
+        "jp": profile.jp,
+    }
+    return _apply_weights(JUNGIAN_WEIGHTS, values)
+
+
 # ---------------------------------------------------------------------------
 # Reverse mapping functions
 # ---------------------------------------------------------------------------
@@ -343,6 +534,29 @@ def traits_to_disc(traits: PersonalityTraits) -> DiscProfile:
     return DiscProfile(**disc_vals)
 
 
+def traits_to_jungian(traits: PersonalityTraits) -> JungianProfile:
+    """Approximate reverse mapping from custom traits to Jungian profile.
+
+    Uses weighted-sum formulas. The result is an approximation — a round-trip
+    (jungian → traits → jungian) will not be exact.
+    """
+    defined = traits.defined_traits()
+    values = {
+        "warmth": defined.get("warmth", 0.5),
+        "verbosity": defined.get("verbosity", 0.5),
+        "assertiveness": defined.get("assertiveness", 0.5),
+        "humor": defined.get("humor", 0.5),
+        "empathy": defined.get("empathy", 0.5),
+        "directness": defined.get("directness", 0.5),
+        "rigor": defined.get("rigor", 0.5),
+        "creativity": defined.get("creativity", 0.5),
+        "epistemic_humility": defined.get("epistemic_humility", 0.5),
+        "patience": defined.get("patience", 0.5),
+    }
+    jungian_vals = _apply_weights(REVERSE_JUNGIAN_WEIGHTS, values)
+    return JungianProfile(**jungian_vals)
+
+
 # ---------------------------------------------------------------------------
 # Preset lookup
 # ---------------------------------------------------------------------------
@@ -362,6 +576,55 @@ def get_disc_preset(name: str) -> DiscProfile:
 def list_disc_presets() -> dict[str, DiscProfile]:
     """Return all available DISC presets."""
     return dict(DISC_PRESETS)
+
+
+def get_jungian_preset(name: str) -> JungianProfile:
+    """Look up a named Jungian type preset.
+
+    Accepts case-insensitive type codes (e.g. 'INTJ', 'intj').
+    Raises ``KeyError`` if the preset name is not found.
+    """
+    key = name.lower()
+    if key not in JUNGIAN_PRESETS:
+        available = ", ".join(sorted(JUNGIAN_PRESETS.keys()))
+        raise KeyError(f"Unknown Jungian preset '{name}'. Available: {available}")
+    return JUNGIAN_PRESETS[key]
+
+
+def list_jungian_presets() -> dict[str, JungianProfile]:
+    """Return all available Jungian 16-type presets."""
+    return dict(JUNGIAN_PRESETS)
+
+
+def closest_jungian_type(profile: JungianProfile) -> str:
+    """Find the closest Jungian type preset by Euclidean distance."""
+    best_name = ""
+    best_dist = float("inf")
+    for name, preset in JUNGIAN_PRESETS.items():
+        dist = math.sqrt(
+            (profile.ei - preset.ei) ** 2
+            + (profile.sn - preset.sn) ** 2
+            + (profile.tf - preset.tf) ** 2
+            + (profile.jp - preset.jp) ** 2
+        )
+        if dist < best_dist:
+            best_dist = dist
+            best_name = name
+    return best_name.upper()
+
+
+def get_jungian_role_recommendations(
+    role_category: str,
+) -> list[tuple[str, str]]:
+    """Look up recommended Jungian types for an agent role category.
+
+    Raises ``KeyError`` if the role category is not found.
+    """
+    key = role_category.lower().replace("-", "_").replace(" ", "_")
+    if key not in JUNGIAN_ROLE_RECOMMENDATIONS:
+        available = ", ".join(sorted(JUNGIAN_ROLE_RECOMMENDATIONS.keys()))
+        raise KeyError(f"Unknown role category '{role_category}'. Available: {available}")
+    return JUNGIAN_ROLE_RECOMMENDATIONS[key]
 
 
 # ---------------------------------------------------------------------------
@@ -401,11 +664,18 @@ def compute_personality_traits(personality: Personality) -> PersonalityTraits:
             raise ValueError("DISC mode requires a disc profile or disc_preset to be set")
         computed = disc_to_traits(disc)
 
+    elif mode == PersonalityMode.JUNGIAN:
+        jungian = profile.jungian
+        if jungian is None and profile.jungian_preset:
+            jungian = get_jungian_preset(profile.jungian_preset)
+        if jungian is None:
+            raise ValueError("JUNGIAN mode requires a jungian profile or jungian_preset")
+        computed = jungian_to_traits(jungian)
+
     elif mode == PersonalityMode.HYBRID:
         # HYBRID mode computes base traits from a framework profile, then applies
-        # explicit trait overrides on top (see override_priority below). When both
-        # OCEAN and DISC profiles are provided, OCEAN takes precedence as the base.
-        # To use DISC as the base instead, omit the OCEAN profile from the identity.
+        # explicit trait overrides on top (see override_priority below).
+        # Precedence: OCEAN > DISC > Jungian (first available wins).
         if profile.ocean is not None:
             computed = ocean_to_traits(profile.ocean)
         elif profile.disc is not None:
@@ -413,6 +683,11 @@ def compute_personality_traits(personality: Personality) -> PersonalityTraits:
         elif profile.disc_preset:
             disc = get_disc_preset(profile.disc_preset)
             computed = disc_to_traits(disc)
+        elif profile.jungian is not None:
+            computed = jungian_to_traits(profile.jungian)
+        elif profile.jungian_preset:
+            jungian = get_jungian_preset(profile.jungian_preset)
+            computed = jungian_to_traits(jungian)
         else:
             # Should not happen — validated at model level
             computed = {}
