@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PersonaNexus — YAML Personality Framework</title>
+    <title>PersonaNexus — The Identity Layer for AI Agents</title>
+    <link rel="icon" type="image/jpeg" href="logo.jpg">
     <style>
         * {
             margin: 0;
@@ -394,6 +395,90 @@
             transition: all 0.2s;
         }
 
+        .footer-link:hover {
+            color: white;
+        }
+
+        /* Logo */
+        .hero-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 10px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        /* PyPI Badge */
+        .badges {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 24px;
+        }
+
+        .badges img {
+            height: 24px;
+        }
+
+        /* Comparison Table */
+        .comparison {
+            padding: 80px 20px;
+            background: #0d131d;
+        }
+
+        .comparison-table {
+            max-width: 1000px;
+            margin: 0 auto;
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 16px 20px;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .comparison-table th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .comparison-table th:first-child,
+        .comparison-table td:first-child {
+            text-align: left;
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .comparison-table th.highlight {
+            background: linear-gradient(135deg, var(--accent-start), var(--accent-end));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1rem;
+        }
+
+        .comparison-table td.highlight {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .comparison-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .comparison-table tr:hover td.highlight {
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .check { color: #86efac; font-size: 1.2rem; }
+        .cross { color: #64748b; font-size: 1.2rem; }
+        .partial { color: #fbbf24; font-size: 1.2rem; }
+
         .animate-on-scroll {
             opacity: 0;
             transform: translateY(30px);
@@ -416,11 +501,18 @@
 <body>
     <!-- Hero Section -->
     <section class="hero animate-on-scroll">
-        <h1>Define Who Your AI Agents Are</h1>
-        <p class="subtitle">YAML-based identity framework with OCEAN & DISC personality models. Open source.</p>
+        <img src="logo.jpg" alt="PersonaNexus" class="hero-logo">
+        <h1>The Identity Layer for AI Agents</h1>
+        <p class="subtitle">Define personality, psychology, and governance for AI agents in YAML. Compile to any LLM. Open source.</p>
+        <div class="badges">
+            <a href="https://pypi.org/project/personanexus"><img src="https://img.shields.io/pypi/v/personanexus?color=6366f1&style=flat-square" alt="PyPI"></a>
+            <a href="https://github.com/jcrowan3/agent-identity"><img src="https://img.shields.io/github/stars/jcrowan3/agent-identity?style=flat-square&color=6366f1" alt="GitHub Stars"></a>
+            <a href="https://github.com/jcrowan3/agent-identity/blob/main/LICENSE"><img src="https://img.shields.io/badge/license-MIT-6366f1?style=flat-square" alt="MIT License"></a>
+        </div>
         <div class="hero-buttons">
             <a href="#install" class="btn btn-primary">Get Started</a>
-            <a href="https://github.com/jcrowan3/personanexus" target="_blank" class="btn btn-secondary">GitHub</a>
+            <a href="https://github.com/jcrowan3/agent-identity" target="_blank" class="btn btn-secondary">GitHub</a>
+            <a href="https://personanexus.ai" target="_blank" class="btn btn-secondary">Docs</a>
         </div>
         
         <div class="code-snippet">
@@ -612,15 +704,97 @@ personality:
         </div>
     </section>
 
+    <!-- Comparison Section -->
+    <section class="comparison animate-on-scroll">
+        <h2 class="section-title">Why PersonaNexus?</h2>
+        <table class="comparison-table">
+            <thead>
+                <tr>
+                    <th>Feature</th>
+                    <th class="highlight">PersonaNexus</th>
+                    <th>CrewAI</th>
+                    <th>AgentForge</th>
+                    <th>OpenSouls</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>YAML-based identity</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="partial">~</span></td>
+                    <td><span class="partial">~</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>OCEAN/DISC psychology</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Multi-agent governance</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="partial">~</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>LLM-agnostic compilation</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Inheritance & mixins</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Guardrails & safety</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="partial">~</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="partial">~</span></td>
+                </tr>
+                <tr>
+                    <td>Dynamic mood states</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="check">✓</span></td>
+                </tr>
+                <tr>
+                    <td>Open standard / spec</td>
+                    <td class="highlight"><span class="check">✓</span></td>
+                    <td><span class="cross">✗</span></td>
+                    <td><span class="partial">~</span></td>
+                    <td><span class="cross">✗</span></td>
+                </tr>
+                <tr>
+                    <td>Language</td>
+                    <td class="highlight">Python</td>
+                    <td>Python</td>
+                    <td>Python</td>
+                    <td>TypeScript</td>
+                </tr>
+            </tbody>
+        </table>
+    </section>
+
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-links">
-            <a href="https://github.com/jcrowan3/personanexus" target="_blank" class="footer-link">GitHub</a>
+            <a href="https://github.com/jcrowan3/agent-identity" target="_blank" class="footer-link">GitHub</a>
             <a href="https://pypi.org/project/personanexus" target="_blank" class="footer-link">PyPI</a>
-            <a href="https://github.com/jcrowan3/personanexus/blob/main/LICENSE" target="_blank" class="footer-link">MIT License</a>
+            <a href="https://personanexus.ai" target="_blank" class="footer-link">Docs</a>
+            <a href="https://github.com/jcrowan3/agent-identity/blob/main/LICENSE" target="_blank" class="footer-link">MIT License</a>
         </div>
-        <p class="license">Copyright &copy; 2026 Jason Crow. All rights reserved.</p>
-        <p class="built-for-devs">Built for developers building intelligent agents</p>
+        <p class="license">Copyright &copy; 2026 PersonaNexus Contributors. MIT License.</p>
+        <p class="built-for-devs" style="color: var(--text-muted); margin-top: 8px;">personanexus.ai — The identity layer for AI agents</p>
     </footer>
 
     <script>
