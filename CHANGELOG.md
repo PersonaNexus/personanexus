@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-02-22
+
+### Added
+
+- **Jungian 16-Type Personality Framework** — third personality framework using Carl Jung's typological theory (1921, public domain)
+  - `JungianProfile` model with 4 preference dimensions (E/I, S/N, T/F, J/P)
+  - All 16 type presets (INTJ through ESFP) with 0.2/0.8 preference values
+  - Forward mapping: `jungian_to_traits()` — 4 dimensions to 10 personality traits
+  - Reverse mapping: `traits_to_jungian()` — 10 traits to 4 dimensions (approximate)
+  - `closest_jungian_type()` — Euclidean distance matching to nearest type
+  - 10 role recommendation categories mapping agent roles to suggested types
+  - Interactive wizard with 3 input paths: type code, role recommendation, manual dimensions
+  - CLI commands: `jungian-to-traits`, `list-jungian-presets`, `jungian-recommend`
+  - `show-profile` updated with Jungian display and reverse mapping
+  - Full integration: analyzer, diff, validator, builder, compiler
+  - Trademark disclaimer added to README
+- 83 new tests (558 total)
+
+### Changed
+
+- Documentation cleanup: removed internal strategy docs, updated CONTRIBUTING.md tooling references
+
 ## [1.3.0] - 2026-02-16
 
 ### Added

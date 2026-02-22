@@ -34,7 +34,7 @@ This framework gives you:
 - **Inheritance and composition** — build agents from reusable archetypes and trait mixins
 - **Validation at build time** — catch misconfigurations before deployment, not after
 - **Multi-target compilation** — transform YAML identities into system prompts, SOUL.md files, or platform-specific configs
-- **Soul analysis** — reverse-map any personality file onto OCEAN, DISC, and trait frameworks for comparison
+- **Soul analysis** — reverse-map any personality file onto OCEAN, DISC, Jungian, and trait frameworks for comparison
 - **OpenClaw integration** — seamless integration with OpenClaw multi-agent platform
 - **One source of truth** that's human-readable, machine-parseable, and version-controlled
 
@@ -174,12 +174,12 @@ Scout  (Identity Yaml — confidence: 100%)
 │ ...                │       │           │            │
 └────────────────────┴───────┴───────────┴────────────┘
 
-OCEAN (Big Five)       DISC Profile
-Openness:    0.523     Dominance:        0.527
-Conscient.:  0.700     Influence:        0.591
-Extraver.:   0.603     Steadiness:       0.599
-Agreeable.:  0.595     Conscientiousness: 0.682
-Neuroticism: 0.330     Closest preset: The Steady Hand
+OCEAN (Big Five)       DISC Profile             Jungian Profile
+Openness:    0.523     Dominance:     0.527      E/I: 0.482
+Conscient.:  0.700     Influence:     0.591      S/N: 0.530
+Extraver.:   0.603     Steadiness:    0.599      T/F: 0.548
+Agreeable.:  0.595     Conscient.:    0.682      J/P: 0.415
+Neuroticism: 0.330     Closest: Steady Hand      Closest: ISFJ
 ```
 
 Compare two agents side-by-side:
@@ -230,7 +230,7 @@ personality:
       neuroticism: 0.3
 ```
 
-Supported modes: **Custom** (direct traits), **OCEAN** (Big Five), **DISC** (with presets like *The Commander*, *The Analyst*), and **Hybrid** (framework base + trait overrides).
+Supported modes: **Custom** (direct traits), **OCEAN** (Big Five), **DISC** (with presets like *The Commander*, *The Analyst*), **Jungian** (16 types like *INTJ*, *ENFP*), and **Hybrid** (framework base + trait overrides).
 
 All modes compile to the same 10 standardized traits and reverse-map back to any framework for analysis.
 
@@ -265,7 +265,7 @@ personality:
         trigger: "user_frustration_detected"
 ```
 
-**OCEAN defines who I am. Mood defines how I'm acting right now.**
+**OCEAN/DISC/Jungian defines who I am. Mood defines how I'm acting right now.**
 
 ### 🔀 Behavioral Modes (v1.4)
 
@@ -539,11 +539,11 @@ personanexus init my-tutor --extends archetypes/tutor
 | `personanexus validate <file>` | Validate a YAML identity file |
 | `personanexus resolve <file>` | Show fully resolved identity after inheritance |
 | `personanexus compile <file>` | Compile identity to system prompt or platform format |
-| `personanexus analyze <file>` | Analyze personality and show trait/OCEAN/DISC profiles |
+| `personanexus analyze <file>` | Analyze personality and show trait/OCEAN/DISC/Jungian profiles |
 | `personanexus init <name>` | Scaffold a new identity (minimal, full, archetype, or mixin) |
 | `personanexus build` | Interactive wizard with optional `--llm-enhance` |
 | `personanexus migrate <from> <to> <file>` | Migrate between schema versions |
-| `personanexus personality` | OCEAN/DISC mapping utilities (subcommands below) |
+| `personanexus personality` | OCEAN/DISC/Jungian mapping utilities (subcommands below) |
 
 ### Compile targets
 
@@ -565,6 +565,25 @@ Options:
   --compare, -c PATH     Second file for side-by-side comparison
   --format, -f TEXT       Output format: table (default) or json
   --search-path, -s PATH Search paths for YAML inheritance resolution
+```
+
+### Personality subcommands
+
+```bash
+# Map Jungian type to traits
+personanexus personality jungian-to-traits --preset intj
+
+# Map with manual dimensions
+personanexus personality jungian-to-traits --ei 0.8 --sn 0.7 --tf 0.3 --jp 0.2
+
+# List all 16 Jungian type presets
+personanexus personality list-jungian-presets
+
+# Get role-based type recommendations
+personanexus personality jungian-recommend strategic_analysis
+
+# Show full personality profile with reverse mapping
+personanexus personality show-profile examples/identities/ada-jungian.yaml
 ```
 
 ### Team management
@@ -624,7 +643,9 @@ result = analyzer.analyze("agents/my-agent.SOUL.md")
 print(result.traits)            # PersonalityTraits
 print(result.ocean)             # OceanProfile
 print(result.disc)              # DiscProfile
+print(result.jungian)           # JungianProfile
 print(result.closest_preset)    # DiscPresetMatch
+print(result.closest_jungian_preset)  # JungianPresetMatch
 print(result.confidence)        # 0.0-1.0
 
 # Compare two agents
@@ -644,7 +665,7 @@ A Streamlit-based web UI with three modes:
 |------|-------------|
 | **Playground** | Quick personality exploration with trait sliders, framework switching, system prompt preview, and live chat simulation |
 | **Setup Wizard** | 6-step guided identity builder with archetype selection, personality tuning, and multi-format export |
-| **Analyze** | Upload SOUL.md, personality.json, or YAML files to visualize traits, OCEAN/DISC mappings, and compare agents side-by-side |
+| **Analyze** | Upload SOUL.md, personality.json, or YAML files to visualize traits, OCEAN/DISC/Jungian mappings, and compare agents side-by-side |
 
 ```bash
 cd web
@@ -743,14 +764,15 @@ Agent Name  (OpenClaw Personality — confidence: 92%)
 │ epistemic_humility │  0.72 │ High      │        85% │
 └────────────────────┴───────┴───────────┴────────────┘
 
-OCEAN (Big Five)              DISC Profile
-Openness:         0.68        Dominance:           0.72
-Conscientiousness: 0.85       Influence:           0.66
-Extraversion:     0.58        Steadiness:          0.62
-Agreeableness:    0.70        Conscientiousness:   0.85
-Neuroticism:      0.25        
+OCEAN (Big Five)              DISC Profile             Jungian Profile
+Openness:         0.68        Dominance:     0.72      E/I: 0.520
+Conscientiousness: 0.85       Influence:     0.66      S/N: 0.680
+Extraversion:     0.58        Steadiness:    0.62      T/F: 0.350
+Agreeableness:    0.70        Conscient.:    0.85      J/P: 0.280
+Neuroticism:      0.25
 
 Closest DISC preset: The Analyst (similarity: 0.87)
+Closest Jungian type: INTJ (distance: 0.32)
 ```
 
 ### Comparison Mode
