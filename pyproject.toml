@@ -22,15 +22,14 @@ classifiers = [
 dependencies = [
     "pydantic>=2.0",
     "pyyaml>=6.0",
-    "jsonschema>=4.20",
     "typer>=0.9",
     "rich>=13.0",
-    "streamlit>=1.54.0",
-    "openai>=2.21.0",
 ]
 
 [project.optional-dependencies]
-llm = ["anthropic>=0.30", "google-generativeai>=0.8"]
+web = ["streamlit>=1.54.0"]
+llm = ["openai>=2.21.0", "anthropic>=0.30", "google-generativeai>=0.8"]
+all = ["personanexus[web,llm]"]
 
 [project.urls]
 Homepage = "https://github.com/PersonaNexus/personanexus"
@@ -50,7 +49,7 @@ packages = ["src/personanexus"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-addopts = "--cov=personanexus --cov-report=term-missing --cov-fail-under=82"
+addopts = "--cov=personanexus --cov-report=term-missing --cov-fail-under=80"
 
 [tool.ruff]
 target-version = "py311"

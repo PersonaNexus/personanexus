@@ -13,6 +13,13 @@ from personanexus.compiler import (
     compile_identity,
 )
 from personanexus.conflict import MergeTrace, MergeTraceEntry
+from personanexus.drift import (
+    DriftReport,
+    detect_drift,
+    detect_drift_from_files,
+    format_drift_report,
+)
+from personanexus.linter import IdentityLinter, LintWarning
 from personanexus.parser import IdentityParser, parse_file, parse_identity_file, parse_yaml
 from personanexus.personality import (
     compute_personality_traits,
@@ -46,8 +53,14 @@ from personanexus.validator import IdentityValidator, ValidationResult
 
 __all__ = [
     "AgentIdentity",
+    "IdentityLinter",
+    "LintWarning",
     "AnalysisResult",
     "ComparisonResult",
+    "DriftReport",
+    "detect_drift",
+    "detect_drift_from_files",
+    "format_drift_report",
     "DiscProfile",
     "IdentityParser",
     "IdentityResolver",

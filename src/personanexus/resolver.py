@@ -88,7 +88,12 @@ class IdentityResolver:
         conflict_config = comp_data.get("conflict_resolution", {})
         try:
             cr = ConflictResolution.model_validate(conflict_config)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "Invalid conflict_resolution config in %s, using defaults: %s",
+                source_path,
+                exc,
+            )
             cr = ConflictResolution()
         merger = ConflictResolver(cr)
 

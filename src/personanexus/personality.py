@@ -12,7 +12,10 @@ from __future__ import annotations
 
 import math
 
+from pydantic import BaseModel
+
 from personanexus.types import (
+    TRAIT_ORDER,
     DiscProfile,
     JungianProfile,
     OceanProfile,
@@ -487,27 +490,19 @@ def jungian_to_traits(profile: JungianProfile) -> dict[str, float]:
 # ---------------------------------------------------------------------------
 
 
+def _traits_to_values(traits: PersonalityTraits) -> dict[str, float]:
+    """Build trait values dict with 0.5 defaults for undefined traits."""
+    defined = traits.defined_traits()
+    return {name: defined.get(name, 0.5) for name in TRAIT_ORDER}
+
+
 def traits_to_ocean(traits: PersonalityTraits) -> OceanProfile:
     """Approximate reverse mapping from custom traits to OCEAN profile.
 
     Uses weighted-sum formulas from the AgentGov spec. The result is an
     approximation — a round-trip (ocean → traits → ocean) will not be exact.
     """
-    defined = traits.defined_traits()
-    # Use 0.5 as neutral default for undefined traits
-    values = {
-        "warmth": defined.get("warmth", 0.5),
-        "verbosity": defined.get("verbosity", 0.5),
-        "assertiveness": defined.get("assertiveness", 0.5),
-        "humor": defined.get("humor", 0.5),
-        "empathy": defined.get("empathy", 0.5),
-        "directness": defined.get("directness", 0.5),
-        "rigor": defined.get("rigor", 0.5),
-        "creativity": defined.get("creativity", 0.5),
-        "epistemic_humility": defined.get("epistemic_humility", 0.5),
-        "patience": defined.get("patience", 0.5),
-    }
-    ocean_vals = _apply_weights(REVERSE_OCEAN_WEIGHTS, values)
+    ocean_vals = _apply_weights(REVERSE_OCEAN_WEIGHTS, _traits_to_values(traits))
     return OceanProfile(**ocean_vals)
 
 
@@ -517,20 +512,7 @@ def traits_to_disc(traits: PersonalityTraits) -> DiscProfile:
     Uses weighted-sum formulas derived from the forward DISC mapping.
     The result is an approximation.
     """
-    defined = traits.defined_traits()
-    values = {
-        "warmth": defined.get("warmth", 0.5),
-        "verbosity": defined.get("verbosity", 0.5),
-        "assertiveness": defined.get("assertiveness", 0.5),
-        "humor": defined.get("humor", 0.5),
-        "empathy": defined.get("empathy", 0.5),
-        "directness": defined.get("directness", 0.5),
-        "rigor": defined.get("rigor", 0.5),
-        "creativity": defined.get("creativity", 0.5),
-        "epistemic_humility": defined.get("epistemic_humility", 0.5),
-        "patience": defined.get("patience", 0.5),
-    }
-    disc_vals = _apply_weights(REVERSE_DISC_WEIGHTS, values)
+    disc_vals = _apply_weights(REVERSE_DISC_WEIGHTS, _traits_to_values(traits))
     return DiscProfile(**disc_vals)
 
 
@@ -540,20 +522,7 @@ def traits_to_jungian(traits: PersonalityTraits) -> JungianProfile:
     Uses weighted-sum formulas. The result is an approximation — a round-trip
     (jungian → traits → jungian) will not be exact.
     """
-    defined = traits.defined_traits()
-    values = {
-        "warmth": defined.get("warmth", 0.5),
-        "verbosity": defined.get("verbosity", 0.5),
-        "assertiveness": defined.get("assertiveness", 0.5),
-        "humor": defined.get("humor", 0.5),
-        "empathy": defined.get("empathy", 0.5),
-        "directness": defined.get("directness", 0.5),
-        "rigor": defined.get("rigor", 0.5),
-        "creativity": defined.get("creativity", 0.5),
-        "epistemic_humility": defined.get("epistemic_humility", 0.5),
-        "patience": defined.get("patience", 0.5),
-    }
-    jungian_vals = _apply_weights(REVERSE_JUNGIAN_WEIGHTS, values)
+    jungian_vals = _apply_weights(REVERSE_JUNGIAN_WEIGHTS, _traits_to_values(traits))
     return JungianProfile(**jungian_vals)
 
 
@@ -596,21 +565,38 @@ def list_jungian_presets() -> dict[str, JungianProfile]:
     return dict(JUNGIAN_PRESETS)
 
 
-def closest_jungian_type(profile: JungianProfile) -> str:
-    """Find the closest Jungian type preset by Euclidean distance."""
+def _find_closest_in_presets(
+    profile: BaseModel,
+    presets: dict[str, BaseModel],
+) -> tuple[str, float]:
+    """Find the closest preset by Euclidean distance on all numeric fields.
+
+    Returns (preset_name, distance).
+    """
+    profile_vals = list(profile.model_dump().values())
     best_name = ""
     best_dist = float("inf")
-    for name, preset in JUNGIAN_PRESETS.items():
-        dist = math.sqrt(
-            (profile.ei - preset.ei) ** 2
-            + (profile.sn - preset.sn) ** 2
-            + (profile.tf - preset.tf) ** 2
-            + (profile.jp - preset.jp) ** 2
-        )
+    for name, preset in presets.items():
+        preset_vals = list(preset.model_dump().values())
+        dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(profile_vals, preset_vals, strict=True)))
         if dist < best_dist:
             best_dist = dist
             best_name = name
-    return best_name.upper()
+    return best_name, best_dist
+
+
+def closest_disc_preset(disc: DiscProfile) -> tuple[str, float]:
+    """Find the closest DISC preset by Euclidean distance.
+
+    Returns (preset_name, distance).
+    """
+    return _find_closest_in_presets(disc, DISC_PRESETS)
+
+
+def closest_jungian_type(profile: JungianProfile) -> str:
+    """Find the closest Jungian type preset by Euclidean distance."""
+    name, _ = _find_closest_in_presets(profile, JUNGIAN_PRESETS)
+    return name.upper()
 
 
 def get_jungian_role_recommendations(

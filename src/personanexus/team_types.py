@@ -55,7 +55,7 @@ class TeamMetadata(BaseModel):
 class TeamAgent(BaseModel):
     """Agent definition within a team context."""
 
-    agent_id: str = Field(..., pattern=r"^agt_\w+_\d{3}$")
+    agent_id: str = Field(..., pattern=r"^agt_[a-zA-Z0-9_]+$")
     role: str = Field(..., min_length=1)
     authority_level: int = Field(..., ge=1, le=5)
     expertise_domains: list[str] = Field(..., min_length=1)

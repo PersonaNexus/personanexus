@@ -19,6 +19,8 @@ from rich.table import Table
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
+from personanexus.drift import detect_drift_from_files, format_drift_report
+from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
 from personanexus.team_types import TeamConfiguration
@@ -104,6 +106,84 @@ def validate(
             console.print(f"[dim]Extends: {identity.extends}[/dim]")
         if identity.mixins:
             console.print(f"[dim]Mixins: {', '.join(identity.mixins)}[/dim]")
+
+
+# ---------------------------------------------------------------------------
+# lint command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def lint(
+    file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file to lint")],
+    severity: Annotated[
+        str,
+        typer.Option(
+            "--severity",
+            "-s",
+            help="Minimum severity to show: info, warning, or error",
+        ),
+    ] = "info",
+) -> None:
+    """Run semantic lint checks on a PersonaNexus YAML file.
+
+    Goes beyond schema validation to find logical inconsistencies,
+    unused fields, conflicting settings, and missing recommended config.
+    """
+    if not file.exists():
+        console.print(f"[red]Error: File not found: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    if not file.is_file():
+        console.print(f"[red]Error: Not a file: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    severity_levels = {"info": 0, "warning": 1, "error": 2}
+    if severity not in severity_levels:
+        console.print(
+            f"[red]Error: Invalid severity '{severity}'. "
+            "Must be 'info', 'warning', or 'error'[/red]"
+        )
+        raise typer.Exit(code=1)
+    min_level = severity_levels[severity]
+
+    linter = IdentityLinter()
+
+    try:
+        warnings = linter.lint_file(str(file))
+    except Exception as exc:
+        console.print("[red]Linting failed:[/red]")
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    # Filter by severity
+    filtered = [
+        w for w in warnings if severity_levels.get(w.severity, 0) >= min_level
+    ]
+
+    if not filtered:
+        console.print(f"[green]No lint warnings for {file}[/green]")
+        return
+
+    severity_color = {
+        "info": "blue",
+        "warning": "yellow",
+        "error": "red",
+    }
+
+    console.print(f"\n[bold]Lint results for {file} ({len(filtered)} findings):[/bold]\n")
+    for w in filtered:
+        color = severity_color.get(w.severity, "white")
+        location = f" ({w.path})" if w.path else ""
+        console.print(
+            f"  [{color}][{w.severity.upper()}] {w.rule}{location}: "
+            f"{w.message}[/{color}]"
+        )
+    console.print()
+
+    # Exit 1 if any errors found
+    if any(w.severity == "error" for w in filtered):
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
@@ -574,7 +654,8 @@ def compile(
         typer.Option(
             "--target",
             "-t",
-            help="Target: text, anthropic, openai, openclaw, soul, json, langchain, markdown",
+            help="Target: text, anthropic, openai, openclaw, soul, "
+            "json, langchain, crewai, autogen, markdown",
         ),
     ] = "text",
     search_path: Annotated[
@@ -611,6 +692,8 @@ def compile(
         "soul",
         "json",
         "langchain",
+        "crewai",
+        "autogen",
         "markdown",
     )
     if target not in valid_targets:
@@ -688,6 +771,8 @@ def compile(
             "openclaw": ".personality.json",
             "json": ".compiled.json",
             "langchain": ".langchain.json",
+            "crewai": ".crewai.yaml",
+            "autogen": ".autogen.json",
             "markdown": ".compiled.doc.md",
         }
         suffix = ext_map.get(target, ".compiled.txt")
@@ -1443,6 +1528,80 @@ def compat(
 
     except Exception as e:
         console.print(f"[red]Error calculating compatibility: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# drift command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def drift(
+    baseline: Annotated[Path, typer.Argument(help="Path to the baseline identity YAML file")],
+    current: Annotated[Path, typer.Argument(help="Path to the current identity YAML file")],
+    threshold: Annotated[
+        float,
+        typer.Option("--threshold", "-t", help="Trait drift threshold (default 0.1)"),
+    ] = 0.1,
+    format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: text, json"),
+    ] = "text",
+) -> None:
+    """Detect configuration drift between two PersonaNexus identity files."""
+    if not baseline.exists():
+        console.print(f"[red]Error: File not found: {baseline}[/red]")
+        raise typer.Exit(code=1)
+
+    if not current.exists():
+        console.print(f"[red]Error: File not found: {current}[/red]")
+        raise typer.Exit(code=1)
+
+    if not baseline.is_file():
+        console.print(f"[red]Error: Not a file: {baseline}[/red]")
+        raise typer.Exit(code=1)
+
+    if not current.is_file():
+        console.print(f"[red]Error: Not a file: {current}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        report = detect_drift_from_files(
+            baseline_path=str(baseline),
+            current_path=str(current),
+            threshold=threshold,
+        )
+
+        if format == "json":
+            console.print_json(data=report.to_dict())
+        else:
+            output = format_drift_report(report, fmt="text")
+            if report.drift_detected:
+                severity_colors = {
+                    "minor": "yellow",
+                    "major": "red",
+                    "critical": "bold red",
+                }
+                color = severity_colors.get(report.severity, "green")
+                console.print(
+                    Panel(
+                        output,
+                        title=f"[{color}]Drift Report ({report.severity.upper()})[/{color}]",
+                        border_style=color,
+                    )
+                )
+            else:
+                console.print(
+                    Panel(
+                        output,
+                        title="[green]Drift Report (CLEAN)[/green]",
+                        border_style="green",
+                    )
+                )
+
+    except Exception as e:
+        console.print(f"[red]Error detecting drift: {e}[/red]")
         raise typer.Exit(code=1)
 
 

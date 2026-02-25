@@ -169,7 +169,7 @@ class TestDiffCommand:
             ["diff", str(mira_path), str(mira_ocean_path), "--format", "markdown"],
         )
         assert result.exit_code == 0
-        assert "IDENTITY DIFF" in result.output or "REPORT" in result.output
+        assert "Identity Diff Report" in result.output or "Changed Fields" in result.output
 
     def test_diff_nonexistent(self):
         result = runner.invoke(app, ["diff", "/nonexistent1.yaml", "/nonexistent2.yaml"])

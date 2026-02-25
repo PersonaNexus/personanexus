@@ -415,10 +415,10 @@ class MoodConfig(BaseModel):
 class BehavioralModeOverrides(BaseModel):
     """Overrides to apply when a behavioral mode is active."""
 
-    tone_register: str | None = None  # e.g. "formal", "casual"
+    tone_register: Register | None = None
     tone_default: str | None = None
-    emoji_usage: str | None = None  # "never", "sparingly", "frequently"
-    sentence_length: str | None = None  # "short", "mixed", "long"
+    emoji_usage: EmojiUsage | None = None
+    sentence_length: SentenceLength | None = None
     trait_modifiers: list[TraitModifier] = Field(default_factory=list)
 
 

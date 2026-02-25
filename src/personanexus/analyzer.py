@@ -14,10 +14,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from personanexus.compiler import _TRAIT_TEMPLATES
+from personanexus.compiler import TRAIT_TEMPLATES
 from personanexus.personality import (
     DISC_PRESETS,
     JUNGIAN_PRESETS,
+    _find_closest_in_presets,
     compute_personality_traits,
     traits_to_disc,
     traits_to_jungian,
@@ -198,13 +199,13 @@ _KEYWORD_SIGNALS: dict[str, list[tuple[list[str], float]]] = {
 
 
 def _build_reverse_templates() -> dict[str, list[tuple[str, float]]]:
-    """Build reverse lookup from compiler's _TRAIT_TEMPLATES.
+    """Build reverse lookup from compiler's TRAIT_TEMPLATES.
 
     Returns mapping of trait_name -> [(phrase, midpoint_value), ...] sorted
     from highest to lowest value so longer/more-specific phrases match first.
     """
     reverse: dict[str, list[tuple[str, float]]] = {}
-    for trait_name, templates in _TRAIT_TEMPLATES.items():
+    for trait_name, templates in TRAIT_TEMPLATES.items():
         pairs = [(template, _LEVEL_MIDPOINTS[i]) for i, template in enumerate(templates)]
         # Reverse so we match high-value (more specific) phrases first
         reverse[trait_name] = list(reversed(pairs))
@@ -231,13 +232,18 @@ def detect_format(path: Path) -> SourceFormat:
 
     # Content-based fallback
     try:
+        file_size = path.stat().st_size
+    except OSError as exc:
+        raise AnalyzerError(f"Cannot read file {path}: {exc}") from exc
+
+    # Check for oversized files before reading into memory
+    if file_size > 1_000_000:  # 1MB limit
+        raise AnalyzerError(f"File {path} is too large to process")
+
+    try:
         content = path.read_text(encoding="utf-8")
     except (PermissionError, OSError) as exc:
         raise AnalyzerError(f"Cannot read file {path}: {exc}") from exc
-
-    # Check for oversized files to avoid memory issues
-    if len(content) > 1000000:  # 1MB limit
-        raise AnalyzerError(f"File {path} is too large to process")
 
     if "schema_version" in content and "metadata:" in content:
         return SourceFormat.IDENTITY_YAML
@@ -411,20 +417,7 @@ class SoulMdParser:
 
 def find_closest_preset(disc: DiscProfile) -> DiscPresetMatch:
     """Find the closest DISC preset by Euclidean distance."""
-    best_name = ""
-    best_dist = float("inf")
-
-    for name, preset in DISC_PRESETS.items():
-        dist = math.sqrt(
-            (disc.dominance - preset.dominance) ** 2
-            + (disc.influence - preset.influence) ** 2
-            + (disc.steadiness - preset.steadiness) ** 2
-            + (disc.conscientiousness - preset.conscientiousness) ** 2
-        )
-        if dist < best_dist:
-            best_dist = dist
-            best_name = name
-
+    best_name, best_dist = _find_closest_in_presets(disc, DISC_PRESETS)
     return DiscPresetMatch(
         preset_name=best_name,
         distance=round(best_dist, 4),
@@ -439,20 +432,7 @@ def find_closest_preset(disc: DiscProfile) -> DiscPresetMatch:
 
 def find_closest_jungian_preset(profile: JungianProfile) -> JungianPresetMatch:
     """Find the closest Jungian 16-type preset by Euclidean distance."""
-    best_name = ""
-    best_dist = float("inf")
-
-    for name, preset in JUNGIAN_PRESETS.items():
-        dist = math.sqrt(
-            (profile.ei - preset.ei) ** 2
-            + (profile.sn - preset.sn) ** 2
-            + (profile.tf - preset.tf) ** 2
-            + (profile.jp - preset.jp) ** 2
-        )
-        if dist < best_dist:
-            best_dist = dist
-            best_name = name
-
+    best_name, best_dist = _find_closest_in_presets(profile, JUNGIAN_PRESETS)
     return JungianPresetMatch(
         preset_name=best_name,
         distance=round(best_dist, 4),
