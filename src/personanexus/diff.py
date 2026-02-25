@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import yaml
 
 from personanexus.personality import DISC_PRESETS, JUNGIAN_PRESETS
 
+# Maximum file size to read (10 MB)
+_MAX_FILE_SIZE = 10_000_000
+
 
 def _load_yaml(path: str | os.PathLike) -> dict:
     """Load a YAML file and return its contents as a dictionary."""
+    p = Path(path)
+    file_size = p.stat().st_size
+    if file_size > _MAX_FILE_SIZE:
+        raise ValueError(
+            f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})"
+        )
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 

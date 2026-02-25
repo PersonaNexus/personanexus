@@ -17,6 +17,9 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+# Maximum file size to read (10 MB)
+_MAX_FILE_SIZE = 10_000_000
+
 
 # ---------------------------------------------------------------------------
 # Drift report data structures
@@ -103,6 +106,11 @@ def _load_yaml(path: str | Path) -> dict[str, Any]:
     path = Path(path)
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
+    file_size = path.stat().st_size
+    if file_size > _MAX_FILE_SIZE:
+        raise ValueError(
+            f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})"
+        )
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):

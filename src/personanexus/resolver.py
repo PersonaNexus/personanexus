@@ -144,6 +144,15 @@ class IdentityResolver:
 
     def _find_file(self, ref: str, source_path: Path) -> Path:
         """Resolve a reference (extends/mixin path) to an actual file path."""
+        # Reject references that attempt path traversal or use absolute paths
+        ref_parts = Path(ref).parts
+        if ".." in ref_parts or ref.startswith("/") or ref.startswith("\\"):
+            raise ParseError(
+                f"Invalid reference '{ref}': must be a relative path"
+                " without '..' components",
+                source=str(source_path),
+            )
+
         candidates: list[Path] = []
 
         # Relative to source file's directory

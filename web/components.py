@@ -6,6 +6,7 @@ utilities used by both the Playground and Setup Wizard modes.
 
 from __future__ import annotations
 
+import html
 import json
 import os
 import sys
@@ -442,9 +443,9 @@ def render_comparison_bars(
     """Render side-by-side trait comparison bars."""
     html_parts = [
         '<div style="font-size: 0.8rem; margin-bottom: 8px;">',
-        f'<span style="color: #3b82f6; font-weight: 600;">{label_a}</span>',
+        f'<span style="color: #3b82f6; font-weight: 600;">{html.escape(label_a)}</span>',
         ' vs ',
-        f'<span style="color: #f97316; font-weight: 600;">{label_b}</span>',
+        f'<span style="color: #f97316; font-weight: 600;">{html.escape(label_b)}</span>',
         '</div>',
     ]
     for trait in TRAIT_ORDER:

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -33,6 +35,38 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+
+
+# ---------------------------------------------------------------------------
+# Security helpers
+# ---------------------------------------------------------------------------
+
+
+def _sanitize_filename(name: str) -> str:
+    """Sanitize a user-provided name into a safe filename component.
+
+    Strips all characters except alphanumeric and underscores to prevent
+    path traversal attacks.
+    """
+    safe = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower()).strip("_")
+    # Collapse consecutive underscores
+    safe = re.sub(r"_+", "_", safe)
+    return safe if safe else "agent"
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    """Write content to a file atomically via temp-and-rename.
+
+    On POSIX systems ``os.replace`` is atomic within the same filesystem,
+    preventing partial writes from corrupting the target file.
+    """
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        tmp.write_text(content, encoding="utf-8")
+        os.replace(str(tmp), str(path))
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -317,10 +351,8 @@ def init(
     # Create output directory if it doesn't exist
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate filename from name
-    filename = name.lower().replace(" ", "_").replace("-", "_")
-    if not filename.endswith(".yaml"):
-        filename += ".yaml"
+    # Generate filename from name (sanitized to prevent path traversal)
+    filename = _sanitize_filename(name) + ".yaml"
 
     output_path = output_dir / filename
     if output_path.exists():
@@ -347,8 +379,8 @@ def init(
     else:  # minimal
         content = _generate_minimal_template(name, agent_id, timestamp, extends)
 
-    # Write the file
-    output_path.write_text(content, encoding="utf-8")
+    # Write the file (atomic to prevent corruption)
+    _atomic_write(output_path, content)
 
     console.print(f"\n[green]✓ Created {type} identity: {output_path}[/green]")
     console.print(f"[dim]ID: {agent_id}[/dim]")
@@ -364,22 +396,22 @@ def _generate_minimal_template(
     lines = ["schema_version: '1.0'", ""]
 
     if extends:
-        lines.extend([f"extends: {extends}", ""])
+        lines.extend([f"extends: \"{extends}\"", ""])
 
     lines.extend(
         [
             "metadata:",
             f"  id: {agent_id}",
-            f"  name: {name}",
+            f"  name: \"{name}\"",
             "  version: 0.1.0",
-            f"  description: Agent identity for {name}",
-            f"  created_at: {timestamp}",
-            f"  updated_at: {timestamp}",
+            f"  description: \"Agent identity for {name}\"",
+            f"  created_at: \"{timestamp}\"",
+            f"  updated_at: \"{timestamp}\"",
             "  status: draft",
             "",
             "role:",
-            f"  title: {name}",
-            f"  purpose: Assist users with tasks related to {name.lower()}",
+            f"  title: \"{name}\"",
+            f"  purpose: \"Assist users with tasks related to {name.lower()}\"",
             "  scope:",
             "    primary:",
             "      - General assistance",
@@ -416,25 +448,25 @@ def _generate_full_template(name: str, agent_id: str, timestamp: str, extends: s
     lines = ["schema_version: '1.0'", ""]
 
     if extends:
-        lines.extend([f"extends: {extends}", ""])
+        lines.extend([f"extends: \"{extends}\"", ""])
 
     lines.extend(
         [
             "metadata:",
             f"  id: {agent_id}",
-            f"  name: {name}",
+            f"  name: \"{name}\"",
             "  version: 0.1.0",
-            f"  description: Full PersonaNexus for {name}",
-            f"  created_at: {timestamp}",
-            f"  updated_at: {timestamp}",
+            f"  description: \"Full PersonaNexus for {name}\"",
+            f"  created_at: \"{timestamp}\"",
+            f"  updated_at: \"{timestamp}\"",
             "  author: PersonaNexus Framework",
             "  tags:",
             "    - assistant",
             "  status: draft",
             "",
             "role:",
-            f"  title: {name}",
-            f"  purpose: A comprehensive assistant for {name.lower()}-related tasks",
+            f"  title: \"{name}\"",
+            f"  purpose: \"A comprehensive assistant for {name.lower()}-related tasks\"",
             "  scope:",
             "    primary:",
             "      - General assistance",
@@ -538,22 +570,22 @@ def _generate_archetype_template(name: str, agent_id: str, timestamp: str) -> st
         "",
         "archetype:",
         f"  id: {agent_id}",
-        f"  name: {name}",
-        f"  description: Base archetype for {name.lower()} agents",
+        f"  name: \"{name}\"",
+        f"  description: \"Base archetype for {name.lower()} agents\"",
         "  abstract: true",
         "",
         "metadata:",
         f"  id: {agent_id}",
-        f"  name: {name} Archetype",
+        f"  name: \"{name} Archetype\"",
         "  version: 1.0.0",
-        f"  description: Archetype defining core traits for {name.lower()} agents",
-        f"  created_at: {timestamp}",
-        f"  updated_at: {timestamp}",
+        f"  description: \"Archetype defining core traits for {name.lower()} agents\"",
+        f"  created_at: \"{timestamp}\"",
+        f"  updated_at: \"{timestamp}\"",
         "  status: active",
         "",
         "role:",
-        f"  title: {name}",
-        f"  purpose: Base purpose for {name.lower()} agents",
+        f"  title: \"{name}\"",
+        f"  purpose: \"Base purpose for {name.lower()} agents\"",
         "  scope:",
         "    primary:",
         "      - Core capability area",
@@ -591,20 +623,20 @@ def _generate_mixin_template(name: str, agent_id: str, timestamp: str) -> str:
         "",
         "mixin:",
         f"  id: {agent_id}",
-        f"  name: {name}",
-        f"  description: Mixin providing {name.lower()} capabilities",
+        f"  name: \"{name}\"",
+        f"  description: \"Mixin providing {name.lower()} capabilities\"",
         "",
         "metadata:",
         f"  id: {agent_id}",
-        f"  name: {name} Mixin",
+        f"  name: \"{name} Mixin\"",
         "  version: 1.0.0",
-        f"  description: Adds {name.lower()} functionality to any agent",
-        f"  created_at: {timestamp}",
-        f"  updated_at: {timestamp}",
+        f"  description: \"Adds {name.lower()} functionality to any agent\"",
+        f"  created_at: \"{timestamp}\"",
+        f"  updated_at: \"{timestamp}\"",
         "  status: active",
         "",
         "role:",
-        f"  title: {name} Enhanced",
+        f"  title: \"{name} Enhanced\"",
         "  purpose: Provides additional capabilities",
         "  scope:",
         "    primary:",
@@ -747,8 +779,8 @@ def compile(
 
         soul_path = out_dir / f"{stem}.SOUL.md"
         style_path = out_dir / f"{stem}.STYLE.md"
-        soul_path.write_text(result["soul_md"], encoding="utf-8")
-        style_path.write_text(result["style_md"], encoding="utf-8")
+        _atomic_write(soul_path, result["soul_md"])
+        _atomic_write(style_path, result["style_md"])
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {soul_path}[/green]")
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {style_path}[/green]")
         console.print("[dim]Target: soul (SOUL.md + STYLE.md)[/dim]")
@@ -780,7 +812,7 @@ def compile(
 
     # Write to file
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(output_text, encoding="utf-8")
+    _atomic_write(output, output_text)
     console.print(f"[green]✓ Compiled {identity.metadata.name} → {output}[/green]")
     console.print(f"[dim]Target: {target}[/dim]")
 
@@ -1350,11 +1382,11 @@ def build(
     # Write the file
     output_dir.mkdir(parents=True, exist_ok=True)
     name = identity.data.get("metadata", {}).get("name", "agent")
-    filename = name.lower().replace(" ", "_").replace("-", "_") + ".yaml"
+    filename = _sanitize_filename(name) + ".yaml"
     output_path = output_dir / filename
 
     yaml_str = identity.to_yaml_string()
-    output_path.write_text(yaml_str, encoding="utf-8")
+    _atomic_write(output_path, yaml_str)
 
     console.print(f"\n[green]✓ Saved identity: {output_path}[/green]")
 

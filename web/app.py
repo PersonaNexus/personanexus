@@ -5,12 +5,16 @@ personanexus framework. Supports a quick Playground mode and a full
 Setup Wizard with multi-step guided identity building.
 """
 
+import html
 import json
+import logging
 import os
 import sys
 
 import streamlit as st
 import yaml
+
+logger = logging.getLogger(__name__)
 
 # Add src and web to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -162,9 +166,8 @@ if app_mode == "Setup Wizard":
         from wizard import render_wizard
         render_wizard()
     except Exception as e:
-        st.error(f"Wizard error: {e}")
-        import traceback
-        st.code(traceback.format_exc())
+        st.error("An error occurred while loading the wizard. Check logs for details.")
+        logger.exception("Wizard error: %s", e)
     st.stop()
 
 if app_mode == "Analyze":
@@ -172,9 +175,8 @@ if app_mode == "Analyze":
         from analyze import render_analyze
         render_analyze()
     except Exception as e:
-        st.error(f"Analyze error: {e}")
-        import traceback
-        st.code(traceback.format_exc())
+        st.error("An error occurred while loading the analyzer. Check logs for details.")
+        logger.exception("Analyze error: %s", e)
     st.stop()
 
 
@@ -434,7 +436,7 @@ def render_trait_bars(traits: dict[str, float]) -> str:
 # Main area
 # ---------------------------------------------------------------------------
 
-st.markdown(f'<div class="main-header">🧬 {role_title}</div>', unsafe_allow_html=True)
+st.markdown(f'<div class="main-header">🧬 {html.escape(role_title)}</div>', unsafe_allow_html=True)
 
 mode_badge = {
     "Custom": "Custom Traits",
@@ -443,7 +445,7 @@ mode_badge = {
     "Hybrid": "Hybrid",
 }
 st.markdown(
-    f'<div class="sub-header">Personality Mode: <strong>{mode_badge[mode]}</strong></div>',
+    f'<div class="sub-header">Personality Mode: <strong>{html.escape(mode_badge[mode])}</strong></div>',
     unsafe_allow_html=True,
 )
 

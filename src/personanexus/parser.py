@@ -9,6 +9,9 @@ import yaml
 
 from personanexus.types import AgentIdentity
 
+# Maximum file size to read (10 MB) — prevents memory exhaustion from oversized files
+MAX_FILE_SIZE = 10_000_000
+
 
 class ParseError(Exception):
     """Raised when YAML parsing fails."""
@@ -49,6 +52,12 @@ class IdentityParser:
             raise ParseError(f"File not found: {path}")
         if not path.is_file():
             raise ParseError(f"Not a file: {path}")
+
+        file_size = path.stat().st_size
+        if file_size > MAX_FILE_SIZE:
+            raise ParseError(
+                f"File {path} is too large ({file_size:,} bytes, max {MAX_FILE_SIZE:,})"
+            )
 
         content = path.read_text(encoding="utf-8")
         return self.parse_yaml(content, source=str(path))
