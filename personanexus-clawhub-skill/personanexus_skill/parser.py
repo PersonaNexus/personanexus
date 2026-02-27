@@ -90,5 +90,10 @@ def parse_file(path: str | Path) -> dict[str, Any]:
 def parse_identity_file(path: str | Path, base_dir: str | Path | None = None) -> AgentIdentity:
     """Load a YAML file and return a validated AgentIdentity model."""
     if base_dir:
+        path_parts = Path(path).parts
+        if ".." in path_parts or str(path).startswith(("/", "\\")):
+            raise ParseError(
+                f"Invalid path '{path}': must be a relative path without '..' components"
+            )
         path = Path(base_dir) / path
     return _parser.load_identity(path)

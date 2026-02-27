@@ -31,13 +31,13 @@ business-grade personality frameworks (OCEAN Big Five, DISC, Jungian 16-type).
 Install the skill's Python dependencies:
 
 ```bash
-pip install pydantic pyyaml
+pip install pydantic pyyaml typer rich
 ```
 
 Or if using uv:
 
 ```bash
-uv pip install pydantic pyyaml
+uv pip install pydantic pyyaml typer rich
 ```
 
 ## Usage
@@ -88,6 +88,53 @@ traits = disc_to_traits(disc)
 # Get a Jungian preset
 jungian = get_jungian_preset("intj")
 traits = jungian_to_traits(jungian)
+```
+
+## CLI
+
+The skill includes a CLI for common operations:
+
+```bash
+python -m personanexus_skill --help
+```
+
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `validate FILE` | Parse and validate a YAML identity file |
+| `compile FILE --target TARGET` | Compile identity to a system prompt |
+| `init NAME --type TYPE` | Scaffold a new agent identity YAML |
+| `personality ocean-to-traits` | Map OCEAN scores to personality traits |
+| `personality disc-to-traits` | Map DISC scores to personality traits |
+| `personality jungian-to-traits` | Map Jungian scores to personality traits |
+| `personality list-disc-presets` | Show available DISC presets |
+| `personality list-jungian-presets` | Show available Jungian 16-type presets |
+
+### CLI Examples
+
+```bash
+# Validate an identity file
+python -m personanexus_skill validate my-agent.yaml --verbose
+
+# Compile to Anthropic system prompt
+python -m personanexus_skill compile my-agent.yaml --target anthropic --output prompt.md
+
+# Compile to OpenClaw personality.json
+python -m personanexus_skill compile my-agent.yaml --target openclaw --output personality.json
+
+# Scaffold a new minimal agent
+python -m personanexus_skill init "My Agent"
+python -m personanexus_skill init "My Agent" --type full --output-dir ./agents
+
+# Personality framework tools
+python -m personanexus_skill personality disc-to-traits --preset the_analyst
+python -m personanexus_skill personality jungian-to-traits --preset intj
+python -m personanexus_skill personality ocean-to-traits \
+  --openness 0.8 --conscientiousness 0.7 --extraversion 0.4 \
+  --agreeableness 0.6 --neuroticism 0.3
+python -m personanexus_skill personality list-disc-presets
+python -m personanexus_skill personality list-jungian-presets
 ```
 
 ## The 10 Canonical Traits
