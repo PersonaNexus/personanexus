@@ -777,8 +777,16 @@ class TestCompileIdentityEdgeCases:
 
     def test_all_targets_produce_output(self, mira_identity):
         """Smoke test: all recognized targets produce non-empty output."""
-        targets = ("text", "anthropic", "openai", "openclaw",
-                   "soul", "json", "langchain", "markdown")
+        targets = (
+            "text",
+            "anthropic",
+            "openai",
+            "openclaw",
+            "soul",
+            "json",
+            "langchain",
+            "markdown",
+        )
         for target in targets:
             result = compile_identity(mira_identity, target=target)
             if isinstance(result, str):

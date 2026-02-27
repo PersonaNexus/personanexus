@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -20,7 +21,7 @@ class ResolutionError(Exception):
 class IdentityResolver:
     """Resolves identity inheritance (extends), mixins, and overrides into a single spec."""
 
-    def __init__(self, search_paths: list[str | Path] | None = None, max_depth: int = 10):
+    def __init__(self, search_paths: Sequence[str | Path] | None = None, max_depth: int = 10):
         self.search_paths = [Path(p) for p in (search_paths or [])]
         self.max_depth = max_depth
         self._parser = IdentityParser()
@@ -148,8 +149,7 @@ class IdentityResolver:
         ref_parts = Path(ref).parts
         if ".." in ref_parts or ref.startswith("/") or ref.startswith("\\"):
             raise ParseError(
-                f"Invalid reference '{ref}': must be a relative path"
-                " without '..' components",
+                f"Invalid reference '{ref}': must be a relative path without '..' components",
                 source=str(source_path),
             )
 

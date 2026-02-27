@@ -293,7 +293,8 @@ class PersonalityJsonParser:
     def extract_name(self, content: str) -> str | None:
         try:
             data = json.loads(content)
-            return data.get("agent_name")
+            name = data.get("agent_name")
+            return str(name) if name is not None else None
         except (json.JSONDecodeError, AttributeError):
             return None
 

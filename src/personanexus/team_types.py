@@ -6,7 +6,7 @@ import enum
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, Field, ValidationInfo, field_validator, model_validator
 
 # ---------------------------------------------------------------------------
 # Enums for Team Schema
@@ -284,7 +284,7 @@ class TeamSpec(BaseModel):
     def validate_workflow_agents(
         cls,
         v: dict[str, WorkflowPattern],
-        info,
+        info: ValidationInfo,
     ) -> dict[str, WorkflowPattern]:
         """Validate that workflow agents exist in team composition."""
         if not info.data:

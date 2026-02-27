@@ -166,9 +166,8 @@ class IdentityLinter:
             tone_match = tone_kw in tone_default
             if not tone_match:
                 continue
-            conflict = (
-                (direction == "high" and value > threshold)
-                or (direction == "low" and value < threshold)
+            conflict = (direction == "high" and value > threshold) or (
+                direction == "low" and value < threshold
             )
             if conflict:
                 warnings.append(
@@ -181,18 +180,16 @@ class IdentityLinter:
                 )
         return warnings
 
-    def _check_guardrail_principle_overlap(
-        self, identity: AgentIdentity
-    ) -> list[LintWarning]:
+    def _check_guardrail_principle_overlap(self, identity: AgentIdentity) -> list[LintWarning]:
         """Rule ``guardrail-principle-overlap``: guardrail rules that largely
         duplicate a principle statement (word overlap > 60 %)."""
         warnings: list[LintWarning] = []
         all_rules: list[tuple[str, str, str]] = []  # (id, rule_text, path)
 
-        for idx, g in enumerate(identity.guardrails.hard):
-            all_rules.append((g.id, g.rule, f"guardrails.hard[{idx}]"))
-        for idx, g in enumerate(identity.guardrails.soft):
-            all_rules.append((g.id, g.rule, f"guardrails.soft[{idx}]"))
+        for idx, hg in enumerate(identity.guardrails.hard):
+            all_rules.append((hg.id, hg.rule, f"guardrails.hard[{idx}]"))
+        for idx, sg in enumerate(identity.guardrails.soft):
+            all_rules.append((sg.id, sg.rule, f"guardrails.soft[{idx}]"))
 
         for rule_id, rule_text, rule_path in all_rules:
             for _pidx, principle in enumerate(identity.principles):

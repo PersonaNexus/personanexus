@@ -1052,7 +1052,7 @@ class LLMEnhancer:
         if not self.api_key:
             return None
         try:
-            import anthropic
+            import anthropic  # type: ignore[import-not-found]
 
             self._client = anthropic.Anthropic(api_key=self.api_key)
             return self._client
@@ -1134,7 +1134,8 @@ Respond in this exact JSON format (no markdown, just raw JSON):
             import json
 
             text = response.content[0].text
-            return json.loads(text)
+            parsed: dict[str, Any] = json.loads(text)
+            return parsed
         except Exception as exc:
             self.console.print(
                 f"[yellow]LLM enhancement failed: {exc}. Falling back to templates.[/yellow]"

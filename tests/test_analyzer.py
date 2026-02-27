@@ -84,9 +84,7 @@ class TestFormatDetector:
         with pytest.raises(AnalyzerError, match="Cannot detect format"):
             detect_format(f)
 
-    @pytest.mark.skipif(
-        os.getuid() == 0, reason="chmod restrictions don't apply to root"
-    )
+    @pytest.mark.skipif(os.getuid() == 0, reason="chmod restrictions don't apply to root")
     def test_detect_format_with_inaccessible_file(self, tmp_path):
         f = tmp_path / "restricted.txt"
         f.write_text("some content")
