@@ -1088,24 +1088,28 @@ class LLMEnhancer:
     def _enhance_with_llm(self, client: Any, identity: BuiltIdentity) -> dict[str, Any]:
         """Use Anthropic API to generate enhancements."""
         data = identity.data
-        name = data.get("metadata", {}).get("name", "Agent")
-        role = data.get("role", {}).get("title", "Assistant")
-        purpose = data.get("role", {}).get("purpose", "")
+        name = data.get("metadata", {}).get("name", "Agent")[:100]
+        role = data.get("role", {}).get("title", "Assistant")[:200]
+        purpose = data.get("role", {}).get("purpose", "")[:500]
         traits = data.get("personality", {}).get("traits", {})
 
-        trait_desc = ", ".join(f"{k}={v}" for k, v in traits.items())
+        trait_desc = ", ".join(f"{k}={v}" for k, v in traits.items())[:500]
 
-        prompt = f"""I'm building an AI PersonaNexus. Generate enhancements for:
+        # Note: user-provided values are embedded below (length-limited above).
+        prompt = f"""I'm building an AI agent identity. Generate enhancements \
+for the agent described below.
 
+<agent_description>
 Name: {name}
 Role: {role}
 Purpose: {purpose}
 Traits: {trait_desc}
+</agent_description>
 
 Respond in this exact JSON format (no markdown, just raw JSON):
 {{
-  "personality_notes": "2-3 sentences synthesizing traits into a character description for {name}.",
-  "greeting": "A warm greeting message from {name} introducing themselves and their role.",
+  "personality_notes": "2-3 sentences synthesizing traits into a character description.",
+  "greeting": "A warm greeting message introducing the agent and its role.",
   "vocabulary": {{
     "preferred": ["phrase1", "phrase2", "phrase3"],
     "avoided": ["phrase1", "phrase2", "phrase3"],
@@ -1113,10 +1117,10 @@ Respond in this exact JSON format (no markdown, just raw JSON):
   }},
   "strategies": {{
     "uncertainty": {{
-      "approach": "A brief description of how {name} handles uncertainty"
+      "approach": "A brief description of how the agent handles uncertainty"
     }},
     "disagreement": {{
-      "approach": "A brief description of how {name} handles disagreement"
+      "approach": "A brief description of how the agent handles disagreement"
     }}
   }}
 }}"""

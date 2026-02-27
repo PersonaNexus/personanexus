@@ -4,14 +4,24 @@ from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 
 import yaml
 
 from personanexus.personality import DISC_PRESETS, JUNGIAN_PRESETS
 
+# Maximum file size to read (10 MB)
+_MAX_FILE_SIZE = 10_000_000
+
 
 def _load_yaml(path: str | os.PathLike) -> dict:
     """Load a YAML file and return its contents as a dictionary."""
+    p = Path(path)
+    file_size = p.stat().st_size
+    if file_size > _MAX_FILE_SIZE:
+        raise ValueError(
+            f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})"
+        )
     with open(path, encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -908,6 +918,15 @@ def _calculate_disc_compatibility(disc1: dict, disc2: dict) -> float:
 # ---------------------------------------------------------------------------
 
 
+def _fmt_trait_delta(trait: str, data: dict, md: bool) -> str:
+    """Format a single trait delta line for text or markdown."""
+    delta = data["delta"]
+    sign = "+" if delta >= 0 else ""
+    if md:
+        return f"- **{trait}:** {data['val1']} -> {data['val2']} ({sign}{delta})"
+    return f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})"
+
+
 def format_diff(diff: dict, fmt: str = "text") -> str:
     """Format diff as text, json, or markdown.
 
@@ -921,116 +940,194 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
     if fmt == "json":
         return json.dumps(diff, indent=2, default=str)
 
-    lines = []
+    md = fmt == "markdown"
+    lines: list[str] = []
 
     # Header
-    lines.append("=" * 60)
-    lines.append("IDENTITY DIFF REPORT")
-    lines.append("=" * 60)
-    lines.append("")
+    if md:
+        lines += ["# Identity Diff Report", ""]
+    else:
+        lines += ["=" * 60, "IDENTITY DIFF REPORT", "=" * 60, ""]
 
-    # Changed fields
+    # --- Changed fields ---
     changed = diff.get("changed_fields", [])
+    lines.append("## Changed Fields" if md else "CHANGED FIELDS:")
     if changed:
-        lines.append("CHANGED FIELDS:")
-        lines.append("-" * 40)
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
         for field, val1, val2 in changed:
-            lines.append(f"  {field}:")
-            lines.append(f"    old: {val1}")
-            lines.append(f"    new: {val2}")
-        lines.append("")
+            if md:
+                lines += [f"### `{field}`", f"- **Old:** `{val1}`", f"- **New:** `{val2}`", ""]
+            else:
+                lines += [f"  {field}:", f"    old: {val1}", f"    new: {val2}"]
+        if not md:
+            lines.append("")
     else:
-        lines.append("CHANGED FIELDS: (none)")
-        lines.append("")
+        if md:
+            lines += ["", "*None*", ""]
+        else:
+            lines[-1] += " (none)"
+            lines.append("")
 
-    # Added fields
+    # --- Added fields ---
     added = diff.get("added_fields", [])
+    lines.append("## Added Fields" if md else "ADDED FIELDS:")
     if added:
-        lines.append("ADDED FIELDS:")
-        lines.append("-" * 40)
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
         for field in added:
-            lines.append(f"  + {field}")
+            lines.append(f"- `+ {field}`" if md else f"  + {field}")
         lines.append("")
     else:
-        lines.append("ADDED FIELDS: (none)")
-        lines.append("")
+        if md:
+            lines += ["", "*None*", ""]
+        else:
+            lines[-1] += " (none)"
+            lines.append("")
 
-    # Removed fields
+    # --- Removed fields ---
     removed = diff.get("removed_fields", [])
+    lines.append("## Removed Fields" if md else "REMOVED FIELDS:")
     if removed:
-        lines.append("REMOVED FIELDS:")
-        lines.append("-" * 40)
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
         for field in removed:
-            lines.append(f"  - {field}")
+            lines.append(f"- `- {field}`" if md else f"  - {field}")
         lines.append("")
     else:
-        lines.append("REMOVED FIELDS: (none)")
-        lines.append("")
+        if md:
+            lines += ["", "*None*", ""]
+        else:
+            lines[-1] += " (none)"
+            lines.append("")
 
-    # Personality diff
+    # --- Personality diff ---
     personality = diff.get("personality_diff", {})
     if personality:
-        lines.append("PERSONALITY DIFFERENCES:")
-        lines.append("-" * 40)
+        lines.append("## Personality Differences" if md else "PERSONALITY DIFFERENCES:")
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
 
-        if "ocean" in personality:
-            lines.append("OCEAN Traits:")
-            for trait, data in personality["ocean"].items():
-                delta = data["delta"]
-                sign = "+" if delta >= 0 else ""
-                lines.append(f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})")
+        for framework, label in [("ocean", "OCEAN Traits"), ("disc", "DISC Traits"),
+                                  ("jungian", "Jungian Profile")]:
+            if framework in personality:
+                lines.append(f"### {label}" if md else f"{label}:")
+                if md:
+                    lines.append("")
+                for trait, data in personality[framework].items():
+                    lines.append(_fmt_trait_delta(trait, data, md))
+                if md:
+                    lines.append("")
+        if not md:
+            lines.append("")
+    elif not md:
+        lines += ["PERSONALITY DIFFERENCES: (none)", ""]
 
-        if "disc" in personality:
-            lines.append("DISC Traits:")
-            for trait, data in personality["disc"].items():
-                delta = data["delta"]
-                sign = "+" if delta >= 0 else ""
-                lines.append(f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})")
-
-        if "jungian" in personality:
-            lines.append("Jungian Profile:")
-            for trait, data in personality["jungian"].items():
-                delta = data["delta"]
-                sign = "+" if delta >= 0 else ""
-                lines.append(f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})")
-        lines.append("")
-    else:
-        lines.append("PERSONALITY DIFFERENCES: (none)")
-        lines.append("")
-
-    # Principles comparison
+    # --- Principles comparison ---
     principles = diff.get("principles_comparison")
     if principles:
-        lines.append("PRINCIPLES ALIGNMENT:")
-        lines.append("-" * 40)
-        lines.append(f"  Alignment Score: {principles['alignment_score']}%")
+        lines.append("## Principles Alignment" if md else "PRINCIPLES ALIGNMENT:")
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
+        score_line = f"Alignment Score: {principles['alignment_score']}%"
+        lines.append(f"**{score_line}**" if md else f"  {score_line}")
+        if md:
+            lines.append("")
         if principles["common"]:
-            lines.append(f"  Common: {', '.join(principles['common'])}")
+            val = ", ".join(principles["common"])
+            lines.append(f"**Common:** {val}" if md else f"  Common: {val}")
+            if md:
+                lines.append("")
         if principles["unique_to_first"]:
-            lines.append(f"  Only in first: {', '.join(principles['unique_to_first'])}")
+            if md:
+                lines.append("**Only in first:**")
+                for p in principles["unique_to_first"]:
+                    lines.append(f"- `{p}`")
+            else:
+                lines.append(f"  Only in first: {', '.join(principles['unique_to_first'])}")
+            if md:
+                lines.append("")
         if principles["unique_to_second"]:
-            lines.append(f"  Only in second: {', '.join(principles['unique_to_second'])}")
+            if md:
+                lines.append("**Only in second:**")
+                for p in principles["unique_to_second"]:
+                    lines.append(f"- `{p}`")
+            else:
+                lines.append(f"  Only in second: {', '.join(principles['unique_to_second'])}")
+            if md:
+                lines.append("")
         if principles["conflicting"]:
-            lines.append("  Conflicting:")
-            for c in principles["conflicting"]:
-                lines.append(f"    {c['id']}:")
-                lines.append(f"      first:  {c['statement1']}")
-                lines.append(f"      second: {c['statement2']}")
+            if md:
+                lines += ["**Conflicting Principles:**", ""]
+                for c in principles["conflicting"]:
+                    lines += [f"- **{c['id']}**", f"  - First: {c['statement1']}",
+                              f"  - Second: {c['statement2']}"]
+            else:
+                lines.append("  Conflicting:")
+                for c in principles["conflicting"]:
+                    lines += [f"    {c['id']}:", f"      first:  {c['statement1']}",
+                              f"      second: {c['statement2']}"]
+            if md:
+                lines.append("")
         lines.append("")
 
-    # Expertise comparison
+    # --- Expertise comparison ---
     expertise = diff.get("expertise_comparison")
     if expertise:
-        lines.append("EXPERTISE OVERLAP:")
-        lines.append("-" * 40)
-        lines.append(f"  Overlap Score: {expertise['overlap_score']}%")
+        lines.append("## Expertise Overlap" if md else "EXPERTISE OVERLAP:")
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
+        score_line = f"Overlap Score: {expertise['overlap_score']}%"
+        lines.append(f"**{score_line}**" if md else f"  {score_line}")
+        if md:
+            lines.append("")
         if expertise["shared_domains"]:
-            lines.append(f"  Shared: {', '.join(expertise['shared_domains'])}")
+            if md:
+                lines.append("**Shared Domains:**")
+                for d in expertise["shared_domains"]:
+                    level_info = expertise["level_differences"].get(d)
+                    if level_info:
+                        lines.append(
+                            f"- `{d}`: {level_info['level1']} vs {level_info['level2']} "
+                            f"(delta: {level_info['delta']:+})"
+                        )
+                    else:
+                        lines.append(f"- `{d}`")
+            else:
+                lines.append(f"  Shared: {', '.join(expertise['shared_domains'])}")
+            if md:
+                lines.append("")
         if expertise["unique_to_first"]:
-            lines.append(f"  Only in first: {', '.join(expertise['unique_to_first'])}")
+            if md:
+                lines.append("**Only in first:**")
+                for d in expertise["unique_to_first"]:
+                    lines.append(f"- `{d}`")
+            else:
+                lines.append(f"  Only in first: {', '.join(expertise['unique_to_first'])}")
+            if md:
+                lines.append("")
         if expertise["unique_to_second"]:
-            lines.append(f"  Only in second: {', '.join(expertise['unique_to_second'])}")
-        if expertise["level_differences"]:
+            if md:
+                lines.append("**Only in second:**")
+                for d in expertise["unique_to_second"]:
+                    lines.append(f"- `{d}`")
+            else:
+                lines.append(f"  Only in second: {', '.join(expertise['unique_to_second'])}")
+            if md:
+                lines.append("")
+        if not md and expertise.get("level_differences"):
             lines.append("  Level Differences:")
             for name, data in expertise["level_differences"].items():
                 lines.append(
@@ -1038,263 +1135,110 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
                 )
         lines.append("")
 
-    # Communication comparison
+    # --- Communication comparison ---
     communication = diff.get("communication_comparison")
     if communication:
-        lines.append("COMMUNICATION COMPATIBILITY:")
-        lines.append("-" * 40)
-        lines.append(f"  Compatibility Score: {communication['compatibility_score']}%")
-        lines.append(f"  Register Match: {communication['register_match']}")
-        lines.append(f"  Tone Similarity: {communication['tone_similarity']}")
+        lines.append(
+            "## Communication Compatibility" if md else "COMMUNICATION COMPATIBILITY:"
+        )
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
+        score_line = f"Compatibility Score: {communication['compatibility_score']}%"
+        lines.append(f"**{score_line}**" if md else f"  {score_line}")
+        if md:
+            lines.append("")
+        reg = f"Register Match: {communication['register_match']}"
+        tone = f"Tone Similarity: {communication['tone_similarity']}"
+        if md:
+            lines += [f"- **{reg}**", f"- **{tone}**"]
+        else:
+            lines += [f"  {reg}", f"  {tone}"]
         if communication["style_differences"]:
-            lines.append("  Style Differences:")
-            for field, val1, val2 in communication["style_differences"]:
-                lines.append(f"    {field}: {val1} -> {val2}")
+            if md:
+                lines += ["", "**Style Differences:**", ""]
+                for field, val1, val2 in communication["style_differences"]:
+                    lines.append(f"- `{field}`: `{val1}` -> `{val2}`")
+            else:
+                lines.append("  Style Differences:")
+                for field, val1, val2 in communication["style_differences"]:
+                    lines.append(f"    {field}: {val1} -> {val2}")
         lines.append("")
 
-    # Guardrails comparison
+    # --- Guardrails comparison ---
     guardrails = diff.get("guardrails_comparison")
     if guardrails:
-        lines.append("GUARDRAIL COMPARISON:")
-        lines.append("-" * 40)
-        if guardrails["shared_rules"]:
-            lines.append(f"  Shared: {', '.join(guardrails['shared_rules'])}")
-        if guardrails["unique_to_first"]:
-            lines.append(f"  Only in first: {', '.join(guardrails['unique_to_first'])}")
-        if guardrails["unique_to_second"]:
-            lines.append(f"  Only in second: {', '.join(guardrails['unique_to_second'])}")
+        lines.append("## Guardrail Comparison" if md else "GUARDRAIL COMPARISON:")
+        if not md:
+            lines.append("-" * 40)
+        else:
+            lines.append("")
+        for key, label in [("shared_rules", "Shared"), ("unique_to_first", "Only in first"),
+                           ("unique_to_second", "Only in second")]:
+            items = guardrails.get(key, [])
+            if items:
+                if md:
+                    lines.append(f"**{label}:**" if key != "shared_rules" else "**Shared Rules:**")
+                    for r in items:
+                        lines.append(f"- `{r}`")
+                    lines.append("")
+                else:
+                    lines.append(f"  {label}: {', '.join(items)}")
         if guardrails["potential_conflicts"]:
-            lines.append("  Potential Conflicts:")
+            if md:
+                lines += ["**Potential Conflicts:**", ""]
+            else:
+                lines.append("  Potential Conflicts:")
             for c in guardrails["potential_conflicts"]:
                 if "id" in c:
-                    lines.append(f"    {c['id']}: overlap={c['word_overlap']}")
+                    if md:
+                        lines.append(f"- **{c['id']}** (overlap: {c['word_overlap']})")
+                    else:
+                        lines.append(f"    {c['id']}: overlap={c['word_overlap']}")
                 else:
-                    lines.append(f"    {c['id1']} vs {c['id2']}: overlap={c['word_overlap']}")
+                    if md:
+                        lines.append(
+                            f"- **{c['id1']}** vs **{c['id2']}** (overlap: {c['word_overlap']})"
+                        )
+                    else:
+                        lines.append(
+                            f"    {c['id1']} vs {c['id2']}: overlap={c['word_overlap']}"
+                        )
+            if md:
+                lines.append("")
         lines.append("")
 
-    # Impact analysis
+    # --- Impact analysis ---
     impact = diff.get("impact_analysis")
     if impact:
         summary = impact.get("summary", {})
         has_changes = any(v > 0 for v in summary.values())
         if has_changes:
-            lines.append("CHANGE IMPACT ANALYSIS:")
-            lines.append("-" * 40)
-            for cat, count in summary.items():
-                if count > 0:
-                    severity = _SEVERITY_MAP.get(cat, "medium")
-                    lines.append(f"  {cat} ({severity}): {count} field(s)")
+            lines.append(
+                "## Change Impact Analysis" if md else "CHANGE IMPACT ANALYSIS:"
+            )
+            if md:
+                lines += [
+                    "",
+                    "| Category | Severity | Fields |",
+                    "|----------|----------|--------|",
+                ]
+                for cat, count in summary.items():
+                    if count > 0:
+                        severity = _SEVERITY_MAP.get(cat, "medium")
+                        lines.append(f"| {cat} | {severity} | {count} |")
+            else:
+                lines.append("-" * 40)
+                for cat, count in summary.items():
+                    if count > 0:
+                        severity = _SEVERITY_MAP.get(cat, "medium")
+                        lines.append(f"  {cat} ({severity}): {count} field(s)")
             lines.append("")
 
     return "\n".join(lines)
 
 
 def format_diff_markdown(diff: dict) -> str:
-    """Format diff as markdown (alias for format_diff with fmt='markdown')."""
-    lines = []
-
-    lines.append("# Identity Diff Report")
-    lines.append("")
-
-    # Changed fields
-    changed = diff.get("changed_fields", [])
-    if changed:
-        lines.append("## Changed Fields")
-        lines.append("")
-        for field, val1, val2 in changed:
-            lines.append(f"### `{field}`")
-            lines.append(f"- **Old:** `{val1}`")
-            lines.append(f"- **New:** `{val2}`")
-            lines.append("")
-    else:
-        lines.append("## Changed Fields")
-        lines.append("")
-        lines.append("*None*")
-        lines.append("")
-
-    # Added fields
-    added = diff.get("added_fields", [])
-    if added:
-        lines.append("## Added Fields")
-        lines.append("")
-        for field in added:
-            lines.append(f"- `+ {field}`")
-        lines.append("")
-    else:
-        lines.append("## Added Fields")
-        lines.append("")
-        lines.append("*None*")
-        lines.append("")
-
-    # Removed fields
-    removed = diff.get("removed_fields", [])
-    if removed:
-        lines.append("## Removed Fields")
-        lines.append("")
-        for field in removed:
-            lines.append(f"- `- {field}`")
-        lines.append("")
-    else:
-        lines.append("## Removed Fields")
-        lines.append("")
-        lines.append("*None*")
-        lines.append("")
-
-    # Personality diff
-    personality = diff.get("personality_diff", {})
-    if personality:
-        lines.append("## Personality Differences")
-        lines.append("")
-
-        if "ocean" in personality:
-            lines.append("### OCEAN Traits")
-            lines.append("")
-            for trait, data in personality["ocean"].items():
-                delta = data["delta"]
-                sign = "+" if delta >= 0 else ""
-                lines.append(f"- **{trait}:** {data['val1']} -> {data['val2']} ({sign}{delta})")
-            lines.append("")
-
-        if "disc" in personality:
-            lines.append("### DISC Traits")
-            lines.append("")
-            for trait, data in personality["disc"].items():
-                delta = data["delta"]
-                sign = "+" if delta >= 0 else ""
-                lines.append(f"- **{trait}:** {data['val1']} -> {data['val2']} ({sign}{delta})")
-            lines.append("")
-
-        if "jungian" in personality:
-            lines.append("### Jungian Profile")
-            lines.append("")
-            for trait, data in personality["jungian"].items():
-                delta = data["delta"]
-                sign = "+" if delta >= 0 else ""
-                lines.append(f"- **{trait}:** {data['val1']} -> {data['val2']} ({sign}{delta})")
-            lines.append("")
-
-    # Principles comparison
-    principles = diff.get("principles_comparison")
-    if principles:
-        lines.append("## Principles Alignment")
-        lines.append("")
-        lines.append(f"**Alignment Score:** {principles['alignment_score']}%")
-        lines.append("")
-        if principles["common"]:
-            lines.append(f"**Common:** {', '.join(principles['common'])}")
-            lines.append("")
-        if principles["unique_to_first"]:
-            lines.append("**Only in first:**")
-            for p in principles["unique_to_first"]:
-                lines.append(f"- `{p}`")
-            lines.append("")
-        if principles["unique_to_second"]:
-            lines.append("**Only in second:**")
-            for p in principles["unique_to_second"]:
-                lines.append(f"- `{p}`")
-            lines.append("")
-        if principles["conflicting"]:
-            lines.append("**Conflicting Principles:**")
-            lines.append("")
-            for c in principles["conflicting"]:
-                lines.append(f"- **{c['id']}**")
-                lines.append(f"  - First: {c['statement1']}")
-                lines.append(f"  - Second: {c['statement2']}")
-            lines.append("")
-
-    # Expertise comparison
-    expertise = diff.get("expertise_comparison")
-    if expertise:
-        lines.append("## Expertise Overlap")
-        lines.append("")
-        lines.append(f"**Overlap Score:** {expertise['overlap_score']}%")
-        lines.append("")
-        if expertise["shared_domains"]:
-            lines.append("**Shared Domains:**")
-            for d in expertise["shared_domains"]:
-                level_info = expertise["level_differences"].get(d)
-                if level_info:
-                    lines.append(
-                        f"- `{d}`: {level_info['level1']} vs {level_info['level2']} "
-                        f"(delta: {level_info['delta']:+})"
-                    )
-                else:
-                    lines.append(f"- `{d}`")
-            lines.append("")
-        if expertise["unique_to_first"]:
-            lines.append("**Only in first:**")
-            for d in expertise["unique_to_first"]:
-                lines.append(f"- `{d}`")
-            lines.append("")
-        if expertise["unique_to_second"]:
-            lines.append("**Only in second:**")
-            for d in expertise["unique_to_second"]:
-                lines.append(f"- `{d}`")
-            lines.append("")
-
-    # Communication comparison
-    communication = diff.get("communication_comparison")
-    if communication:
-        lines.append("## Communication Compatibility")
-        lines.append("")
-        lines.append(f"**Compatibility Score:** {communication['compatibility_score']}%")
-        lines.append("")
-        lines.append(f"- **Register Match:** {communication['register_match']}")
-        lines.append(f"- **Tone Similarity:** {communication['tone_similarity']}")
-        if communication["style_differences"]:
-            lines.append("")
-            lines.append("**Style Differences:**")
-            lines.append("")
-            for field, val1, val2 in communication["style_differences"]:
-                lines.append(f"- `{field}`: `{val1}` -> `{val2}`")
-        lines.append("")
-
-    # Guardrails comparison
-    guardrails = diff.get("guardrails_comparison")
-    if guardrails:
-        lines.append("## Guardrail Comparison")
-        lines.append("")
-        if guardrails["shared_rules"]:
-            lines.append("**Shared Rules:**")
-            for r in guardrails["shared_rules"]:
-                lines.append(f"- `{r}`")
-            lines.append("")
-        if guardrails["unique_to_first"]:
-            lines.append("**Only in first:**")
-            for r in guardrails["unique_to_first"]:
-                lines.append(f"- `{r}`")
-            lines.append("")
-        if guardrails["unique_to_second"]:
-            lines.append("**Only in second:**")
-            for r in guardrails["unique_to_second"]:
-                lines.append(f"- `{r}`")
-            lines.append("")
-        if guardrails["potential_conflicts"]:
-            lines.append("**Potential Conflicts:**")
-            lines.append("")
-            for c in guardrails["potential_conflicts"]:
-                if "id" in c:
-                    lines.append(f"- **{c['id']}** (overlap: {c['word_overlap']})")
-                else:
-                    lines.append(
-                        f"- **{c['id1']}** vs **{c['id2']}** (overlap: {c['word_overlap']})"
-                    )
-            lines.append("")
-
-    # Impact analysis
-    impact = diff.get("impact_analysis")
-    if impact:
-        summary = impact.get("summary", {})
-        has_changes = any(v > 0 for v in summary.values())
-        if has_changes:
-            lines.append("## Change Impact Analysis")
-            lines.append("")
-            lines.append("| Category | Severity | Fields |")
-            lines.append("|----------|----------|--------|")
-            for cat, count in summary.items():
-                if count > 0:
-                    severity = _SEVERITY_MAP.get(cat, "medium")
-                    lines.append(f"| {cat} | {severity} | {count} |")
-            lines.append("")
-
-    return "\n".join(lines)
+    """Format diff as markdown. Convenience wrapper around format_diff."""
+    return format_diff(diff, fmt="markdown")

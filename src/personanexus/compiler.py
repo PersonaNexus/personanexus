@@ -6,6 +6,8 @@ import logging
 import re
 from typing import Any
 
+import yaml
+
 from personanexus.personality import compute_personality_traits
 from personanexus.types import (
     AgentIdentity,
@@ -21,6 +23,7 @@ from personanexus.types import (
     Personality,
     PersonalityMode,
     Principle,
+    RelationshipDynamic,
     Role,
     Severity,
 )
@@ -36,7 +39,7 @@ class CompilerError(Exception):
 # Trait-to-language mapping (5 levels per trait)
 # ---------------------------------------------------------------------------
 
-_TRAIT_TEMPLATES: dict[str, list[str]] = {
+TRAIT_TEMPLATES: dict[str, list[str]] = {
     "warmth": [
         "reserved and professional",
         "moderately warm",
@@ -112,7 +115,7 @@ _TRAIT_TEMPLATES: dict[str, list[str]] = {
 
 def _trait_to_language(trait_name: str, value: float) -> str:
     """Convert a numeric trait (0-1) to a natural language sentence."""
-    templates = _TRAIT_TEMPLATES.get(trait_name)
+    templates = TRAIT_TEMPLATES.get(trait_name)
     if not templates:
         # Generic fallback for custom traits
         if value < 0.3:
@@ -1291,48 +1294,145 @@ def _markdown_bar(value: float, width: int = 10) -> str:
 
 
 class LangChainCompiler:
-    """Compiles a resolved AgentIdentity into LangChain-compatible configuration."""
+    """Compiles a resolved AgentIdentity into a LangChain agent configuration dict."""
 
     def __init__(self, prompt_compiler: SystemPromptCompiler | None = None):
         self.prompt_compiler = prompt_compiler or SystemPromptCompiler()
 
     def compile(self, identity: AgentIdentity) -> dict[str, Any]:
-        """Compile identity into a LangChain-compatible dict.
+        """Compile identity into a LangChain agent configuration dict.
 
         Returns:
-            Dict with keys:
-                - system_message: The full system prompt text.
-                - human_message_prefix: A prefix for human messages.
-                - ai_message_prefix: A prefix for AI responses.
-                - metadata: Agent metadata for LangChain chain configuration.
+            Dict matching the LangChain conversational agent configuration schema.
         """
         system_message = self.prompt_compiler.compile(identity, format="text")
 
-        name = identity.metadata.name
-        role_title = identity.role.title
-
-        # Build a human message prefix that sets context
-        human_message_prefix = ""
-
-        # Build an AI message prefix from the agent's persona
-        ai_message_prefix = f"[{name} - {role_title}] "
-
-        metadata = {
-            "agent_id": identity.metadata.id,
-            "agent_name": name,
-            "agent_version": identity.metadata.version,
-            "role_title": role_title,
-            "tone": identity.communication.tone.default,
-            "domains": [d.name for d in identity.expertise.domains],
-            "guardrail_count": len(identity.guardrails.hard),
-            "principle_count": len(identity.principles),
+        return {
+            "agent_type": "conversational",
+            "system_message": system_message,
+            "name": identity.metadata.name,
+            "description": identity.metadata.description,
+            "tools": [],
+            "verbose": True,
+            "metadata": {
+                "personanexus_id": identity.metadata.id,
+                "personanexus_version": identity.metadata.version,
+                "personality_mode": identity.personality.profile.mode.value,
+            },
         }
 
+
+# ---------------------------------------------------------------------------
+# CrewAI Compiler
+# ---------------------------------------------------------------------------
+
+
+class CrewAICompiler:
+    """Compiles a resolved AgentIdentity into a CrewAI agent YAML configuration."""
+
+    def __init__(self, prompt_compiler: SystemPromptCompiler | None = None):
+        self.prompt_compiler = prompt_compiler or SystemPromptCompiler()
+
+    def compile(self, identity: AgentIdentity) -> str:
+        """Compile identity into a CrewAI agent YAML configuration string.
+
+        Returns:
+            YAML string with CrewAI agent configuration.
+        """
+        backstory = self._build_backstory(identity)
+        allow_delegation = self._should_allow_delegation(identity)
+
+        agent_config: dict[str, Any] = {
+            "agent": {
+                "role": identity.role.title,
+                "goal": identity.role.purpose,
+                "backstory": backstory,
+                "verbose": True,
+                "allow_delegation": allow_delegation,
+                "tools": [],
+                "metadata": {
+                    "personanexus_id": identity.metadata.id,
+                },
+            }
+        }
+
+        return yaml.dump(agent_config, default_flow_style=False, sort_keys=False)
+
+    def _build_backstory(self, identity: AgentIdentity) -> str:
+        """Build a backstory from compiled personality and narrative summary."""
+        parts: list[str] = []
+
+        # Start with narrative backstory if available
+        if identity.narrative.backstory:
+            parts.append(identity.narrative.backstory.strip())
+
+        # Add personality summary
+        if identity.personality.profile.mode != PersonalityMode.CUSTOM:
+            computed = compute_personality_traits(identity.personality)
+            traits = computed.defined_traits()
+        else:
+            traits = identity.personality.traits.defined_traits()
+
+        if traits:
+            trait_descriptions = [
+                _trait_to_language(name, value) for name, value in sorted(traits.items())
+            ]
+            parts.append(" ".join(trait_descriptions))
+
+        # Add personality notes if available
+        if identity.personality.notes:
+            parts.append(identity.personality.notes.strip())
+
+        if not parts:
+            # Fallback to role purpose
+            parts.append(identity.role.purpose.strip())
+
+        return " ".join(parts)
+
+    def _should_allow_delegation(self, identity: AgentIdentity) -> bool:
+        """Determine if delegation should be allowed based on authority level.
+
+        Checks agent relationships for delegation dynamics and autonomous
+        permissions for indicators of delegation authority.
+        """
+        # Check if the agent has any "delegates_to" relationships
+        if identity.memory.relationships.agent_relationships:
+            for rel in identity.memory.relationships.agent_relationships:
+                if rel.dynamic == RelationshipDynamic.DELEGATES_TO:
+                    return True
+
+        # Check if there are autonomous permissions (indicates authority)
+        return bool(identity.guardrails.permissions.autonomous)
+
+
+# ---------------------------------------------------------------------------
+# AutoGen Compiler
+# ---------------------------------------------------------------------------
+
+
+class AutoGenCompiler:
+    """Compiles a resolved AgentIdentity into an AutoGen agent JSON configuration."""
+
+    def __init__(self, prompt_compiler: SystemPromptCompiler | None = None):
+        self.prompt_compiler = prompt_compiler or SystemPromptCompiler()
+
+    def compile(self, identity: AgentIdentity) -> dict[str, Any]:
+        """Compile identity into an AutoGen agent configuration dict.
+
+        Returns:
+            Dict matching the AutoGen AssistantAgent configuration schema.
+        """
+        system_message = self.prompt_compiler.compile(identity, format="text")
+
         return {
+            "name": identity.metadata.name,
             "system_message": system_message,
-            "human_message_prefix": human_message_prefix,
-            "ai_message_prefix": ai_message_prefix,
-            "metadata": metadata,
+            "human_input_mode": "NEVER",
+            "description": identity.metadata.description,
+            "metadata": {
+                "personanexus_id": identity.metadata.id,
+                "personanexus_version": identity.metadata.version,
+            },
         }
 
 
@@ -1352,11 +1452,11 @@ def compile_identity(
     Args:
         identity: A fully resolved AgentIdentity.
         target: "text", "anthropic", "openai", "openclaw", "soul", "json",
-                "langchain", or "markdown".
+                "langchain", "crewai", "autogen", or "markdown".
         token_budget: Estimated token budget for system prompt.
 
     Returns:
-        String for text formats, dict for openclaw/soul/json/langchain.
+        String for text/crewai formats, dict for openclaw/soul/json/langchain/autogen.
     """
     prompt_compiler = SystemPromptCompiler(token_budget=token_budget)
 
@@ -1389,6 +1489,12 @@ def compile_identity(
     elif target == "langchain":
         langchain_compiler = LangChainCompiler(prompt_compiler)
         return langchain_compiler.compile(identity)
+    elif target == "crewai":
+        crewai_compiler = CrewAICompiler(prompt_compiler)
+        return crewai_compiler.compile(identity)
+    elif target == "autogen":
+        autogen_compiler = AutoGenCompiler(prompt_compiler)
+        return autogen_compiler.compile(identity)
     elif target == "markdown":
         markdown_compiler = MarkdownCompiler()
         return markdown_compiler.compile(identity)

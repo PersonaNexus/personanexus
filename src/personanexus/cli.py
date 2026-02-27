@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import re
 import uuid
 from datetime import datetime
 from pathlib import Path
@@ -19,6 +21,8 @@ from rich.table import Table
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
+from personanexus.drift import detect_drift_from_files, format_drift_report
+from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
 from personanexus.team_types import TeamConfiguration
@@ -31,6 +35,38 @@ app = typer.Typer(
     add_completion=False,
 )
 console = Console()
+
+
+# ---------------------------------------------------------------------------
+# Security helpers
+# ---------------------------------------------------------------------------
+
+
+def _sanitize_filename(name: str) -> str:
+    """Sanitize a user-provided name into a safe filename component.
+
+    Strips all characters except alphanumeric and underscores to prevent
+    path traversal attacks.
+    """
+    safe = re.sub(r"[^a-zA-Z0-9_]", "_", name.lower()).strip("_")
+    # Collapse consecutive underscores
+    safe = re.sub(r"_+", "_", safe)
+    return safe if safe else "agent"
+
+
+def _atomic_write(path: Path, content: str) -> None:
+    """Write content to a file atomically via temp-and-rename.
+
+    On POSIX systems ``os.replace`` is atomic within the same filesystem,
+    preventing partial writes from corrupting the target file.
+    """
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    try:
+        tmp.write_text(content, encoding="utf-8")
+        os.replace(str(tmp), str(path))
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 # ---------------------------------------------------------------------------
@@ -104,6 +140,84 @@ def validate(
             console.print(f"[dim]Extends: {identity.extends}[/dim]")
         if identity.mixins:
             console.print(f"[dim]Mixins: {', '.join(identity.mixins)}[/dim]")
+
+
+# ---------------------------------------------------------------------------
+# lint command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def lint(
+    file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file to lint")],
+    severity: Annotated[
+        str,
+        typer.Option(
+            "--severity",
+            "-s",
+            help="Minimum severity to show: info, warning, or error",
+        ),
+    ] = "info",
+) -> None:
+    """Run semantic lint checks on a PersonaNexus YAML file.
+
+    Goes beyond schema validation to find logical inconsistencies,
+    unused fields, conflicting settings, and missing recommended config.
+    """
+    if not file.exists():
+        console.print(f"[red]Error: File not found: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    if not file.is_file():
+        console.print(f"[red]Error: Not a file: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    severity_levels = {"info": 0, "warning": 1, "error": 2}
+    if severity not in severity_levels:
+        console.print(
+            f"[red]Error: Invalid severity '{severity}'. "
+            "Must be 'info', 'warning', or 'error'[/red]"
+        )
+        raise typer.Exit(code=1)
+    min_level = severity_levels[severity]
+
+    linter = IdentityLinter()
+
+    try:
+        warnings = linter.lint_file(str(file))
+    except Exception as exc:
+        console.print("[red]Linting failed:[/red]")
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1)
+
+    # Filter by severity
+    filtered = [
+        w for w in warnings if severity_levels.get(w.severity, 0) >= min_level
+    ]
+
+    if not filtered:
+        console.print(f"[green]No lint warnings for {file}[/green]")
+        return
+
+    severity_color = {
+        "info": "blue",
+        "warning": "yellow",
+        "error": "red",
+    }
+
+    console.print(f"\n[bold]Lint results for {file} ({len(filtered)} findings):[/bold]\n")
+    for w in filtered:
+        color = severity_color.get(w.severity, "white")
+        location = f" ({w.path})" if w.path else ""
+        console.print(
+            f"  [{color}][{w.severity.upper()}] {w.rule}{location}: "
+            f"{w.message}[/{color}]"
+        )
+    console.print()
+
+    # Exit 1 if any errors found
+    if any(w.severity == "error" for w in filtered):
+        raise typer.Exit(code=1)
 
 
 # ---------------------------------------------------------------------------
@@ -237,10 +351,8 @@ def init(
     # Create output directory if it doesn't exist
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    # Generate filename from name
-    filename = name.lower().replace(" ", "_").replace("-", "_")
-    if not filename.endswith(".yaml"):
-        filename += ".yaml"
+    # Generate filename from name (sanitized to prevent path traversal)
+    filename = _sanitize_filename(name) + ".yaml"
 
     output_path = output_dir / filename
     if output_path.exists():
@@ -267,8 +379,8 @@ def init(
     else:  # minimal
         content = _generate_minimal_template(name, agent_id, timestamp, extends)
 
-    # Write the file
-    output_path.write_text(content, encoding="utf-8")
+    # Write the file (atomic to prevent corruption)
+    _atomic_write(output_path, content)
 
     console.print(f"\n[green]✓ Created {type} identity: {output_path}[/green]")
     console.print(f"[dim]ID: {agent_id}[/dim]")
@@ -284,22 +396,22 @@ def _generate_minimal_template(
     lines = ["schema_version: '1.0'", ""]
 
     if extends:
-        lines.extend([f"extends: {extends}", ""])
+        lines.extend([f"extends: \"{extends}\"", ""])
 
     lines.extend(
         [
             "metadata:",
             f"  id: {agent_id}",
-            f"  name: {name}",
+            f"  name: \"{name}\"",
             "  version: 0.1.0",
-            f"  description: Agent identity for {name}",
-            f"  created_at: {timestamp}",
-            f"  updated_at: {timestamp}",
+            f"  description: \"Agent identity for {name}\"",
+            f"  created_at: \"{timestamp}\"",
+            f"  updated_at: \"{timestamp}\"",
             "  status: draft",
             "",
             "role:",
-            f"  title: {name}",
-            f"  purpose: Assist users with tasks related to {name.lower()}",
+            f"  title: \"{name}\"",
+            f"  purpose: \"Assist users with tasks related to {name.lower()}\"",
             "  scope:",
             "    primary:",
             "      - General assistance",
@@ -336,25 +448,25 @@ def _generate_full_template(name: str, agent_id: str, timestamp: str, extends: s
     lines = ["schema_version: '1.0'", ""]
 
     if extends:
-        lines.extend([f"extends: {extends}", ""])
+        lines.extend([f"extends: \"{extends}\"", ""])
 
     lines.extend(
         [
             "metadata:",
             f"  id: {agent_id}",
-            f"  name: {name}",
+            f"  name: \"{name}\"",
             "  version: 0.1.0",
-            f"  description: Full PersonaNexus for {name}",
-            f"  created_at: {timestamp}",
-            f"  updated_at: {timestamp}",
+            f"  description: \"Full PersonaNexus for {name}\"",
+            f"  created_at: \"{timestamp}\"",
+            f"  updated_at: \"{timestamp}\"",
             "  author: PersonaNexus Framework",
             "  tags:",
             "    - assistant",
             "  status: draft",
             "",
             "role:",
-            f"  title: {name}",
-            f"  purpose: A comprehensive assistant for {name.lower()}-related tasks",
+            f"  title: \"{name}\"",
+            f"  purpose: \"A comprehensive assistant for {name.lower()}-related tasks\"",
             "  scope:",
             "    primary:",
             "      - General assistance",
@@ -458,22 +570,22 @@ def _generate_archetype_template(name: str, agent_id: str, timestamp: str) -> st
         "",
         "archetype:",
         f"  id: {agent_id}",
-        f"  name: {name}",
-        f"  description: Base archetype for {name.lower()} agents",
+        f"  name: \"{name}\"",
+        f"  description: \"Base archetype for {name.lower()} agents\"",
         "  abstract: true",
         "",
         "metadata:",
         f"  id: {agent_id}",
-        f"  name: {name} Archetype",
+        f"  name: \"{name} Archetype\"",
         "  version: 1.0.0",
-        f"  description: Archetype defining core traits for {name.lower()} agents",
-        f"  created_at: {timestamp}",
-        f"  updated_at: {timestamp}",
+        f"  description: \"Archetype defining core traits for {name.lower()} agents\"",
+        f"  created_at: \"{timestamp}\"",
+        f"  updated_at: \"{timestamp}\"",
         "  status: active",
         "",
         "role:",
-        f"  title: {name}",
-        f"  purpose: Base purpose for {name.lower()} agents",
+        f"  title: \"{name}\"",
+        f"  purpose: \"Base purpose for {name.lower()} agents\"",
         "  scope:",
         "    primary:",
         "      - Core capability area",
@@ -511,20 +623,20 @@ def _generate_mixin_template(name: str, agent_id: str, timestamp: str) -> str:
         "",
         "mixin:",
         f"  id: {agent_id}",
-        f"  name: {name}",
-        f"  description: Mixin providing {name.lower()} capabilities",
+        f"  name: \"{name}\"",
+        f"  description: \"Mixin providing {name.lower()} capabilities\"",
         "",
         "metadata:",
         f"  id: {agent_id}",
-        f"  name: {name} Mixin",
+        f"  name: \"{name} Mixin\"",
         "  version: 1.0.0",
-        f"  description: Adds {name.lower()} functionality to any agent",
-        f"  created_at: {timestamp}",
-        f"  updated_at: {timestamp}",
+        f"  description: \"Adds {name.lower()} functionality to any agent\"",
+        f"  created_at: \"{timestamp}\"",
+        f"  updated_at: \"{timestamp}\"",
         "  status: active",
         "",
         "role:",
-        f"  title: {name} Enhanced",
+        f"  title: \"{name} Enhanced\"",
         "  purpose: Provides additional capabilities",
         "  scope:",
         "    primary:",
@@ -574,7 +686,8 @@ def compile(
         typer.Option(
             "--target",
             "-t",
-            help="Target: text, anthropic, openai, openclaw, soul, json, langchain, markdown",
+            help="Target: text, anthropic, openai, openclaw, soul, "
+            "json, langchain, crewai, autogen, markdown",
         ),
     ] = "text",
     search_path: Annotated[
@@ -611,6 +724,8 @@ def compile(
         "soul",
         "json",
         "langchain",
+        "crewai",
+        "autogen",
         "markdown",
     )
     if target not in valid_targets:
@@ -664,8 +779,8 @@ def compile(
 
         soul_path = out_dir / f"{stem}.SOUL.md"
         style_path = out_dir / f"{stem}.STYLE.md"
-        soul_path.write_text(result["soul_md"], encoding="utf-8")
-        style_path.write_text(result["style_md"], encoding="utf-8")
+        _atomic_write(soul_path, result["soul_md"])
+        _atomic_write(style_path, result["style_md"])
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {soul_path}[/green]")
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {style_path}[/green]")
         console.print("[dim]Target: soul (SOUL.md + STYLE.md)[/dim]")
@@ -688,6 +803,8 @@ def compile(
             "openclaw": ".personality.json",
             "json": ".compiled.json",
             "langchain": ".langchain.json",
+            "crewai": ".crewai.yaml",
+            "autogen": ".autogen.json",
             "markdown": ".compiled.doc.md",
         }
         suffix = ext_map.get(target, ".compiled.txt")
@@ -695,7 +812,7 @@ def compile(
 
     # Write to file
     output.parent.mkdir(parents=True, exist_ok=True)
-    output.write_text(output_text, encoding="utf-8")
+    _atomic_write(output, output_text)
     console.print(f"[green]✓ Compiled {identity.metadata.name} → {output}[/green]")
     console.print(f"[dim]Target: {target}[/dim]")
 
@@ -1265,11 +1382,11 @@ def build(
     # Write the file
     output_dir.mkdir(parents=True, exist_ok=True)
     name = identity.data.get("metadata", {}).get("name", "agent")
-    filename = name.lower().replace(" ", "_").replace("-", "_") + ".yaml"
+    filename = _sanitize_filename(name) + ".yaml"
     output_path = output_dir / filename
 
     yaml_str = identity.to_yaml_string()
-    output_path.write_text(yaml_str, encoding="utf-8")
+    _atomic_write(output_path, yaml_str)
 
     console.print(f"\n[green]✓ Saved identity: {output_path}[/green]")
 
@@ -1443,6 +1560,80 @@ def compat(
 
     except Exception as e:
         console.print(f"[red]Error calculating compatibility: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# drift command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def drift(
+    baseline: Annotated[Path, typer.Argument(help="Path to the baseline identity YAML file")],
+    current: Annotated[Path, typer.Argument(help="Path to the current identity YAML file")],
+    threshold: Annotated[
+        float,
+        typer.Option("--threshold", "-t", help="Trait drift threshold (default 0.1)"),
+    ] = 0.1,
+    format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: text, json"),
+    ] = "text",
+) -> None:
+    """Detect configuration drift between two PersonaNexus identity files."""
+    if not baseline.exists():
+        console.print(f"[red]Error: File not found: {baseline}[/red]")
+        raise typer.Exit(code=1)
+
+    if not current.exists():
+        console.print(f"[red]Error: File not found: {current}[/red]")
+        raise typer.Exit(code=1)
+
+    if not baseline.is_file():
+        console.print(f"[red]Error: Not a file: {baseline}[/red]")
+        raise typer.Exit(code=1)
+
+    if not current.is_file():
+        console.print(f"[red]Error: Not a file: {current}[/red]")
+        raise typer.Exit(code=1)
+
+    try:
+        report = detect_drift_from_files(
+            baseline_path=str(baseline),
+            current_path=str(current),
+            threshold=threshold,
+        )
+
+        if format == "json":
+            console.print_json(data=report.to_dict())
+        else:
+            output = format_drift_report(report, fmt="text")
+            if report.drift_detected:
+                severity_colors = {
+                    "minor": "yellow",
+                    "major": "red",
+                    "critical": "bold red",
+                }
+                color = severity_colors.get(report.severity, "green")
+                console.print(
+                    Panel(
+                        output,
+                        title=f"[{color}]Drift Report ({report.severity.upper()})[/{color}]",
+                        border_style=color,
+                    )
+                )
+            else:
+                console.print(
+                    Panel(
+                        output,
+                        title="[green]Drift Report (CLEAN)[/green]",
+                        border_style="green",
+                    )
+                )
+
+    except Exception as e:
+        console.print(f"[red]Error detecting drift: {e}[/red]")
         raise typer.Exit(code=1)
 
 

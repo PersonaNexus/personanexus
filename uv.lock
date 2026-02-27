@@ -1471,19 +1471,26 @@ name = "personanexus"
 version = "1.4.0"
 source = { editable = "." }
 dependencies = [
-    { name = "jsonschema" },
-    { name = "openai" },
     { name = "pydantic" },
     { name = "pyyaml" },
     { name = "rich" },
-    { name = "streamlit" },
     { name = "typer" },
 ]
 
 [package.optional-dependencies]
+all = [
+    { name = "anthropic" },
+    { name = "google-generativeai" },
+    { name = "openai" },
+    { name = "streamlit" },
+]
 llm = [
     { name = "anthropic" },
     { name = "google-generativeai" },
+    { name = "openai" },
+]
+web = [
+    { name = "streamlit" },
 ]
 
 [package.dev-dependencies]
@@ -1500,15 +1507,15 @@ dev = [
 requires-dist = [
     { name = "anthropic", marker = "extra == 'llm'", specifier = ">=0.30" },
     { name = "google-generativeai", marker = "extra == 'llm'", specifier = ">=0.8" },
-    { name = "jsonschema", specifier = ">=4.20" },
-    { name = "openai", specifier = ">=2.21.0" },
+    { name = "openai", marker = "extra == 'llm'", specifier = ">=2.21.0" },
+    { name = "personanexus", extras = ["web", "llm"], marker = "extra == 'all'" },
     { name = "pydantic", specifier = ">=2.0" },
     { name = "pyyaml", specifier = ">=6.0" },
     { name = "rich", specifier = ">=13.0" },
-    { name = "streamlit", specifier = ">=1.54.0" },
+    { name = "streamlit", marker = "extra == 'web'", specifier = ">=1.54.0" },
     { name = "typer", specifier = ">=0.9" },
 ]
-provides-extras = ["llm"]
+provides-extras = ["web", "llm", "all"]
 
 [package.metadata.requires-dev]
 dev = [

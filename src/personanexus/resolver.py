@@ -88,7 +88,12 @@ class IdentityResolver:
         conflict_config = comp_data.get("conflict_resolution", {})
         try:
             cr = ConflictResolution.model_validate(conflict_config)
-        except Exception:
+        except Exception as exc:
+            logger.warning(
+                "Invalid conflict_resolution config in %s, using defaults: %s",
+                source_path,
+                exc,
+            )
             cr = ConflictResolution()
         merger = ConflictResolver(cr)
 
@@ -139,6 +144,15 @@ class IdentityResolver:
 
     def _find_file(self, ref: str, source_path: Path) -> Path:
         """Resolve a reference (extends/mixin path) to an actual file path."""
+        # Reject references that attempt path traversal or use absolute paths
+        ref_parts = Path(ref).parts
+        if ".." in ref_parts or ref.startswith("/") or ref.startswith("\\"):
+            raise ParseError(
+                f"Invalid reference '{ref}': must be a relative path"
+                " without '..' components",
+                source=str(source_path),
+            )
+
         candidates: list[Path] = []
 
         # Relative to source file's directory

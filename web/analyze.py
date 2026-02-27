@@ -6,6 +6,7 @@ maps them to all three personality frameworks (traits, OCEAN, DISC).
 
 from __future__ import annotations
 
+import html
 import json
 import os
 import sys
@@ -17,10 +18,7 @@ import streamlit as st
 # Add src to path so we can import the library
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from personanexus.analyzer import AnalyzerError, SoulAnalyzer
-
 from components import (
-    APP_CSS,
     DISC_LABELS,
     OCEAN_LABELS,
     render_comparison_bars,
@@ -29,6 +27,8 @@ from components import (
     render_ocean_bars,
     render_trait_bars,
 )
+
+from personanexus.analyzer import AnalyzerError, SoulAnalyzer
 
 
 def render_analyze() -> None:
@@ -82,13 +82,16 @@ def render_analyze() -> None:
         _render_single(result_a)
 
 
-def _analyze_uploaded(analyzer: SoulAnalyzer, uploaded_file) -> "AnalysisResult | None":
+def _analyze_uploaded(analyzer: SoulAnalyzer, uploaded_file) -> AnalysisResult | None:
     """Write uploaded file to temp dir and analyze it."""
-    from personanexus.analyzer import AnalysisResult
 
     try:
         with tempfile.TemporaryDirectory() as tmp:
-            tmp_path = Path(tmp) / uploaded_file.name
+            # Sanitize filename: strip directory components to prevent path traversal
+            safe_name = Path(uploaded_file.name).name
+            if not safe_name:
+                safe_name = "upload.yaml"
+            tmp_path = Path(tmp) / safe_name
             tmp_path.write_bytes(uploaded_file.getvalue())
             return analyzer.analyze(tmp_path)
     except AnalyzerError as exc:
@@ -106,8 +109,8 @@ def _render_single(result) -> None:
 
     # Header with confidence badge
     st.markdown(
-        f"### {name}  "
-        f'<span style="font-size: 0.85rem; color: #586069;">({fmt})</span>  '
+        f"### {html.escape(name)}  "
+        f'<span style="font-size: 0.85rem; color: #586069;">({html.escape(fmt)})</span>  '
         + render_confidence_badge(result.confidence),
         unsafe_allow_html=True,
     )
@@ -254,13 +257,13 @@ def _render_comparison(analyzer, result_a, result_b) -> None:
             st.markdown(f"**{name_a}**")
             st.markdown(render_trait_bars(traits_a), unsafe_allow_html=True)
             st.markdown(
-                f"Confidence: " + render_confidence_badge(result_a.confidence),
+                "Confidence: " + render_confidence_badge(result_a.confidence),
                 unsafe_allow_html=True,
             )
         with col_ib:
             st.markdown(f"**{name_b}**")
             st.markdown(render_trait_bars(traits_b), unsafe_allow_html=True)
             st.markdown(
-                f"Confidence: " + render_confidence_badge(result_b.confidence),
+                "Confidence: " + render_confidence_badge(result_b.confidence),
                 unsafe_allow_html=True,
             )

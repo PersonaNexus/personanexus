@@ -306,7 +306,7 @@ JSON Schemas for IDE autocompletion: [`schemas/v1.0/schema.json`](schemas/v1.0/s
 ## Development
 
 ```bash
-git clone https://github.com/jcrowan3/personanexus.git
+git clone https://github.com/PersonaNexus/personanexus.git
 cd personanexus
 uv sync --dev
 uv run pytest

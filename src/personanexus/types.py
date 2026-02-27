@@ -249,7 +249,7 @@ class Metadata(BaseModel):
     created_at: datetime
     updated_at: datetime
     author: str | None = None
-    tags: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list, max_length=50)
     status: Status = Status.DRAFT
 
 
@@ -259,9 +259,9 @@ class Metadata(BaseModel):
 
 
 class Scope(BaseModel):
-    primary: list[str] = Field(..., min_length=1)
-    secondary: list[str] = Field(default_factory=list)
-    out_of_scope: list[str] = Field(default_factory=list)
+    primary: list[str] = Field(..., min_length=1, max_length=50)
+    secondary: list[str] = Field(default_factory=list, max_length=50)
+    out_of_scope: list[str] = Field(default_factory=list, max_length=50)
 
 
 class Audience(BaseModel):
@@ -403,8 +403,8 @@ class MoodConfig(BaseModel):
     """Configuration for dynamic mood/emotional states."""
 
     default: str = "neutral"
-    states: list[MoodState] = Field(default_factory=list)
-    transitions: list[MoodTransition] = Field(default_factory=list)
+    states: list[MoodState] = Field(default_factory=list, max_length=50)
+    transitions: list[MoodTransition] = Field(default_factory=list, max_length=50)
 
 
 # ============================================================================
@@ -415,11 +415,11 @@ class MoodConfig(BaseModel):
 class BehavioralModeOverrides(BaseModel):
     """Overrides to apply when a behavioral mode is active."""
 
-    tone_register: str | None = None  # e.g. "formal", "casual"
+    tone_register: Register | None = None
     tone_default: str | None = None
-    emoji_usage: str | None = None  # "never", "sparingly", "frequently"
-    sentence_length: str | None = None  # "short", "mixed", "long"
-    trait_modifiers: list[TraitModifier] = Field(default_factory=list)
+    emoji_usage: EmojiUsage | None = None
+    sentence_length: SentenceLength | None = None
+    trait_modifiers: list[TraitModifier] = Field(default_factory=list, max_length=20)
 
 
 class BehavioralMode(BaseModel):
@@ -494,17 +494,17 @@ class Personality(BaseModel):
 
 
 class ToneOverride(BaseModel):
-    context: str
-    tone: str
-    note: str | None = None
+    context: str = Field(..., max_length=500)
+    tone: str = Field(..., max_length=500)
+    note: str | None = Field(None, max_length=500)
 
 
 class ToneConfig(BaseModel):
     model_config = {"populate_by_name": True}
 
-    default: str
+    default: str = Field(..., max_length=500)
     register: Register | None = None  # shadows BaseModel attribute — intentional
-    overrides: list[ToneOverride] = Field(default_factory=list)
+    overrides: list[ToneOverride] = Field(default_factory=list, max_length=20)
 
 
 class StyleConfig(BaseModel):
@@ -514,34 +514,34 @@ class StyleConfig(BaseModel):
     use_lists: bool | None = None
     use_code_blocks: bool | None = None
     use_emoji: EmojiUsage | None = None
-    preferred_formats: list[str] = Field(default_factory=list)
+    preferred_formats: list[str] = Field(default_factory=list, max_length=20)
 
 
 class LanguageConfig(BaseModel):
-    primary: str = "en"
-    supported: list[str] = Field(default_factory=list)
+    primary: str = Field("en", max_length=10)
+    supported: list[str] = Field(default_factory=list, max_length=20)
     reading_level: ReadingLevel | None = None
     jargon_policy: JargonPolicy | None = None
 
 
 class VocabularyConfig(BaseModel):
-    preferred: list[str] = Field(default_factory=list)
-    avoided: list[str] = Field(default_factory=list)
-    signature_phrases: list[str] = Field(default_factory=list)
+    preferred: list[str] = Field(default_factory=list, max_length=100)
+    avoided: list[str] = Field(default_factory=list, max_length=100)
+    signature_phrases: list[str] = Field(default_factory=list, max_length=50)
 
 
 class VoiceExample(BaseModel):
     """An example of right or wrong voice for calibration."""
 
-    text: str
-    context: str | None = None
+    text: str = Field(..., max_length=5000)
+    context: str | None = Field(None, max_length=500)
 
 
 class VoiceExamples(BaseModel):
     """Good and bad output samples for voice calibration."""
 
-    good: list[VoiceExample] = Field(default_factory=list)
-    bad: list[VoiceExample] = Field(default_factory=list)
+    good: list[VoiceExample] = Field(default_factory=list, max_length=50)
+    bad: list[VoiceExample] = Field(default_factory=list, max_length=50)
 
 
 class Communication(BaseModel):
@@ -558,15 +558,15 @@ class Communication(BaseModel):
 
 
 class ExpertiseDomain(BaseModel):
-    name: str
+    name: str = Field(..., max_length=200)
     level: float = Field(..., ge=0.0, le=1.0)
     category: ExpertiseCategory
-    description: str | None = None
+    description: str | None = Field(None, max_length=1000)
     can_teach: bool = False
 
 
 class Expertise(BaseModel):
-    domains: list[ExpertiseDomain] = Field(default_factory=list)
+    domains: list[ExpertiseDomain] = Field(default_factory=list, max_length=100)
     out_of_expertise_strategy: OutOfExpertiseStrategy = (
         OutOfExpertiseStrategy.ACKNOWLEDGE_AND_REDIRECT
     )
@@ -580,8 +580,8 @@ class Expertise(BaseModel):
 class Principle(BaseModel):
     id: str
     priority: int = Field(..., ge=1)
-    statement: str
-    implications: list[str] = Field(default_factory=list)
+    statement: str = Field(..., max_length=2000)
+    implications: list[str] = Field(default_factory=list, max_length=20)
 
 
 # ---------------------------------------------------------------------------
@@ -590,20 +590,20 @@ class Principle(BaseModel):
 
 
 class BehaviorRule(BaseModel):
-    condition: str | None = None
-    action: str
-    template: str | None = None
+    condition: str | None = Field(None, max_length=1000)
+    action: str = Field(..., max_length=1000)
+    template: str | None = Field(None, max_length=5000)
     adjustments: dict[str, float] = Field(default_factory=dict)
     note: str | None = None
 
 
 class BehaviorStrategy(BaseModel):
-    approach: str
-    rules: list[BehaviorRule] = Field(default_factory=list)
+    approach: str = Field(..., max_length=1000)
+    rules: list[BehaviorRule] = Field(default_factory=list, max_length=50)
     max_pushback_rounds: int | None = None
-    final_fallback: str | None = None
+    final_fallback: str | None = Field(None, max_length=1000)
     near_scope_threshold: float | None = None
-    near_scope_action: str | None = None
+    near_scope_action: str | None = Field(None, max_length=1000)
     bias: ClarificationBias | None = None
 
 
@@ -617,7 +617,7 @@ class ProactiveTrigger(BaseModel):
 
 class ProactiveConfig(BaseModel):
     enabled: bool = False
-    triggers: list[ProactiveTrigger] = Field(default_factory=list)
+    triggers: list[ProactiveTrigger] = Field(default_factory=list, max_length=50)
     limits: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -629,7 +629,7 @@ class LengthRule(BaseModel):
 
 class LengthCalibrationConfig(BaseModel):
     default: LengthCalibration = LengthCalibration.ADAPTIVE
-    rules: list[LengthRule] = Field(default_factory=list)
+    rules: list[LengthRule] = Field(default_factory=list, max_length=50)
 
 
 class ClarificationPolicy(BaseModel):
@@ -652,7 +652,7 @@ class DecisionHeuristic(BaseModel):
 
 
 class DecisionMaking(BaseModel):
-    heuristics: list[DecisionHeuristic] = Field(default_factory=list)
+    heuristics: list[DecisionHeuristic] = Field(default_factory=list, max_length=50)
     autonomy_threshold: dict[str, str] = Field(default_factory=dict)
 
 
@@ -689,16 +689,16 @@ class SoftGuardrail(BaseModel):
 
 class TopicEntry(BaseModel):
     category: str
-    subtopics: list[str] = Field(default_factory=list)
+    subtopics: list[str] = Field(default_factory=list, max_length=50)
     reason: str | None = None
     redirect_to: str | None = None
     response: str | None = None
 
 
 class Topics(BaseModel):
-    allowed: list[TopicEntry] = Field(default_factory=list)
-    restricted: list[TopicEntry] = Field(default_factory=list)
-    forbidden: list[TopicEntry] = Field(default_factory=list)
+    allowed: list[TopicEntry] = Field(default_factory=list, max_length=100)
+    restricted: list[TopicEntry] = Field(default_factory=list, max_length=100)
+    forbidden: list[TopicEntry] = Field(default_factory=list, max_length=100)
 
 
 class ConfirmableAction(BaseModel):

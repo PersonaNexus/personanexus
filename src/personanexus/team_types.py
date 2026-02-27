@@ -43,7 +43,7 @@ class TeamMetadata(BaseModel):
     created_at: datetime
     updated_at: datetime | None = None
     author: str | None = None
-    tags: list[str] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list, max_length=50)
     source: str | None = None
 
 
@@ -55,12 +55,12 @@ class TeamMetadata(BaseModel):
 class TeamAgent(BaseModel):
     """Agent definition within a team context."""
 
-    agent_id: str = Field(..., pattern=r"^agt_\w+_\d{3}$")
+    agent_id: str = Field(..., pattern=r"^agt_[a-zA-Z0-9_]+$")
     role: str = Field(..., min_length=1)
     authority_level: int = Field(..., ge=1, le=5)
-    expertise_domains: list[str] = Field(..., min_length=1)
-    capabilities: list[str] = Field(default_factory=list)
-    delegation_rights: list[str] = Field(default_factory=list)
+    expertise_domains: list[str] = Field(..., min_length=1, max_length=50)
+    capabilities: list[str] = Field(default_factory=list, max_length=50)
+    delegation_rights: list[str] = Field(default_factory=list, max_length=50)
     personality_summary: dict[str, float] = Field(default_factory=dict)
 
     # Optional full personality (if this agent is detailed in this team config)
@@ -100,10 +100,10 @@ class WorkflowStage(BaseModel):
     stage: str = Field(..., min_length=1)
     primary_agent: str = Field(..., min_length=1)
     objective: str = Field(..., min_length=1)
-    deliverables: list[str] = Field(default_factory=list)
-    success_criteria: list[str] = Field(default_factory=list)
-    trigger_conditions: list[str] = Field(default_factory=list)
-    input_context: list[str] = Field(default_factory=list)
+    deliverables: list[str] = Field(default_factory=list, max_length=50)
+    success_criteria: list[str] = Field(default_factory=list, max_length=50)
+    trigger_conditions: list[str] = Field(default_factory=list, max_length=50)
+    input_context: list[str] = Field(default_factory=list, max_length=50)
     max_duration: str | None = None
 
 
@@ -138,9 +138,9 @@ class DecisionFramework(BaseModel):
 
     authority: str = Field(..., min_length=1)
     description: str | None = None
-    consultation_required: list[str] = Field(default_factory=list)
-    veto_rights: list[str] = Field(default_factory=list)
-    escalation_criteria: list[str] = Field(default_factory=list)
+    consultation_required: list[str] = Field(default_factory=list, max_length=20)
+    veto_rights: list[str] = Field(default_factory=list, max_length=20)
+    escalation_criteria: list[str] = Field(default_factory=list, max_length=50)
 
 
 class ConflictResolution(BaseModel):
@@ -148,8 +148,8 @@ class ConflictResolution(BaseModel):
 
     description: str | None = None
     strategy: ConflictStrategy
-    process: list[str] = Field(default_factory=list)
-    criteria: list[str] = Field(default_factory=list)
+    process: list[str] = Field(default_factory=list, max_length=50)
+    criteria: list[str] = Field(default_factory=list, max_length=50)
     fallback: str | None = None
     escalation: str | None = None
     fallback_authority: str | None = None
@@ -179,7 +179,7 @@ class PerformanceMetric(BaseModel):
 class TeamPerformanceMetrics(BaseModel):
     """Performance measurement framework for the team."""
 
-    team_effectiveness: list[PerformanceMetric] = Field(default_factory=list)
+    team_effectiveness: list[PerformanceMetric] = Field(default_factory=list, max_length=50)
     individual_contributions: dict[str, list[PerformanceMetric]] = Field(default_factory=dict)
 
 
@@ -201,7 +201,7 @@ class QualityGate(BaseModel):
 
     gate: str = Field(..., min_length=1)
     enforced_by: str = Field(..., min_length=1)
-    criteria: list[str] = Field(..., min_length=1)
+    criteria: list[str] = Field(..., min_length=1, max_length=20)
     auto_check: bool = False
 
 
@@ -209,7 +209,7 @@ class CollaborationProtocols(BaseModel):
     """Protocols for agent collaboration."""
 
     handoff_standards: HandoffStandards = Field(default_factory=HandoffStandards)
-    quality_gates: list[QualityGate] = Field(default_factory=list)
+    quality_gates: list[QualityGate] = Field(default_factory=list, max_length=50)
     status_updates: dict[str, Any] = Field(default_factory=dict)
 
 
