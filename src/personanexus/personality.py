@@ -11,6 +11,7 @@ Weights are sourced from the AgentGov Multi-Agent Spec (Deliverable 2).
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 
 from pydantic import BaseModel
 
@@ -567,7 +568,7 @@ def list_jungian_presets() -> dict[str, JungianProfile]:
 
 def _find_closest_in_presets(
     profile: BaseModel,
-    presets: dict[str, BaseModel],
+    presets: Mapping[str, BaseModel],
 ) -> tuple[str, float]:
     """Find the closest preset by Euclidean distance on all numeric fields.
 

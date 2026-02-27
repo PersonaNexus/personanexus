@@ -829,10 +829,10 @@ class OpenClawCompiler:
 
     def _extract_behavioral_settings(self, identity: AgentIdentity) -> dict[str, bool]:
         settings: dict[str, bool] = {}
-        for guardrail in identity.guardrails.hard:
-            settings[guardrail.id] = True
-        for guardrail in identity.guardrails.soft:
-            settings[guardrail.id] = True
+        for hard_g in identity.guardrails.hard:
+            settings[hard_g.id] = True
+        for soft_g in identity.guardrails.soft:
+            settings[soft_g.id] = True
         return settings
 
     def _extract_response_format(self, identity: AgentIdentity) -> dict[str, Any]:

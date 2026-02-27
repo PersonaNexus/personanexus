@@ -224,9 +224,7 @@ class TestGuardrailPrincipleOverlap:
                 ]
             },
         )
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "guardrail-principle-overlap"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "guardrail-principle-overlap"]
         assert len(warnings) == 1
         assert "g1" in warnings[0].message
         assert "p1" in warnings[0].message
@@ -251,9 +249,7 @@ class TestGuardrailPrincipleOverlap:
                 ]
             },
         )
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "guardrail-principle-overlap"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "guardrail-principle-overlap"]
         assert len(warnings) == 0
 
     def test_soft_guardrail_overlap(self, linter: IdentityLinter):
@@ -283,9 +279,7 @@ class TestGuardrailPrincipleOverlap:
                 ],
             },
         )
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "guardrail-principle-overlap"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "guardrail-principle-overlap"]
         assert len(warnings) == 1
         assert "g_soft" in warnings[0].message
 
@@ -313,7 +307,8 @@ class TestEmptySection:
             },
         )
         warnings = [
-            w for w in linter.lint(identity)
+            w
+            for w in linter.lint(identity)
             if w.rule == "empty-section" and w.path == "expertise.domains"
         ]
         assert len(warnings) == 0
@@ -326,7 +321,8 @@ class TestEmptySection:
             },
         )
         warnings = [
-            w for w in linter.lint(identity)
+            w
+            for w in linter.lint(identity)
             if w.rule == "empty-section" and w.path == "communication.vocabulary"
         ]
         assert len(warnings) == 1
@@ -339,7 +335,8 @@ class TestEmptySection:
             },
         )
         warnings = [
-            w for w in linter.lint(identity)
+            w
+            for w in linter.lint(identity)
             if w.rule == "empty-section" and w.path == "communication.vocabulary"
         ]
         assert len(warnings) == 0
@@ -403,9 +400,7 @@ class TestInconsistentNaming:
                 "status": "draft",
             },
         )
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "inconsistent-naming"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "inconsistent-naming"]
         assert len(warnings) == 0
 
     def test_mismatched_name_and_id(self, linter: IdentityLinter):
@@ -420,9 +415,7 @@ class TestInconsistentNaming:
                 "status": "draft",
             },
         )
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "inconsistent-naming"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "inconsistent-naming"]
         assert len(warnings) == 1
         assert warnings[0].severity == "warning"
         assert "Bravo" in warnings[0].message
@@ -442,9 +435,7 @@ class TestInconsistentNaming:
             },
         )
         # Should not raise; short names produce no word set so no warning
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "inconsistent-naming"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "inconsistent-naming"]
         assert len(warnings) == 0
 
 
@@ -456,9 +447,7 @@ class TestInconsistentNaming:
 class TestMissingRecommended:
     def test_empty_out_of_scope(self, linter: IdentityLinter):
         identity = _make_identity()
-        warnings = [
-            w for w in linter.lint(identity) if w.rule == "missing-recommended"
-        ]
+        warnings = [w for w in linter.lint(identity) if w.rule == "missing-recommended"]
         paths = [w.path for w in warnings]
         assert "role.scope.out_of_scope" in paths
 
@@ -474,7 +463,8 @@ class TestMissingRecommended:
             },
         )
         warnings = [
-            w for w in linter.lint(identity)
+            w
+            for w in linter.lint(identity)
             if w.rule == "missing-recommended" and w.path == "role.scope.out_of_scope"
         ]
         assert len(warnings) == 0
@@ -482,7 +472,8 @@ class TestMissingRecommended:
     def test_no_audience(self, linter: IdentityLinter):
         identity = _make_identity()
         warnings = [
-            w for w in linter.lint(identity)
+            w
+            for w in linter.lint(identity)
             if w.rule == "missing-recommended" and w.path == "role.audience"
         ]
         assert len(warnings) == 1
@@ -497,7 +488,8 @@ class TestMissingRecommended:
             },
         )
         warnings = [
-            w for w in linter.lint(identity)
+            w
+            for w in linter.lint(identity)
             if w.rule == "missing-recommended" and w.path == "role.audience"
         ]
         assert len(warnings) == 0

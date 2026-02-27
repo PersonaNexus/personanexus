@@ -153,8 +153,7 @@ class TestValidateAgentComposition:
     def test_all_same_level(self):
         """All agents at the same level means spread 0 — valid."""
         agents = {
-            f"agt_peer_{i}": _make_agent(f"agt_peer_{i}", authority_level=3)
-            for i in range(5)
+            f"agt_peer_{i}": _make_agent(f"agt_peer_{i}", authority_level=3) for i in range(5)
         }
         comp = TeamComposition(agents=agents)
         assert len(comp.agents) == 5
@@ -307,9 +306,7 @@ class TestValidateAgentReferences:
                 ),
             ],
         )
-        spec = _make_team_spec(
-            agents, governance=governance, collaboration_protocols=collaboration
-        )
+        spec = _make_team_spec(agents, governance=governance, collaboration_protocols=collaboration)
         assert spec.collaboration_protocols.quality_gates[0].enforced_by == "agt_reviewer"
 
     def test_multiple_errors_reported(self):
@@ -340,12 +337,8 @@ class TestValidateWorkflowAgents:
             "standard": WorkflowPattern(
                 description="Standard",
                 stages=[
-                    WorkflowStage(
-                        stage="plan", primary_agent="agt_lead", objective="Plan"
-                    ),
-                    WorkflowStage(
-                        stage="execute", primary_agent="agt_worker", objective="Build"
-                    ),
+                    WorkflowStage(stage="plan", primary_agent="agt_lead", objective="Plan"),
+                    WorkflowStage(stage="execute", primary_agent="agt_worker", objective="Build"),
                 ],
             ),
         }
@@ -385,9 +378,7 @@ class TestValidateWorkflowAgents:
                 ],
             ),
         }
-        with pytest.raises(
-            ValidationError, match="Workflow 'deploy_flow' stage 'deploy_step'"
-        ):
+        with pytest.raises(ValidationError, match="Workflow 'deploy_flow' stage 'deploy_step'"):
             _make_team_spec(agents, workflow_patterns=workflows)
 
 
@@ -396,19 +387,13 @@ class TestValidateTeamSize:
 
     def test_twenty_agents_allowed(self):
         """Exactly 20 agents should be allowed."""
-        agents = {
-            f"agt_agent{i:02d}": _make_agent(f"agt_agent{i:02d}")
-            for i in range(20)
-        }
+        agents = {f"agt_agent{i:02d}": _make_agent(f"agt_agent{i:02d}") for i in range(20)}
         spec = _make_team_spec(agents)
         assert len(spec.composition.agents) == 20
 
     def test_twentyone_agents_rejected(self):
         """More than 20 agents should raise a ValidationError."""
-        agents = {
-            f"agt_agent{i:02d}": _make_agent(f"agt_agent{i:02d}")
-            for i in range(21)
-        }
+        agents = {f"agt_agent{i:02d}": _make_agent(f"agt_agent{i:02d}") for i in range(21)}
         with pytest.raises(ValidationError, match="should not exceed 20"):
             _make_team_spec(agents)
 
@@ -563,8 +548,7 @@ class TestOceanConscientiousnessAgreeableness:
         combined_warnings = [
             w
             for w in result.warnings
-            if w.type == "personality_profile"
-            and "conscientiousness + agreeableness" in w.message
+            if w.type == "personality_profile" and "conscientiousness + agreeableness" in w.message
         ]
         assert len(combined_warnings) == 1
         assert "0.40" in combined_warnings[0].message
@@ -589,8 +573,7 @@ class TestOceanConscientiousnessAgreeableness:
         combined_warnings = [
             w
             for w in result.warnings
-            if w.type == "personality_profile"
-            and "conscientiousness + agreeableness" in w.message
+            if w.type == "personality_profile" and "conscientiousness + agreeableness" in w.message
         ]
         assert len(combined_warnings) == 0
 
@@ -614,8 +597,7 @@ class TestOceanConscientiousnessAgreeableness:
         combined_warnings = [
             w
             for w in result.warnings
-            if w.type == "personality_profile"
-            and "conscientiousness + agreeableness" in w.message
+            if w.type == "personality_profile" and "conscientiousness + agreeableness" in w.message
         ]
         assert len(combined_warnings) == 0
 
@@ -639,8 +621,7 @@ class TestOceanConscientiousnessAgreeableness:
         combined_warnings = [
             w
             for w in result.warnings
-            if w.type == "personality_profile"
-            and "conscientiousness + agreeableness" in w.message
+            if w.type == "personality_profile" and "conscientiousness + agreeableness" in w.message
         ]
         assert len(combined_warnings) == 1
 
@@ -830,9 +811,7 @@ class TestScopeOverlapWarnings:
         overlap_warnings = [
             w
             for w in result.warnings
-            if w.type == "scope_overlap"
-            and "primary" in w.message
-            and "secondary" in w.message
+            if w.type == "scope_overlap" and "primary" in w.message and "secondary" in w.message
         ]
         assert len(overlap_warnings) == 1
         assert overlap_warnings[0].severity == "low"
@@ -897,12 +876,9 @@ class TestTraitTensionWarnings:
         data = _minimal_identity_data()
         data["personality"]["traits"] = {"verbosity": 0.9, "patience": 0.1}
         result = validator.validate_dict(data)
-        tension_warnings = [
-            w for w in result.warnings if w.type == "trait_tension"
-        ]
+        tension_warnings = [w for w in result.warnings if w.type == "trait_tension"]
         matching = [
-            w for w in tension_warnings
-            if "verbosity" in w.message and "patience" in w.message
+            w for w in tension_warnings if "verbosity" in w.message and "patience" in w.message
         ]
         assert len(matching) == 1
 
@@ -920,12 +896,9 @@ class TestTraitTensionWarnings:
         data = _minimal_identity_data()
         data["personality"]["traits"] = {"empathy": 0.95, "directness": 0.1}
         result = validator.validate_dict(data)
-        tension_warnings = [
-            w for w in result.warnings if w.type == "trait_tension"
-        ]
+        tension_warnings = [w for w in result.warnings if w.type == "trait_tension"]
         matching = [
-            w for w in tension_warnings
-            if "empathy" in w.message and "directness" in w.message
+            w for w in tension_warnings if "empathy" in w.message and "directness" in w.message
         ]
         assert len(matching) == 1
 
@@ -939,9 +912,7 @@ class TestTraitTensionWarnings:
         tension_warnings = [
             w
             for w in result.warnings
-            if w.type == "trait_tension"
-            and "warmth" in w.message
-            and "directness" in w.message
+            if w.type == "trait_tension" and "warmth" in w.message and "directness" in w.message
         ]
         assert len(tension_warnings) == 0
 

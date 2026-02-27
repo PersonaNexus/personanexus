@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 import yaml
 
@@ -14,21 +15,20 @@ from personanexus.personality import DISC_PRESETS, JUNGIAN_PRESETS
 _MAX_FILE_SIZE = 10_000_000
 
 
-def _load_yaml(path: str | os.PathLike) -> dict:
+def _load_yaml(path: str | os.PathLike[str]) -> dict[str, Any]:
     """Load a YAML file and return its contents as a dictionary."""
     p = Path(path)
     file_size = p.stat().st_size
     if file_size > _MAX_FILE_SIZE:
-        raise ValueError(
-            f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})"
-        )
+        raise ValueError(f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})")
     with open(path, encoding="utf-8") as f:
-        return yaml.safe_load(f)
+        result: dict[str, Any] = yaml.safe_load(f)
+        return result
 
 
-def _flatten_dict(d: dict, parent_key: str = "", sep: str = ".") -> dict:
+def _flatten_dict(d: dict[str, Any], parent_key: str = "", sep: str = ".") -> dict[str, Any]:
     """Flatten a nested dictionary using dot notation for keys."""
-    items = []
+    items: list[tuple[str, Any]] = []
     for k, v in d.items():
         new_key = f"{parent_key}{sep}{k}" if parent_key else k
         if isinstance(v, dict):
@@ -43,7 +43,7 @@ def _flatten_dict(d: dict, parent_key: str = "", sep: str = ".") -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _compare_principles(id1: dict, id2: dict) -> dict:
+def _compare_principles(id1: dict[str, Any], id2: dict[str, Any]) -> dict[str, Any]:
     """Compare principles between two identities by matching on ``id`` field.
 
     Args:
@@ -114,7 +114,7 @@ def _compare_principles(id1: dict, id2: dict) -> dict:
         # Score is based on: shared principles with matching statements
         # weighted higher than just shared ids
         total = len(all_ids)
-        matched = matching_statements
+        matched: float = matching_statements
         # Shared but conflicting get partial credit
         matched += len(conflicting) * 0.25
         alignment_score = round(100.0 * matched / total, 2)
@@ -133,7 +133,7 @@ def _compare_principles(id1: dict, id2: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _compare_expertise(id1: dict, id2: dict) -> dict:
+def _compare_expertise(id1: dict[str, Any], id2: dict[str, Any]) -> dict[str, Any]:
     """Compare expertise domains between two identities by name (case-insensitive).
 
     Args:
@@ -212,7 +212,7 @@ def _compare_expertise(id1: dict, id2: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _compare_communication(id1: dict, id2: dict) -> dict:
+def _compare_communication(id1: dict[str, Any], id2: dict[str, Any]) -> dict[str, Any]:
     """Compare communication style between two identities.
 
     Compares tone.register, tone.default, and style.use_emoji.
@@ -325,7 +325,7 @@ def _compare_communication(id1: dict, id2: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _compare_guardrails(id1: dict, id2: dict) -> dict:
+def _compare_guardrails(id1: dict[str, Any], id2: dict[str, Any]) -> dict[str, Any]:
     """Compare hard guardrails between two identities using word overlap.
 
     Args:
@@ -477,7 +477,7 @@ def _field_to_impact_category(field: str) -> str:
     return _IMPACT_CATEGORIES.get(top_key, "structural")
 
 
-def _analyze_impact(diff: dict) -> dict:
+def _analyze_impact(diff: dict[str, Any]) -> dict[str, Any]:
     """Analyze the impact of changes in a diff result.
 
     Takes a diff result dictionary (from ``diff_identities``) and categorizes
@@ -532,7 +532,7 @@ def _analyze_impact(diff: dict) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def diff_identities(path1: str, path2: str) -> dict:
+def diff_identities(path1: str, path2: str) -> dict[str, Any]:
     """Load two YAML identity files and return structured diff.
 
     Args:
@@ -601,7 +601,7 @@ def diff_identities(path1: str, path2: str) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def _extract_personality_diff(id1: dict, id2: dict) -> dict:
+def _extract_personality_diff(id1: dict[str, Any], id2: dict[str, Any]) -> dict[str, Any]:
     """Extract personality trait differences between two identities.
 
     Args:
@@ -664,7 +664,7 @@ def _extract_personality_diff(id1: dict, id2: dict) -> dict:
     return personality_diff
 
 
-def _get_ocean_traits(identity: dict) -> dict | None:
+def _get_ocean_traits(identity: dict[str, Any]) -> dict[str, Any] | None:
     """Extract OCEAN traits from an identity dictionary.
 
     Returns None if OCEAN personality is not present.
@@ -684,7 +684,7 @@ def _get_ocean_traits(identity: dict) -> dict | None:
     return None
 
 
-def _get_disc_traits(identity: dict) -> dict | None:
+def _get_disc_traits(identity: dict[str, Any]) -> dict[str, Any] | None:
     """Extract DISC traits from an identity dictionary.
 
     Returns None if DISC personality is not present.
@@ -713,7 +713,7 @@ def _get_disc_traits(identity: dict) -> dict | None:
     return None
 
 
-def _get_jungian_traits(identity: dict) -> dict | None:
+def _get_jungian_traits(identity: dict[str, Any]) -> dict[str, Any] | None:
     """Extract Jungian traits from an identity dictionary.
 
     Returns None if Jungian personality is not present.
@@ -807,7 +807,7 @@ def compatibility_score(path1: str, path2: str) -> float:
     return round(weighted, 2)
 
 
-def _personality_compatibility(id1: dict, id2: dict) -> float:
+def _personality_compatibility(id1: dict[str, Any], id2: dict[str, Any]) -> float:
     """Compute personality-only compatibility score (0-100) from raw identity dicts."""
     # Extract personality traits
     ocean1 = _get_ocean_traits(id1)
@@ -833,19 +833,19 @@ def _personality_compatibility(id1: dict, id2: dict) -> float:
     return 50.0
 
 
-def _get_personality_traits(identity: dict) -> dict | None:
+def _get_personality_traits(identity: dict[str, Any]) -> dict[str, Any] | None:
     """Extract personality traits from an identity dictionary.
 
     Returns None if personality traits are not present.
     """
     personality = identity.get("personality", {})
-    traits = personality.get("traits", {})
+    traits: dict[str, Any] = personality.get("traits", {})
     if traits:
         return traits
     return None
 
 
-def _calculate_traits_compatibility(traits1: dict, traits2: dict) -> float:
+def _calculate_traits_compatibility(traits1: dict[str, Any], traits2: dict[str, Any]) -> float:
     """Calculate compatibility score based on direct personality trait similarity.
 
     Uses Euclidean distance in trait space, normalized to 0-100.
@@ -857,7 +857,7 @@ def _calculate_traits_compatibility(traits1: dict, traits2: dict) -> float:
         return 50.0
 
     # Calculate Euclidean distance
-    distance_sq = sum((traits1[t] - traits2[t]) ** 2 for t in all_traits)
+    distance_sq: float = sum((traits1[t] - traits2[t]) ** 2 for t in all_traits)
 
     # Max theoretical distance depends on number of traits and range
     # Each trait is 0-1, so max delta per trait is 1
@@ -867,10 +867,10 @@ def _calculate_traits_compatibility(traits1: dict, traits2: dict) -> float:
 
     # Normalize to 0-100 (closer = higher score)
     score = 100 * (1 - (distance / max_distance))
-    return round(score, 2)
+    return float(round(score, 2))
 
 
-def _calculate_ocean_compatibility(ocean1: dict, ocean2: dict) -> float:
+def _calculate_ocean_compatibility(ocean1: dict[str, Any], ocean2: dict[str, Any]) -> float:
     """Calculate compatibility score based on OCEAN trait similarity.
 
     Uses Euclidean distance in 5D space, normalized to 0-100.
@@ -878,7 +878,7 @@ def _calculate_ocean_compatibility(ocean1: dict, ocean2: dict) -> float:
     traits = ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]
 
     # Calculate Euclidean distance
-    distance_sq = sum(
+    distance_sq: float = sum(
         (ocean1[t] - ocean2[t]) ** 2
         for t in traits
         if ocean1.get(t) is not None and ocean2.get(t) is not None
@@ -890,15 +890,15 @@ def _calculate_ocean_compatibility(ocean1: dict, ocean2: dict) -> float:
 
     # Normalize to 0-100 (closer = higher score)
     score = 100 * (1 - (distance / max_distance))
-    return round(score, 2)
+    return float(round(score, 2))
 
 
-def _calculate_disc_compatibility(disc1: dict, disc2: dict) -> float:
+def _calculate_disc_compatibility(disc1: dict[str, Any], disc2: dict[str, Any]) -> float:
     """Calculate compatibility score based on DISC trait similarity."""
     traits = ["dominance", "influence", "steadiness", "conscientiousness"]
 
     # Calculate Euclidean distance
-    distance_sq = sum(
+    distance_sq: float = sum(
         (disc1[t] - disc2[t]) ** 2
         for t in traits
         if disc1.get(t) is not None and disc2.get(t) is not None
@@ -910,7 +910,7 @@ def _calculate_disc_compatibility(disc1: dict, disc2: dict) -> float:
 
     # Normalize to 0-100
     score = 100 * (1 - (distance / max_distance))
-    return round(score, 2)
+    return float(round(score, 2))
 
 
 # ---------------------------------------------------------------------------
@@ -918,7 +918,7 @@ def _calculate_disc_compatibility(disc1: dict, disc2: dict) -> float:
 # ---------------------------------------------------------------------------
 
 
-def _fmt_trait_delta(trait: str, data: dict, md: bool) -> str:
+def _fmt_trait_delta(trait: str, data: dict[str, Any], md: bool) -> str:
     """Format a single trait delta line for text or markdown."""
     delta = data["delta"]
     sign = "+" if delta >= 0 else ""
@@ -927,7 +927,7 @@ def _fmt_trait_delta(trait: str, data: dict, md: bool) -> str:
     return f"  {trait}: {data['val1']} -> {data['val2']} ({sign}{delta})"
 
 
-def format_diff(diff: dict, fmt: str = "text") -> str:
+def format_diff(diff: dict[str, Any], fmt: str = "text") -> str:
     """Format diff as text, json, or markdown.
 
     Args:
@@ -1016,8 +1016,11 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
         else:
             lines.append("")
 
-        for framework, label in [("ocean", "OCEAN Traits"), ("disc", "DISC Traits"),
-                                  ("jungian", "Jungian Profile")]:
+        for framework, label in [
+            ("ocean", "OCEAN Traits"),
+            ("disc", "DISC Traits"),
+            ("jungian", "Jungian Profile"),
+        ]:
             if framework in personality:
                 lines.append(f"### {label}" if md else f"{label}:")
                 if md:
@@ -1070,13 +1073,19 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
             if md:
                 lines += ["**Conflicting Principles:**", ""]
                 for c in principles["conflicting"]:
-                    lines += [f"- **{c['id']}**", f"  - First: {c['statement1']}",
-                              f"  - Second: {c['statement2']}"]
+                    lines += [
+                        f"- **{c['id']}**",
+                        f"  - First: {c['statement1']}",
+                        f"  - Second: {c['statement2']}",
+                    ]
             else:
                 lines.append("  Conflicting:")
                 for c in principles["conflicting"]:
-                    lines += [f"    {c['id']}:", f"      first:  {c['statement1']}",
-                              f"      second: {c['statement2']}"]
+                    lines += [
+                        f"    {c['id']}:",
+                        f"      first:  {c['statement1']}",
+                        f"      second: {c['statement2']}",
+                    ]
             if md:
                 lines.append("")
         lines.append("")
@@ -1138,9 +1147,7 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
     # --- Communication comparison ---
     communication = diff.get("communication_comparison")
     if communication:
-        lines.append(
-            "## Communication Compatibility" if md else "COMMUNICATION COMPATIBILITY:"
-        )
+        lines.append("## Communication Compatibility" if md else "COMMUNICATION COMPATIBILITY:")
         if not md:
             lines.append("-" * 40)
         else:
@@ -1174,8 +1181,11 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
             lines.append("-" * 40)
         else:
             lines.append("")
-        for key, label in [("shared_rules", "Shared"), ("unique_to_first", "Only in first"),
-                           ("unique_to_second", "Only in second")]:
+        for key, label in [
+            ("shared_rules", "Shared"),
+            ("unique_to_first", "Only in first"),
+            ("unique_to_second", "Only in second"),
+        ]:
             items = guardrails.get(key, [])
             if items:
                 if md:
@@ -1202,9 +1212,7 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
                             f"- **{c['id1']}** vs **{c['id2']}** (overlap: {c['word_overlap']})"
                         )
                     else:
-                        lines.append(
-                            f"    {c['id1']} vs {c['id2']}: overlap={c['word_overlap']}"
-                        )
+                        lines.append(f"    {c['id1']} vs {c['id2']}: overlap={c['word_overlap']}")
             if md:
                 lines.append("")
         lines.append("")
@@ -1215,9 +1223,7 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
         summary = impact.get("summary", {})
         has_changes = any(v > 0 for v in summary.values())
         if has_changes:
-            lines.append(
-                "## Change Impact Analysis" if md else "CHANGE IMPACT ANALYSIS:"
-            )
+            lines.append("## Change Impact Analysis" if md else "CHANGE IMPACT ANALYSIS:")
             if md:
                 lines += [
                     "",
@@ -1239,6 +1245,6 @@ def format_diff(diff: dict, fmt: str = "text") -> str:
     return "\n".join(lines)
 
 
-def format_diff_markdown(diff: dict) -> str:
+def format_diff_markdown(diff: dict[str, Any]) -> str:
     """Format diff as markdown. Convenience wrapper around format_diff."""
     return format_diff(diff, fmt="markdown")

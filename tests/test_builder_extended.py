@@ -18,9 +18,7 @@ from personanexus.builder import BuiltIdentity, IdentityBuilder
 class TestBuiltIdentityFromYaml:
     def test_from_yaml_loads_valid_file(self, tmp_path: Path):
         p = tmp_path / "test.yaml"
-        p.write_text(
-            yaml.dump({"schema_version": "1.0", "metadata": {"name": "Test"}})
-        )
+        p.write_text(yaml.dump({"schema_version": "1.0", "metadata": {"name": "Test"}}))
         bi = BuiltIdentity.from_yaml(p)
         assert bi.data["metadata"]["name"] == "Test"
 
@@ -57,12 +55,12 @@ class TestPhaseNarrative:
     def test_narrative_with_backstory_and_focus(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "A wise old bot.",       # backstory
-            "Helping users",         # focus 1
-            "Learning new things",   # focus 2
-            "",                      # end focus
-            "Rudeness",              # pet peeve 1
-            "",                      # end peeves
+            "A wise old bot.",  # backstory
+            "Helping users",  # focus 1
+            "Learning new things",  # focus 2
+            "",  # end focus
+            "Rudeness",  # pet peeve 1
+            "",  # end peeves
         ]
         builder = self._make_builder()
         data: dict = {}
@@ -77,9 +75,9 @@ class TestPhaseNarrative:
     def test_narrative_empty_fields_omitted(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "",   # backstory (skip)
-            "",   # focus (none)
-            "",   # peeves (none)
+            "",  # backstory (skip)
+            "",  # focus (none)
+            "",  # peeves (none)
         ]
         builder = self._make_builder()
         data: dict = {}
@@ -110,16 +108,16 @@ class TestPhaseBehavioralModes:
     def test_behavioral_modes_with_entries(self, mock_confirm, mock_ask):
         mock_confirm.return_value = True
         mock_ask.side_effect = [
-            "crisis",           # mode 1 name
-            "Emergency mode",   # mode 1 description
-            "formal",           # mode 1 register override
-            "urgent and clear", # mode 1 tone override
-            "casual",           # mode 2 name
-            "Relaxed mode",     # mode 2 description
-            "",                 # mode 2 register (skip)
-            "",                 # mode 2 tone (skip)
-            "",                 # end modes
-            "crisis",           # default mode choice
+            "crisis",  # mode 1 name
+            "Emergency mode",  # mode 1 description
+            "formal",  # mode 1 register override
+            "urgent and clear",  # mode 1 tone override
+            "casual",  # mode 2 name
+            "Relaxed mode",  # mode 2 description
+            "",  # mode 2 register (skip)
+            "",  # mode 2 tone (skip)
+            "",  # end modes
+            "crisis",  # default mode choice
         ]
         builder = self._make_builder()
         data: dict = {}
@@ -163,11 +161,11 @@ class TestPhaseInteraction:
         # Confirm calls: add interaction = True, tone_matching = True
         mock_confirm.side_effect = [True, True]
         mock_ask.side_effect = [
-            "Hello there!",     # greeting style
-            "Goodbye!",         # farewell style
-            "structured",       # handoff style
-            "concise",          # status reporting
-            "escalate",         # conflict resolution
+            "Hello there!",  # greeting style
+            "Goodbye!",  # farewell style
+            "structured",  # handoff style
+            "concise",  # status reporting
+            "escalate",  # conflict resolution
         ]
         builder = self._make_builder()
         data: dict = {}
@@ -192,7 +190,7 @@ class TestJungianPersonalityMode:
     def test_jungian_by_type_code(self, mock_ask):
         """Path 1: enter a 4-letter type code."""
         mock_ask.side_effect = [
-            "1",     # path choice
+            "1",  # path choice
             "intj",  # type code
         ]
         builder = self._make_builder()
@@ -207,7 +205,7 @@ class TestJungianPersonalityMode:
     def test_jungian_manual_dimensions(self, mock_ask):
         """Path 3: enter dimensions manually."""
         mock_ask.side_effect = [
-            "3",    # path choice
+            "3",  # path choice
             "0.7",  # ei
             "0.6",  # sn
             "0.4",  # tf
@@ -224,9 +222,9 @@ class TestJungianPersonalityMode:
     def test_jungian_role_recommendation(self, mock_ask):
         """Path 2: role-based recommendation."""
         mock_ask.side_effect = [
-            "2",    # path choice
-            "1",    # category number (first in sorted list)
-            "1",    # pick first recommended type
+            "2",  # path choice
+            "1",  # category number (first in sorted list)
+            "1",  # pick first recommended type
         ]
         builder = self._make_builder()
         data: dict = {"_personality_mode": "jungian"}
@@ -250,10 +248,19 @@ class TestHybridJungian:
         """Hybrid mode with jungian base via type code path."""
         mock_ask.side_effect = [
             "jungian",  # base framework choice
-            "1",        # jungian input path (type code)
-            "enfp",     # type code
+            "1",  # jungian input path (type code)
+            "enfp",  # type code
             # 10 trait overrides (all skipped)
-            "", "", "", "", "", "", "", "", "", "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
         ]
         builder = self._make_builder()
         data: dict = {"_personality_mode": "hybrid"}

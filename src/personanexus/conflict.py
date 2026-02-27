@@ -307,37 +307,37 @@ class ConflictResolver:
         source: str = "",
     ) -> Any:
         if strategy == "union" and isinstance(base, list) and isinstance(override, list):
-            result = self._union_by_id(base, override)
+            merged = self._union_by_id(base, override)
             if trace is not None:
-                trace.add(path, source, "explicit:union", base, override, result)
-            return result
+                trace.add(path, source, "explicit:union", base, override, merged)
+            return merged
         if (
             strategy == "highest"
             and isinstance(base, (int, float))
             and isinstance(override, (int, float))
         ):
-            result = max(base, override)
+            highest: int | float = max(base, override)
             if trace is not None:
-                trace.add(path, source, "explicit:highest", base, override, result)
-            return result
+                trace.add(path, source, "explicit:highest", base, override, highest)
+            return highest
         if (
             strategy == "lowest"
             and isinstance(base, (int, float))
             and isinstance(override, (int, float))
         ):
-            result = min(base, override)
+            lowest: int | float = min(base, override)
             if trace is not None:
-                trace.add(path, source, "explicit:lowest", base, override, result)
-            return result
+                trace.add(path, source, "explicit:lowest", base, override, lowest)
+            return lowest
         if (
             strategy == "average"
             and isinstance(base, (int, float))
             and isinstance(override, (int, float))
         ):
-            result = (base + override) / 2
+            avg: float = (base + override) / 2
             if trace is not None:
-                trace.add(path, source, "explicit:average", base, override, result)
-            return result
+                trace.add(path, source, "explicit:average", base, override, avg)
+            return avg
         # Default: last wins
         if trace is not None:
             trace.add(path, source, "explicit:last_wins", base, override, override)

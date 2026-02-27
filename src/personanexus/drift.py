@@ -108,9 +108,7 @@ def _load_yaml(path: str | Path) -> dict[str, Any]:
         raise FileNotFoundError(f"File not found: {path}")
     file_size = path.stat().st_size
     if file_size > _MAX_FILE_SIZE:
-        raise ValueError(
-            f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})"
-        )
+        raise ValueError(f"File {path} is too large ({file_size:,} bytes, max {_MAX_FILE_SIZE:,})")
     with open(path, encoding="utf-8") as f:
         data = yaml.safe_load(f)
     if not isinstance(data, dict):
@@ -148,8 +146,13 @@ def _extract_traits(data: dict[str, Any]) -> dict[str, float]:
     if isinstance(profile, dict):
         ocean = profile.get("ocean")
         if isinstance(ocean, dict):
-            for dim in ("openness", "conscientiousness", "extraversion",
-                        "agreeableness", "neuroticism"):
+            for dim in (
+                "openness",
+                "conscientiousness",
+                "extraversion",
+                "agreeableness",
+                "neuroticism",
+            ):
                 if dim in ocean and isinstance(ocean[dim], (int, float)):
                     traits[f"ocean.{dim}"] = float(ocean[dim])
 
@@ -188,28 +191,34 @@ def check_trait_drift(
         if key in old_traits and key in new_traits:
             delta = new_traits[key] - old_traits[key]
             if abs(delta) > threshold:
-                drifts.append(TraitDrift(
-                    trait=key,
-                    old_value=old_traits[key],
-                    new_value=new_traits[key],
-                    delta=round(delta, 4),
-                ))
+                drifts.append(
+                    TraitDrift(
+                        trait=key,
+                        old_value=old_traits[key],
+                        new_value=new_traits[key],
+                        delta=round(delta, 4),
+                    )
+                )
         elif key in old_traits:
             # Trait removed
-            drifts.append(TraitDrift(
-                trait=key,
-                old_value=old_traits[key],
-                new_value=0.0,
-                delta=round(-old_traits[key], 4),
-            ))
+            drifts.append(
+                TraitDrift(
+                    trait=key,
+                    old_value=old_traits[key],
+                    new_value=0.0,
+                    delta=round(-old_traits[key], 4),
+                )
+            )
         else:
             # Trait added
-            drifts.append(TraitDrift(
-                trait=key,
-                old_value=0.0,
-                new_value=new_traits[key],
-                delta=round(new_traits[key], 4),
-            ))
+            drifts.append(
+                TraitDrift(
+                    trait=key,
+                    old_value=0.0,
+                    new_value=new_traits[key],
+                    delta=round(new_traits[key], 4),
+                )
+            )
 
     return drifts
 
@@ -254,21 +263,25 @@ def check_guardrail_drift(
 
     # Removed guardrails
     for gid in sorted(old_ids - new_ids):
-        drifts.append(GuardrailDrift(
-            id=gid,
-            change_type="removed",
-            old_rule=old_guardrails[gid].get("rule"),
-            details=f"Guardrail '{gid}' was removed",
-        ))
+        drifts.append(
+            GuardrailDrift(
+                id=gid,
+                change_type="removed",
+                old_rule=old_guardrails[gid].get("rule"),
+                details=f"Guardrail '{gid}' was removed",
+            )
+        )
 
     # Added guardrails
     for gid in sorted(new_ids - old_ids):
-        drifts.append(GuardrailDrift(
-            id=gid,
-            change_type="added",
-            new_rule=new_guardrails[gid].get("rule"),
-            details=f"Guardrail '{gid}' was added",
-        ))
+        drifts.append(
+            GuardrailDrift(
+                id=gid,
+                change_type="added",
+                new_rule=new_guardrails[gid].get("rule"),
+                details=f"Guardrail '{gid}' was added",
+            )
+        )
 
     # Modified guardrails
     for gid in sorted(old_ids & new_ids):
@@ -290,13 +303,15 @@ def check_guardrail_drift(
             )
 
         if changes:
-            drifts.append(GuardrailDrift(
-                id=gid,
-                change_type="modified",
-                old_rule=old_g.get("rule"),
-                new_rule=new_g.get("rule"),
-                details="; ".join(changes),
-            ))
+            drifts.append(
+                GuardrailDrift(
+                    id=gid,
+                    change_type="modified",
+                    old_rule=old_g.get("rule"),
+                    new_rule=new_g.get("rule"),
+                    details="; ".join(changes),
+                )
+            )
 
     return drifts
 
@@ -335,21 +350,25 @@ def check_principle_drift(
 
     # Removed principles
     for pid in sorted(old_ids - new_ids):
-        drifts.append(PrincipleDrift(
-            id=pid,
-            change_type="removed",
-            old_value=old_principles[pid].get("statement"),
-            details=f"Principle '{pid}' was removed",
-        ))
+        drifts.append(
+            PrincipleDrift(
+                id=pid,
+                change_type="removed",
+                old_value=old_principles[pid].get("statement"),
+                details=f"Principle '{pid}' was removed",
+            )
+        )
 
     # Added principles
     for pid in sorted(new_ids - old_ids):
-        drifts.append(PrincipleDrift(
-            id=pid,
-            change_type="added",
-            new_value=new_principles[pid].get("statement"),
-            details=f"Principle '{pid}' was added",
-        ))
+        drifts.append(
+            PrincipleDrift(
+                id=pid,
+                change_type="added",
+                new_value=new_principles[pid].get("statement"),
+                details=f"Principle '{pid}' was added",
+            )
+        )
 
     # Modified / reordered principles
     for pid in sorted(old_ids & new_ids):
@@ -360,27 +379,30 @@ def check_principle_drift(
         new_statement = new_p.get("statement", "")
 
         if old_statement != new_statement:
-            drifts.append(PrincipleDrift(
-                id=pid,
-                change_type="reworded",
-                old_value=old_statement,
-                new_value=new_statement,
-                details=f"Principle '{pid}' statement was reworded",
-            ))
+            drifts.append(
+                PrincipleDrift(
+                    id=pid,
+                    change_type="reworded",
+                    old_value=old_statement,
+                    new_value=new_statement,
+                    details=f"Principle '{pid}' statement was reworded",
+                )
+            )
 
         old_priority = old_p.get("priority")
         new_priority = new_p.get("priority")
         if old_priority != new_priority:
-            drifts.append(PrincipleDrift(
-                id=pid,
-                change_type="reordered",
-                old_value=str(old_priority),
-                new_value=str(new_priority),
-                details=(
-                    f"Principle '{pid}' priority changed "
-                    f"from {old_priority} to {new_priority}"
-                ),
-            ))
+            drifts.append(
+                PrincipleDrift(
+                    id=pid,
+                    change_type="reordered",
+                    old_value=str(old_priority),
+                    new_value=str(new_priority),
+                    details=(
+                        f"Principle '{pid}' priority changed from {old_priority} to {new_priority}"
+                    ),
+                )
+            )
 
     return drifts
 
@@ -422,18 +444,22 @@ def check_scope_drift(
         new_items = set(new_scope.get(scope_type, []))
 
         for item in sorted(old_items - new_items):
-            drifts.append(ScopeDrift(
-                scope_type=scope_type,
-                change_type="removed",
-                item=item,
-            ))
+            drifts.append(
+                ScopeDrift(
+                    scope_type=scope_type,
+                    change_type="removed",
+                    item=item,
+                )
+            )
 
         for item in sorted(new_items - old_items):
-            drifts.append(ScopeDrift(
-                scope_type=scope_type,
-                change_type="added",
-                item=item,
-            ))
+            drifts.append(
+                ScopeDrift(
+                    scope_type=scope_type,
+                    change_type="added",
+                    item=item,
+                )
+            )
 
     return drifts
 
@@ -456,10 +482,7 @@ def _calculate_severity(report: DriftReport) -> str:
         return "none"
 
     # Check for critical conditions
-    hard_guardrail_removed = any(
-        g.change_type == "removed"
-        for g in report.guardrail_drifts
-    )
+    hard_guardrail_removed = any(g.change_type == "removed" for g in report.guardrail_drifts)
     if hard_guardrail_removed:
         return "critical"
 
@@ -470,21 +493,15 @@ def _calculate_severity(report: DriftReport) -> str:
     major_indicators += large_trait_drifts
 
     # Principle removals are major
-    principle_removals = sum(
-        1 for p in report.principle_drifts if p.change_type == "removed"
-    )
+    principle_removals = sum(1 for p in report.principle_drifts if p.change_type == "removed")
     major_indicators += principle_removals
 
     # Primary scope changes are major
-    primary_scope_changes = sum(
-        1 for s in report.scope_drifts if s.scope_type == "primary"
-    )
+    primary_scope_changes = sum(1 for s in report.scope_drifts if s.scope_type == "primary")
     major_indicators += primary_scope_changes
 
     # Guardrail modifications are somewhat major
-    guardrail_modifications = sum(
-        1 for g in report.guardrail_drifts if g.change_type == "modified"
-    )
+    guardrail_modifications = sum(1 for g in report.guardrail_drifts if g.change_type == "modified")
     major_indicators += guardrail_modifications
 
     if major_indicators >= 3:
@@ -563,9 +580,7 @@ def detect_drift(
     principle_drifts = check_principle_drift(baseline, current)
     scope_drifts = check_scope_drift(baseline, current)
 
-    drift_detected = bool(
-        trait_drifts or guardrail_drifts or principle_drifts or scope_drifts
-    )
+    drift_detected = bool(trait_drifts or guardrail_drifts or principle_drifts or scope_drifts)
 
     report = DriftReport(
         drift_detected=drift_detected,

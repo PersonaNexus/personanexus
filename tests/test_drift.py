@@ -106,19 +106,28 @@ class TestExtractTraits:
         assert result == {"warmth": 0.8, "humor": 0.5}
 
     def test_ocean_traits(self):
-        data = _make_identity(ocean={
-            "openness": 0.7, "conscientiousness": 0.8,
-            "extraversion": 0.5, "agreeableness": 0.6, "neuroticism": 0.3,
-        })
+        data = _make_identity(
+            ocean={
+                "openness": 0.7,
+                "conscientiousness": 0.8,
+                "extraversion": 0.5,
+                "agreeableness": 0.6,
+                "neuroticism": 0.3,
+            }
+        )
         result = _extract_traits(data)
         assert result["ocean.openness"] == 0.7
         assert result["ocean.neuroticism"] == 0.3
 
     def test_disc_traits(self):
-        data = _make_identity(disc={
-            "dominance": 0.4, "influence": 0.6,
-            "steadiness": 0.5, "conscientiousness": 0.9,
-        })
+        data = _make_identity(
+            disc={
+                "dominance": 0.4,
+                "influence": 0.6,
+                "steadiness": 0.5,
+                "conscientiousness": 0.9,
+            }
+        )
         result = _extract_traits(data)
         assert result["disc.dominance"] == 0.4
 
@@ -131,8 +140,13 @@ class TestExtractTraits:
     def test_combined_traits_and_ocean(self):
         data = _make_identity(
             traits={"warmth": 0.9},
-            ocean={"openness": 0.7, "conscientiousness": 0.8,
-                   "extraversion": 0.5, "agreeableness": 0.6, "neuroticism": 0.3},
+            ocean={
+                "openness": 0.7,
+                "conscientiousness": 0.8,
+                "extraversion": 0.5,
+                "agreeableness": 0.6,
+                "neuroticism": 0.3,
+            },
         )
         result = _extract_traits(data)
         assert "warmth" in result
@@ -198,14 +212,24 @@ class TestCheckTraitDrift:
         assert drifts[0].new_value == 0.0
 
     def test_ocean_drift(self):
-        old = _make_identity(ocean={
-            "openness": 0.5, "conscientiousness": 0.8,
-            "extraversion": 0.3, "agreeableness": 0.6, "neuroticism": 0.4,
-        })
-        new = _make_identity(ocean={
-            "openness": 0.9, "conscientiousness": 0.8,
-            "extraversion": 0.3, "agreeableness": 0.6, "neuroticism": 0.4,
-        })
+        old = _make_identity(
+            ocean={
+                "openness": 0.5,
+                "conscientiousness": 0.8,
+                "extraversion": 0.3,
+                "agreeableness": 0.6,
+                "neuroticism": 0.4,
+            }
+        )
+        new = _make_identity(
+            ocean={
+                "openness": 0.9,
+                "conscientiousness": 0.8,
+                "extraversion": 0.3,
+                "agreeableness": 0.6,
+                "neuroticism": 0.4,
+            }
+        )
         drifts = check_trait_drift(old, new, threshold=0.1)
         assert len(drifts) == 1
         assert drifts[0].trait == "ocean.openness"
@@ -237,19 +261,27 @@ class TestExtractGuardrails:
         assert _extract_guardrails({}) == {}
 
     def test_hard_guardrails(self):
-        data = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "No harmful content", "enforcement": "output_filter",
-             "severity": "critical"},
-        ])
+        data = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "No harmful content",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
         result = _extract_guardrails(data)
         assert "g1" in result
         assert result["g1"]["rule"] == "No harmful content"
         assert result["g1"]["_category"] == "hard"
 
     def test_soft_guardrails(self):
-        data = _make_identity(guardrails_soft=[
-            {"id": "s1", "rule": "Be polite", "override_level": "admin"},
-        ])
+        data = _make_identity(
+            guardrails_soft=[
+                {"id": "s1", "rule": "Be polite", "override_level": "admin"},
+            ]
+        )
         result = _extract_guardrails(data)
         assert "s1" in result
         assert result["s1"]["_category"] == "soft"
@@ -257,47 +289,93 @@ class TestExtractGuardrails:
 
 class TestCheckGuardrailDrift:
     def test_no_drift_identical(self):
-        data = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "No harmful content", "enforcement": "output_filter",
-             "severity": "critical"},
-        ])
+        data = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "No harmful content",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
         assert check_guardrail_drift(data, data) == []
 
     def test_guardrail_added(self):
-        old = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule 1", "enforcement": "output_filter", "severity": "critical"},
-        ])
-        new = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule 1", "enforcement": "output_filter", "severity": "critical"},
-            {"id": "g2", "rule": "Rule 2", "enforcement": "output_filter", "severity": "high"},
-        ])
+        old = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
+        new = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+                {"id": "g2", "rule": "Rule 2", "enforcement": "output_filter", "severity": "high"},
+            ]
+        )
         drifts = check_guardrail_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].id == "g2"
         assert drifts[0].change_type == "added"
 
     def test_guardrail_removed(self):
-        old = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule 1", "enforcement": "output_filter", "severity": "critical"},
-            {"id": "g2", "rule": "Rule 2", "enforcement": "output_filter", "severity": "high"},
-        ])
-        new = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule 1", "enforcement": "output_filter", "severity": "critical"},
-        ])
+        old = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+                {"id": "g2", "rule": "Rule 2", "enforcement": "output_filter", "severity": "high"},
+            ]
+        )
+        new = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
         drifts = check_guardrail_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].id == "g2"
         assert drifts[0].change_type == "removed"
 
     def test_guardrail_modified_rule(self):
-        old = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Original rule", "enforcement": "output_filter",
-             "severity": "critical"},
-        ])
-        new = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Modified rule", "enforcement": "output_filter",
-             "severity": "critical"},
-        ])
+        old = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Original rule",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
+        new = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Modified rule",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
         drifts = check_guardrail_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].id == "g1"
@@ -305,32 +383,57 @@ class TestCheckGuardrailDrift:
         assert "rule changed" in drifts[0].details
 
     def test_guardrail_modified_severity(self):
-        old = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule", "enforcement": "output_filter", "severity": "critical"},
-        ])
-        new = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule", "enforcement": "output_filter", "severity": "low"},
-        ])
+        old = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
+        new = _make_identity(
+            guardrails_hard=[
+                {"id": "g1", "rule": "Rule", "enforcement": "output_filter", "severity": "low"},
+            ]
+        )
         drifts = check_guardrail_drift(old, new)
         assert len(drifts) == 1
         assert "severity changed" in drifts[0].details
 
     def test_guardrail_category_change(self):
-        old = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule", "enforcement": "output_filter", "severity": "critical"},
-        ])
-        new = _make_identity(guardrails_soft=[
-            {"id": "g1", "rule": "Rule", "override_level": "admin"},
-        ])
+        old = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
+        new = _make_identity(
+            guardrails_soft=[
+                {"id": "g1", "rule": "Rule", "override_level": "admin"},
+            ]
+        )
         drifts = check_guardrail_drift(old, new)
         assert len(drifts) == 1
         assert "category changed" in drifts[0].details
 
     def test_empty_to_guardrails(self):
         old = _make_identity()
-        new = _make_identity(guardrails_hard=[
-            {"id": "g1", "rule": "Rule", "enforcement": "output_filter", "severity": "critical"},
-        ])
+        new = _make_identity(
+            guardrails_hard=[
+                {
+                    "id": "g1",
+                    "rule": "Rule",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+            ]
+        )
         drifts = check_guardrail_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].change_type == "added"
@@ -346,10 +449,12 @@ class TestExtractPrinciples:
         assert _extract_principles({}) == {}
 
     def test_basic_principles(self):
-        data = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-            {"id": "p2", "priority": 2, "statement": "Be safe"},
-        ])
+        data = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+                {"id": "p2", "priority": 2, "statement": "Be safe"},
+            ]
+        )
         result = _extract_principles(data)
         assert "p1" in result
         assert result["p1"]["statement"] == "Be helpful"
@@ -359,44 +464,58 @@ class TestExtractPrinciples:
 
 class TestCheckPrincipleDrift:
     def test_no_drift_identical(self):
-        data = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-        ])
+        data = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+            ]
+        )
         assert check_principle_drift(data, data) == []
 
     def test_principle_added(self):
-        old = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-        ])
-        new = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-            {"id": "p2", "priority": 2, "statement": "Be safe"},
-        ])
+        old = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+            ]
+        )
+        new = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+                {"id": "p2", "priority": 2, "statement": "Be safe"},
+            ]
+        )
         drifts = check_principle_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].id == "p2"
         assert drifts[0].change_type == "added"
 
     def test_principle_removed(self):
-        old = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-            {"id": "p2", "priority": 2, "statement": "Be safe"},
-        ])
-        new = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-        ])
+        old = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+                {"id": "p2", "priority": 2, "statement": "Be safe"},
+            ]
+        )
+        new = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+            ]
+        )
         drifts = check_principle_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].id == "p2"
         assert drifts[0].change_type == "removed"
 
     def test_principle_reworded(self):
-        old = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-        ])
-        new = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Always be genuinely helpful"},
-        ])
+        old = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+            ]
+        )
+        new = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Always be genuinely helpful"},
+            ]
+        )
         drifts = check_principle_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].change_type == "reworded"
@@ -404,12 +523,16 @@ class TestCheckPrincipleDrift:
         assert drifts[0].new_value == "Always be genuinely helpful"
 
     def test_principle_reordered(self):
-        old = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-        ])
-        new = _make_identity(principles=[
-            {"id": "p1", "priority": 3, "statement": "Be helpful"},
-        ])
+        old = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+            ]
+        )
+        new = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 3, "statement": "Be helpful"},
+            ]
+        )
         drifts = check_principle_drift(old, new)
         assert len(drifts) == 1
         assert drifts[0].change_type == "reordered"
@@ -417,12 +540,16 @@ class TestCheckPrincipleDrift:
         assert drifts[0].new_value == "3"
 
     def test_principle_reworded_and_reordered(self):
-        old = _make_identity(principles=[
-            {"id": "p1", "priority": 1, "statement": "Be helpful"},
-        ])
-        new = _make_identity(principles=[
-            {"id": "p1", "priority": 5, "statement": "Always help users"},
-        ])
+        old = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 1, "statement": "Be helpful"},
+            ]
+        )
+        new = _make_identity(
+            principles=[
+                {"id": "p1", "priority": 5, "statement": "Always help users"},
+            ]
+        )
         drifts = check_principle_drift(old, new)
         assert len(drifts) == 2
         types = {d.change_type for d in drifts}
@@ -636,8 +763,12 @@ class TestDetectDrift:
         data = _make_identity(
             traits={"warmth": 0.8},
             guardrails_hard=[
-                {"id": "g1", "rule": "Rule 1", "enforcement": "output_filter",
-                 "severity": "critical"},
+                {
+                    "id": "g1",
+                    "rule": "Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
             ],
             principles=[{"id": "p1", "priority": 1, "statement": "Be helpful"}],
             scope_primary=["coding"],
@@ -654,8 +785,12 @@ class TestDetectDrift:
         old = _make_identity(
             traits={"warmth": 0.3, "humor": 0.8},
             guardrails_hard=[
-                {"id": "g1", "rule": "Rule 1", "enforcement": "output_filter",
-                 "severity": "critical"},
+                {
+                    "id": "g1",
+                    "rule": "Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
             ],
             principles=[
                 {"id": "p1", "priority": 1, "statement": "Be helpful"},
@@ -666,10 +801,18 @@ class TestDetectDrift:
         new = _make_identity(
             traits={"warmth": 0.9, "humor": 0.8},
             guardrails_hard=[
-                {"id": "g1", "rule": "Modified Rule 1", "enforcement": "output_filter",
-                 "severity": "critical"},
-                {"id": "g3", "rule": "New Rule", "enforcement": "output_filter",
-                 "severity": "high"},
+                {
+                    "id": "g1",
+                    "rule": "Modified Rule 1",
+                    "enforcement": "output_filter",
+                    "severity": "critical",
+                },
+                {
+                    "id": "g3",
+                    "rule": "New Rule",
+                    "enforcement": "output_filter",
+                    "severity": "high",
+                },
             ],
             principles=[
                 {"id": "p1", "priority": 1, "statement": "Always be genuinely helpful"},
@@ -836,7 +979,8 @@ class TestDriftReportToDict:
 class TestFormatDriftReport:
     def test_text_format_no_drift(self):
         report = DriftReport(
-            drift_detected=False, severity="none",
+            drift_detected=False,
+            severity="none",
             summary="No drift detected between the two identity snapshots.",
         )
         output = format_drift_report(report, fmt="text")

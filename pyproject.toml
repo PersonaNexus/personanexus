@@ -72,6 +72,7 @@ python_version = "3.11"
 strict = true
 warn_return_any = true
 warn_unused_configs = true
+plugins = ["pydantic.mypy"]
 
 [dependency-groups]
 dev = [
@@ -81,4 +82,5 @@ dev = [
     "mypy>=1.8",
     "twine>=5.0",
     "pre-commit>=3.0",
+    "types-PyYAML>=6.0",
 ]

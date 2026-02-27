@@ -191,9 +191,7 @@ def lint(
         raise typer.Exit(code=1)
 
     # Filter by severity
-    filtered = [
-        w for w in warnings if severity_levels.get(w.severity, 0) >= min_level
-    ]
+    filtered = [w for w in warnings if severity_levels.get(w.severity, 0) >= min_level]
 
     if not filtered:
         console.print(f"[green]No lint warnings for {file}[/green]")
@@ -210,8 +208,7 @@ def lint(
         color = severity_color.get(w.severity, "white")
         location = f" ({w.path})" if w.path else ""
         console.print(
-            f"  [{color}][{w.severity.upper()}] {w.rule}{location}: "
-            f"{w.message}[/{color}]"
+            f"  [{color}][{w.severity.upper()}] {w.rule}{location}: {w.message}[/{color}]"
         )
     console.print()
 
@@ -232,7 +229,7 @@ def resolve(
         str, typer.Option("--output", "-o", help="Output format: yaml or json")
     ] = "yaml",
     search_path: Annotated[
-        list[Path],
+        list[Path] | None,
         typer.Option(
             "--search-path",
             "-s",
@@ -396,22 +393,22 @@ def _generate_minimal_template(
     lines = ["schema_version: '1.0'", ""]
 
     if extends:
-        lines.extend([f"extends: \"{extends}\"", ""])
+        lines.extend([f'extends: "{extends}"', ""])
 
     lines.extend(
         [
             "metadata:",
             f"  id: {agent_id}",
-            f"  name: \"{name}\"",
+            f'  name: "{name}"',
             "  version: 0.1.0",
-            f"  description: \"Agent identity for {name}\"",
-            f"  created_at: \"{timestamp}\"",
-            f"  updated_at: \"{timestamp}\"",
+            f'  description: "Agent identity for {name}"',
+            f'  created_at: "{timestamp}"',
+            f'  updated_at: "{timestamp}"',
             "  status: draft",
             "",
             "role:",
-            f"  title: \"{name}\"",
-            f"  purpose: \"Assist users with tasks related to {name.lower()}\"",
+            f'  title: "{name}"',
+            f'  purpose: "Assist users with tasks related to {name.lower()}"',
             "  scope:",
             "    primary:",
             "      - General assistance",
@@ -448,25 +445,25 @@ def _generate_full_template(name: str, agent_id: str, timestamp: str, extends: s
     lines = ["schema_version: '1.0'", ""]
 
     if extends:
-        lines.extend([f"extends: \"{extends}\"", ""])
+        lines.extend([f'extends: "{extends}"', ""])
 
     lines.extend(
         [
             "metadata:",
             f"  id: {agent_id}",
-            f"  name: \"{name}\"",
+            f'  name: "{name}"',
             "  version: 0.1.0",
-            f"  description: \"Full PersonaNexus for {name}\"",
-            f"  created_at: \"{timestamp}\"",
-            f"  updated_at: \"{timestamp}\"",
+            f'  description: "Full PersonaNexus for {name}"',
+            f'  created_at: "{timestamp}"',
+            f'  updated_at: "{timestamp}"',
             "  author: PersonaNexus Framework",
             "  tags:",
             "    - assistant",
             "  status: draft",
             "",
             "role:",
-            f"  title: \"{name}\"",
-            f"  purpose: \"A comprehensive assistant for {name.lower()}-related tasks\"",
+            f'  title: "{name}"',
+            f'  purpose: "A comprehensive assistant for {name.lower()}-related tasks"',
             "  scope:",
             "    primary:",
             "      - General assistance",
@@ -570,22 +567,22 @@ def _generate_archetype_template(name: str, agent_id: str, timestamp: str) -> st
         "",
         "archetype:",
         f"  id: {agent_id}",
-        f"  name: \"{name}\"",
-        f"  description: \"Base archetype for {name.lower()} agents\"",
+        f'  name: "{name}"',
+        f'  description: "Base archetype for {name.lower()} agents"',
         "  abstract: true",
         "",
         "metadata:",
         f"  id: {agent_id}",
-        f"  name: \"{name} Archetype\"",
+        f'  name: "{name} Archetype"',
         "  version: 1.0.0",
-        f"  description: \"Archetype defining core traits for {name.lower()} agents\"",
-        f"  created_at: \"{timestamp}\"",
-        f"  updated_at: \"{timestamp}\"",
+        f'  description: "Archetype defining core traits for {name.lower()} agents"',
+        f'  created_at: "{timestamp}"',
+        f'  updated_at: "{timestamp}"',
         "  status: active",
         "",
         "role:",
-        f"  title: \"{name}\"",
-        f"  purpose: \"Base purpose for {name.lower()} agents\"",
+        f'  title: "{name}"',
+        f'  purpose: "Base purpose for {name.lower()} agents"',
         "  scope:",
         "    primary:",
         "      - Core capability area",
@@ -623,20 +620,20 @@ def _generate_mixin_template(name: str, agent_id: str, timestamp: str) -> str:
         "",
         "mixin:",
         f"  id: {agent_id}",
-        f"  name: \"{name}\"",
-        f"  description: \"Mixin providing {name.lower()} capabilities\"",
+        f'  name: "{name}"',
+        f'  description: "Mixin providing {name.lower()} capabilities"',
         "",
         "metadata:",
         f"  id: {agent_id}",
-        f"  name: \"{name} Mixin\"",
+        f'  name: "{name} Mixin"',
         "  version: 1.0.0",
-        f"  description: \"Adds {name.lower()} functionality to any agent\"",
-        f"  created_at: \"{timestamp}\"",
-        f"  updated_at: \"{timestamp}\"",
+        f'  description: "Adds {name.lower()} functionality to any agent"',
+        f'  created_at: "{timestamp}"',
+        f'  updated_at: "{timestamp}"',
         "  status: active",
         "",
         "role:",
-        f"  title: \"{name} Enhanced\"",
+        f'  title: "{name} Enhanced"',
         "  purpose: Provides additional capabilities",
         "  scope:",
         "    primary:",
@@ -691,7 +688,7 @@ def compile(
         ),
     ] = "text",
     search_path: Annotated[
-        list[Path],
+        list[Path] | None,
         typer.Option(
             "--search-path",
             "-s",
@@ -838,7 +835,7 @@ def analyze(
         typer.Option("--compare", "-c", help="Second file for side-by-side comparison"),
     ] = None,
     search_path: Annotated[
-        list[Path],
+        list[Path] | None,
         typer.Option("--search-path", "-s", help="Search paths for YAML resolution"),
     ] = None,
     output_format: Annotated[
@@ -1238,7 +1235,7 @@ def personality_jungian_recommend(
 def personality_show_profile(
     file: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file")],
     search_path: Annotated[
-        list[Path],
+        list[Path] | None,
         typer.Option("--search-path", "-s", help="Additional search paths for archetypes/mixins"),
     ] = None,
 ) -> None:
