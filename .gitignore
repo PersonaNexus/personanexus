@@ -38,3 +38,6 @@ Thumbs.db
 *.personality.json
 *.SOUL.md
 *.STYLE.md
+
+# Built artifacts
+*.zip

@@ -1,6 +1,6 @@
 """AI PersonaNexus Framework — define, validate, and compose AI agent identities."""
 
-__version__ = "1.4.0"
+__version__ = "1.4.1"
 
 from personanexus.analyzer import (
     AnalysisResult,

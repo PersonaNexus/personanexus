@@ -1,6 +1,6 @@
 [project]
 name = "personanexus"
-version = "1.4.0"
+version = "1.4.1"
 description = "Production-grade framework for defining, validating, and composing AI agent personas"
 readme = "README.md"
 license = { text = "MIT" }
@@ -32,8 +32,10 @@ llm = ["openai>=2.21.0", "anthropic>=0.30", "google-generativeai>=0.8"]
 all = ["personanexus[web,llm]"]
 
 [project.urls]
-Homepage = "https://github.com/PersonaNexus/personanexus"
+Homepage = "https://personanexus.ai"
+Documentation = "https://github.com/PersonaNexus/personanexus#readme"
 Repository = "https://github.com/PersonaNexus/personanexus"
+Changelog = "https://github.com/PersonaNexus/personanexus/blob/main/CHANGELOG.md"
 "Bug Tracker" = "https://github.com/PersonaNexus/personanexus/issues"
 
 [project.scripts]

@@ -13,10 +13,9 @@ A clear and concise description of what the bug is.
 
 Steps to reproduce the behavior:
 
-1. Go to '...'
-2. Click on '...'
-3. Scroll down to '...'
-4. See error
+1. Run command '...'
+2. With input file '...'
+3. See error
 
 ## Expected behavior
 
@@ -30,7 +29,7 @@ If applicable, add screenshots to help explain your problem.
 
 - OS: [e.g. Ubuntu 22.04, macOS 14.0, Windows 11]
 - Python version: [e.g. 3.11.5]
-- PersonaNexus version: [e.g. 0.1.0]
+- PersonaNexus version: [e.g. 1.4.1]
 
 ## Additional context
 

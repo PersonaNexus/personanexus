@@ -5,7 +5,7 @@
 ![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)
 ![Schema Version](https://img.shields.io/badge/schema-v1.0-green.svg)
-![Tests](https://img.shields.io/badge/tests-558%20passing-brightgreen.svg)
+![Tests](https://img.shields.io/badge/tests-878%20passing-brightgreen.svg)
 
 > ⚠️ **Privacy Notice:** All agent configurations in this repository are **fictional demonstrations**. Your private agent data remains on your system and under your control.
 
