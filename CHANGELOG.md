@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.1] - 2026-02-28
+
+### Changed
+
+- Prepare codebase for open-source release
+- Fix LICENSE copyright holder (was missing project name)
+- Fix SECURITY.md to use dedicated security email instead of referencing pyproject.toml
+- Update README test badge to reflect actual count (878 passing)
+- Update CONTRIBUTING.md test count to match reality
+- Add Documentation and Changelog URLs to pyproject.toml
+- Clean up example agent author fields (replace personal names with "PersonaNexus")
+- Fix timezone notation in example agent timestamps
+- Replace hardcoded agent names in openclaw-migrator with generic role names
+- Remove binary .zip artifact from version control
+- Add *.zip to .gitignore
+
 ## [1.4.0] - 2026-02-22
 
 ### Added

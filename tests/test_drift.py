@@ -824,7 +824,7 @@ class TestDetectDrift:
         assert len(report.trait_drifts) == 1  # warmth
         assert len(report.guardrail_drifts) == 2  # g1 modified + g3 added
         assert len(report.principle_drifts) == 2  # p1 reworded + p2 removed
-        assert len(report.scope_drifts) == 1  # debugging removed
+        assert len(report.scope_drifts) == 1  # "debugging" scope was removed
         assert report.severity in ("major", "critical")
         assert report.summary != ""
 

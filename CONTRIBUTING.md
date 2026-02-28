@@ -8,7 +8,7 @@ PersonaNexus aims to make it easier for developers to create NPCs, assistive age
 
 - **Language**: Python 3.11+
 - **Package Manager**: [uv](https://docs.astral.sh/uv/)
-- **Testing**: pytest (550+ tests)
+- **Testing**: pytest (870+ tests)
 - **Code Style**: [ruff](https://docs.astral.sh/ruff/) (lint + format)
 - **License**: MIT
 
@@ -35,7 +35,7 @@ PersonaNexus aims to make it easier for developers to create NPCs, assistive age
    uv run pytest
    ```
 
-   All 550+ tests should pass.
+   All tests should pass.
 
 ## Testing Requirements
 

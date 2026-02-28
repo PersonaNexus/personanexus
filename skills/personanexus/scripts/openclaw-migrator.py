@@ -204,22 +204,22 @@ class OpenClawTeamMigrator:
                 "stages": [
                     {
                         "stage": "research_phase",
-                        "primary_agent": "atlas",
+                        "primary_agent": "researcher",
                         "objective": "Gather comprehensive data with source validation"
                     },
                     {
-                        "stage": "analysis_phase", 
-                        "primary_agent": "annie",
+                        "stage": "analysis_phase",
+                        "primary_agent": "analyst",
                         "objective": "Statistical analysis and insight extraction"
                     },
                     {
                         "stage": "implementation_phase",
-                        "primary_agent": "forge", 
+                        "primary_agent": "developer",
                         "objective": "Build/deploy solution based on research and analysis"
                     },
                     {
                         "stage": "communication_phase",
-                        "primary_agent": "ink",
+                        "primary_agent": "communicator",
                         "objective": "Create comprehensive documentation and stakeholder communication"
                     }
                 ]
@@ -258,21 +258,21 @@ class OpenClawTeamMigrator:
                 "governance": {
                     "decision_frameworks": {
                         "research_methodology": {
-                            "authority": "atlas",
-                            "description": "Atlas leads research approaches and source validation"
+                            "authority": "researcher",
+                            "description": "Research lead drives research approaches and source validation"
                         },
                         "technical_architecture": {
-                            "authority": "forge", 
-                            "description": "Forge leads technical decisions",
-                            "consultation_required": ["atlas"]
+                            "authority": "developer",
+                            "description": "Developer lead drives technical decisions",
+                            "consultation_required": ["researcher"]
                         },
                         "data_analysis_methodology": {
-                            "authority": "annie",
-                            "description": "Annie owns statistical rigor and analysis approach"
+                            "authority": "analyst",
+                            "description": "Analyst owns statistical rigor and analysis approach"
                         },
                         "external_communications": {
-                            "authority": "ink",
-                            "description": "Ink approves external-facing content"
+                            "authority": "communicator",
+                            "description": "Communicator approves external-facing content"
                         }
                     },
                     "conflict_resolution": {

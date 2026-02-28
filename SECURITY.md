@@ -12,7 +12,7 @@
 If you discover a security vulnerability in PersonaNexus, please report it responsibly:
 
 1. **Do not** open a public GitHub issue for security vulnerabilities.
-2. Email the maintainers at the address listed in `pyproject.toml` with:
+2. Email the maintainers at **security@personanexus.ai** with:
    - A description of the vulnerability
    - Steps to reproduce
    - Potential impact
