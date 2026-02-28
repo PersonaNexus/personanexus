@@ -758,72 +758,6 @@
             color: var(--text-muted);
         }
 
-        /* ========== Comparison ========== */
-        .comparison-wrapper {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .comparison-table {
-            width: 100%;
-            max-width: 1000px;
-            margin: 0 auto;
-            border-collapse: separate;
-            border-spacing: 0;
-            background: var(--card-bg);
-            border-radius: 14px;
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
-            border: 1px solid var(--card-border);
-        }
-
-        .comparison-table th,
-        .comparison-table td {
-            padding: 14px 20px;
-            text-align: center;
-        }
-
-        .comparison-table thead th {
-            background: var(--bg-alt);
-            font-weight: 600;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: var(--text-muted);
-            border-bottom: 1px solid var(--border);
-        }
-
-        .comparison-table thead th.highlight {
-            background: var(--accent-bg);
-            color: var(--accent);
-        }
-
-        .comparison-table td {
-            border-bottom: 1px solid var(--border);
-            font-size: 0.95rem;
-        }
-
-        .comparison-table tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        .comparison-table td:first-child,
-        .comparison-table th:first-child {
-            text-align: left;
-            font-weight: 500;
-        }
-
-        .comparison-table td.highlight {
-            background: rgba(99, 102, 241, 0.03);
-        }
-
-        .comparison-table tbody tr:hover td {
-            background: var(--bg-alt);
-        }
-
-        .comparison-table tbody tr:hover td.highlight {
-            background: rgba(99, 102, 241, 0.06);
-        }
 
         .check { color: var(--green); font-weight: 700; font-size: 1.1rem; }
         .cross { color: var(--text-muted); font-size: 1.1rem; }
@@ -1036,7 +970,6 @@
                 <a href="#how-it-works" class="nav-link">How It Works</a>
                 <a href="#frameworks" class="nav-link">Frameworks</a>
                 <a href="#editor" class="nav-link">Editor</a>
-                <a href="#compare" class="nav-link">Compare</a>
                 <a href="https://github.com/PersonaNexus/personanexus" target="_blank" class="nav-link">GitHub</a>
                 <a href="#install" class="nav-cta">Get Started</a>
             </div>
@@ -1400,102 +1333,6 @@ personality:
                     <h4>JSON</h4>
                     <p>Full structured data</p>
                 </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Comparison -->
-    <section class="section" id="compare">
-        <div class="section-inner">
-            <div class="section-header fade-up">
-                <span class="section-label">Compare</span>
-                <h2 class="section-title">Why PersonaNexus?</h2>
-                <p class="section-desc">The only framework purpose-built for declarative, composable AI agent identity.</p>
-            </div>
-            <div class="comparison-wrapper fade-up">
-                <table class="comparison-table">
-                    <thead>
-                        <tr>
-                            <th>Capability</th>
-                            <th class="highlight">PersonaNexus</th>
-                            <th>CrewAI</th>
-                            <th>AgentForge</th>
-                            <th>OpenSouls</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Declarative YAML identity</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="partial">~</span></td>
-                            <td><span class="partial">~</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                        <tr>
-                            <td>OCEAN / DISC / Jungian psychology</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                        <tr>
-                            <td>Inheritance &amp; mixins</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                        <tr>
-                            <td>Multi-target LLM compilation</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                        <tr>
-                            <td>Build-time validation</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="partial">~</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                        <tr>
-                            <td>Guardrails (hard + soft)</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="partial">~</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="partial">~</span></td>
-                        </tr>
-                        <tr>
-                            <td>Multi-agent teams &amp; governance</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="partial">~</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                        <tr>
-                            <td>Dynamic mood states</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="check">&#10003;</span></td>
-                        </tr>
-                        <tr>
-                            <td>Soul / personality analysis</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="partial">~</span></td>
-                        </tr>
-                        <tr>
-                            <td>Open standard / spec</td>
-                            <td class="highlight"><span class="check">&#10003;</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                            <td><span class="partial">~</span></td>
-                            <td><span class="cross">&#10005;</span></td>
-                        </tr>
-                    </tbody>
-                </table>
             </div>
         </div>
     </section>
