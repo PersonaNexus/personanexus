@@ -1,0 +1,340 @@
+{\rtf1\ansi\ansicpg1252\cocoartf2868
+\cocoatextscaling0\cocoaplatform0{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\froman\fcharset0 Times-Bold;\f2\froman\fcharset0 Times-Roman;
+}
+{\colortbl;\red255\green255\blue255;\red0\green0\blue0;}
+{\*\expandedcolortbl;;\cssrgb\c0\c0\c0;}
+\margl1440\margr1440\vieww11520\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0 Historical Figure Board of Directors\
+\
+# Product Spec: Historical Figures Advisory Board Feature for PersonaNexus\
+\
+## Overview\
+PersonaNexus is an open-source tool for building AI agent personalities using business frameworks and archetypes.  \
+This feature adds a **"Historical Figures Advisory Board"** pack \'97 a set of 10 pre-configured, optional personas inspired by public-domain historical figures.  \
+Users can enable this pack to instantly create a virtual advisory board for strategic advice, decision-making, or simulations.\
+\
+**Goal**:  \
+Enhance project growth by providing out-of-the-box value for modern business leaders. Allow mixing historical wisdom with existing frameworks (OCEAN, DISC, Jungian/16-Type, OKR, RACI, SWOT, etc.) to create richer, more insightful agents.\
+\
+**Scope**:  \
+- New optional YAML pack with exactly 10 historical personas  \
+- Integration with existing board/advisory features (if already built) or as standalone personas  \
+- No breaking changes to core system \'97 added as an examples/pack folder  \
+- Fully opt-in, user-customizable, with strong legal/ethical disclaimers\
+\
+**Target Release**: v1.5.0 (next minor version)\
+\
+## Key Requirements\
+1. **Public Domain Safety**  \
+   All figures must have died long enough ago that their core ideas, writings, and general personas are public domain.  \
+   Use only "inspired by" phrasing. Include prominent disclaimer in UI, docs, and code.\
+\
+2. **Opt-In Toggle**  \
+   Default: disabled (`enabled: false`).  \
+   Users enable via YAML flag or CLI argument (`--historical-enabled`).\
+\
+3. **Integration with Existing Frameworks**  \
+   - Link each figure\'92s traits to OCEAN (scores 1\'9610), DISC (primary style), and Jungian/MBTI-inspired type  \
+   - Allow seamless mixing with business frameworks (e.g., Sun Tzu + SWOT for competitive strategy)  \
+   - Support multi-agent "board meetings" (export as CrewAI crew, LangGraph graph, etc.)\
+\
+4. **Customization**  \
+   All fields editable by user (traits, scores, lenses, rules).  \
+   No hard-coded values that cannot be overridden.\
+\
+5. **Export Compatibility**  \
+   Works with existing targets: CrewAI, LangGraph, OpenClaw, plain prompts.\
+\
+6. **Disclaimer** (must appear whenever pack is enabled)  \
+   > These are fictional interpretations inspired by public-domain historical figures.  \
+   > They are not official representations, endorsements, or direct quotes from copyrighted modern works.  \
+   > Use responsibly and adapt to your context.\
+\
+## User Stories\
+- As a user, I can enable the historical pack and instantly get a "board" of 10 figures for advisory input.  \
+- As a business leader, I can query the board (e.g., "Advise on Q2 strategy") and get responses flavored by each figure\'92s mindset.  \
+- As a developer/contributor, I can fork and add new historical figures via PR.\
+\
+## Functional Specs\
+\
+### YAML Structure (Core Implementation)\
+Add new file: `/examples/historical_board_pack.yaml`\
+\
+```yaml\
+historical_board_pack:\
+  enabled: false  # Global toggle (default: false)\
+  disclaimer: "These are fictional interpretations inspired by public-domain historical figures. Not official representations or endorsements."\
+\
+  board_members:\
+    # See table below for full content \'96 10 entries\
+\
+  board_engagement_rules:\
+    - "Convene on user queries"\
+    - "Each member responds from their historical lens"\
+    - "Synthesize consensus or majority vote"\
+    - "Highlight conflicting viewpoints for balanced advice"\
+\
+Table of Historical Leaders for potential board:\
+\
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+
+\f1\b \cf0 \expnd0\expndtw0\kerning0
+\outl0\strokewidth0 \strokec2 #\cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+\cf0 Historical Figure\cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+\cf0 Died\cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+\cf0 Suggested Board Role\cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+\cf0 Core Mindset / Lens they bring\cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+\cf0 Why awesome for modern leaders\cell 
+\pard\intbl\itap1\pardeftab720\qc\partightenfactor0
+\cf0 Personality Traits & Scores (OCEAN/DISC/Jungian)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+
+\f2\b0 \cf0 1\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Sun Tzu\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 ~496 BC\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Strategist / War Games\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Know yourself, know the enemy, win without fighting\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Timeless competitive analysis, deception, long-term positioning\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 9, Conscientiousness 10, Extraversion 4, Agreeableness 3, Neuroticism 2 DISC: Dominance (strategic command) Jungian: INTJ (The Architect \'96 calculated, visionary planner)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 2\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Marcus Aurelius\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 180 AD\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Stoic Chairman / Crisis Manager\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Control what you can, accept what you cannot, act with virtue\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Emotional resilience, decision-making under pressure, ethics\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 8, Conscientiousness 9, Extraversion 5, Agreeableness 7, Neuroticism 3 DISC: Steadiness (calm under fire) Jungian: INFJ (The Advocate \'96 principled, introspective leader)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 3\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Niccol\'f2 Machiavelli\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1527\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Political Realist\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 It is better to be feared than loved (if you cannot be both)\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Power dynamics, pragmatism, reading people & incentives\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 8, Conscientiousness 7, Extraversion 6, Agreeableness 4, Neuroticism 5 DISC: Dominance/Influence (manipulative strategist) Jungian: ENTJ (The Commander \'96 ruthless efficiency)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 4\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Adam Smith\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1790\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Economist / Market Philosopher\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Invisible hand, division of labor, self-interest drives prosperity\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Foundational market thinking, incentives, specialization\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 9, Conscientiousness 8, Extraversion 5, Agreeableness 6, Neuroticism 4 DISC: Compliance (analytical, rule-based) Jungian: INTP (The Logician \'96 theoretical economist)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 5\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Benjamin Franklin\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1790\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Experimenter / Systems Thinker\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Well done is better than well said; never waste time\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Iterative improvement, frugality, networking, prototyping\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 10, Conscientiousness 9, Extraversion 8, Agreeableness 7, Neuroticism 3 DISC: Influence (charismatic inventor) Jungian: ENTP (The Debater \'96 innovative, adaptable polymath)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 6\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Frederick the Great\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1786\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Operations & Discipline\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 The more I see of men, the more I admire dogs (but still leads armies)\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Ruthless execution, logistics, meritocracy, training culture\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 7, Conscientiousness 10, Extraversion 6, Agreeableness 4, Neuroticism 5 DISC: Dominance (authoritarian reformer) Jungian: ESTJ (The Executive \'96 disciplined enforcer)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 7\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Carl von Clausewitz\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1831\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief of Strategic Friction\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 War is the continuation of politics by other means; fog & friction\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Embracing uncertainty, center of gravity, strategy vs tactics\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 8, Conscientiousness 9, Extraversion 4, Agreeableness 5, Neuroticism 6 DISC: Dominance (theoretical warrior) Jungian: INTJ (The Architect \'96 adaptive strategist)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 8\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Abraham Lincoln\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1865\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Unifier / Long-term Vision\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 A house divided against itself cannot stand\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Holding coalitions together, moral clarity, patience\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 8, Conscientiousness 9, Extraversion 7, Agreeableness 8, Neuroticism 4 DISC: Steadiness (empathetic unifier) Jungian: INFJ (The Advocate \'96 moral visionary)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 9\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Alfred Thayer Mahan\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1914\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief Geostrategist / Maritime Power\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Sea power = national power; control the sea lanes\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Supply-chain dominance, global trade routes, strategic geography\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 7, Conscientiousness 8, Extraversion 5, Agreeableness 6, Neuroticism 4 DISC: Compliance (systematic planner) Jungian: ISTJ (The Logistician \'96 global networker)\cell \row
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth240\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx1234
+\clvertalc \clshdrawnil \clwWidth1146\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx2468
+\clvertalc \clshdrawnil \clwWidth490\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx3702
+\clvertalc \clshdrawnil \clwWidth1340\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx4937
+\clvertalc \clshdrawnil \clwWidth2448\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx6171
+\clvertalc \clshdrawnil \clwWidth2298\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx7405
+\clvertalc \clshdrawnil \clwWidth7116\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadt20 \clpadl20 \clpadb20 \clpadr20 \gaph\cellx8640
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 10\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 John Boyd\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 1997\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Chief OODA Loop / Agility Coach\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Observe\'96Orient\'96Decide\'96Act faster than the opponent\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 Speed of decision-making, adaptability, mental models\cell 
+\pard\intbl\itap1\pardeftab720\partightenfactor0
+\cf0 OCEAN: Openness 9, Conscientiousness 8, Extraversion 6, Agreeableness 5, Neuroticism 5 DISC: Dominance (agile disruptor) Jungian: ENTP (The Debater \'96 fast-loop innovator)\cell \lastrow\row
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0 \cf0 \kerning1\expnd0\expndtw0 \outl0\strokewidth0 \
+}
