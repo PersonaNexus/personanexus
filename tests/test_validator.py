@@ -147,8 +147,8 @@ class TestValidateFile:
 
     def test_validate_all_examples(self, validator, examples_dir):
         for path in examples_dir.rglob("*.yaml"):
-            # Skip team definitions (different schema, not individual agents)
-            if "teams" in path.parts:
+            # Skip team definitions and packs (different schema, not individual agents)
+            if "teams" in path.parts or "packs" in path.parts:
                 continue
             result = validator.validate_file(path)
             assert result.valid is True, f"{path.name} failed: {result.errors}"
