@@ -18,10 +18,10 @@ from personanexus_skill.dynamics import (
     evaluate_memory_influences,
     evaluate_trigger,
     evaluate_triggers,
-    get_mood_by_name,
     get_mode_by_name,
-    resolve_mood,
+    get_mood_by_name,
     resolve_mode,
+    resolve_mood,
     run_dynamics_pipeline,
 )
 from personanexus_skill.memory import (
@@ -55,8 +55,8 @@ from personanexus_skill.types import (
     TRAIT_ORDER,
     AgentIdentity,
     DiscProfile,
-    DynamicMood,
     DynamicMode,
+    DynamicMood,
     DynamicsConfig,
     DynamicTrigger,
     JungianProfile,
