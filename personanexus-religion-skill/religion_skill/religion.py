@@ -9,7 +9,6 @@ from typing import Any
 import yaml
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
@@ -145,7 +144,7 @@ def build_persona(yaml_file: str | Path) -> str:
     For full-featured compilation (Anthropic XML, OpenClaw JSON, SOUL.md,
     etc.) use :class:`religion_skill.compiler.SystemPromptCompiler` instead.
     """
-    with open(yaml_file, "r") as fh:
+    with open(yaml_file) as fh:
         persona: dict[str, Any] = yaml.safe_load(fh) or {}
 
     name = persona.get("metadata", {}).get("name", "Agent")

@@ -8,31 +8,28 @@ import pytest
 
 from personanexus.dynamics import (
     DynamicSession,
-    DynamicsResult,
     InteractionContext,
     apply_dynamics_to_traits,
     clamp,
-    compile_with_adjusted_traits,
     context_from_state,
     evaluate_memory_influences,
     evaluate_trigger,
     evaluate_triggers,
-    get_mood_by_name,
     get_mode_by_name,
-    resolve_mood,
+    get_mood_by_name,
     resolve_mode,
+    resolve_mood,
     run_dynamics_pipeline,
 )
 from personanexus.memory import UserState
 from personanexus.types import (
     AgentIdentity,
-    DynamicMood,
     DynamicMode,
+    DynamicMood,
     DynamicsConfig,
     DynamicTrigger,
     MemoryInfluenceRule,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -418,7 +415,7 @@ class TestDynamicSession:
         session = DynamicSession(
             identity, user_id="multi", memory_dir=str(tmp_path / "mem")
         )
-        for i in range(5):
+        for _i in range(5):
             session.process("message", sentiment=0.6, positive=True, compile_prompt=False)
         assert session.state.interaction_count == 5
         assert session.state.custom.get("positive_interactions", 0) == 5

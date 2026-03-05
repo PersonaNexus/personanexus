@@ -6,10 +6,8 @@ import logging
 import re
 from typing import Any
 
-import yaml
-
-from board_skill.personality import compute_personality_traits
 from board_skill.board import BoardConfig
+from board_skill.personality import compute_personality_traits
 from board_skill.types import (
     AgentIdentity,
     Behavior,
@@ -24,7 +22,6 @@ from board_skill.types import (
     Personality,
     PersonalityMode,
     Principle,
-    RelationshipDynamic,
     Role,
     Severity,
 )
@@ -694,10 +691,17 @@ class SystemPromptCompiler:
                 p = member.personality
                 ocean = p.ocean
                 ocean_str = (
-                    f"O={ocean.openness:.1f} C={ocean.conscientiousness:.1f} "
-                    f"E={ocean.extraversion:.1f} A={ocean.agreeableness:.1f} N={ocean.neuroticism:.1f}"
+                    f"O={ocean.openness:.1f}"
+                    f" C={ocean.conscientiousness:.1f}"
+                    f" E={ocean.extraversion:.1f}"
+                    f" A={ocean.agreeableness:.1f}"
+                    f" N={ocean.neuroticism:.1f}"
                 )
-                lines.append(f"  Personality: {p.jungian_type}, DISC={p.disc_style.value}, OCEAN({ocean_str})")
+                lines.append(
+                    f"  Personality: {p.jungian_type},"
+                    f" DISC={p.disc_style.value},"
+                    f" OCEAN({ocean_str})"
+                )
                 if member.key_quote:
                     lines.append(f'  Key quote: "{member.key_quote}"')
 
@@ -1105,7 +1109,7 @@ class SoulCompiler:
             lines.append(f"- {tension}")
         return "\n".join(lines)
 
-    def _soul_board(self, identity: "AgentIdentity") -> str:
+    def _soul_board(self, identity: AgentIdentity) -> str:
         """Render board section for SOUL.md."""
         board = identity.board
         if not board.enabled:

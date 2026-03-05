@@ -1,4 +1,5 @@
-"""PersonaNexus Board Skill -- Build AI agent personalities with a Board of Directors advisory panel."""
+"""PersonaNexus Board Skill -- Build AI agent personalities
+with a Board of Directors advisory panel."""
 
 __version__ = "1.0.0"
 

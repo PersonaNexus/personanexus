@@ -8,11 +8,10 @@ across multiple LLM providers (Anthropic, OpenAI, Google).
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 import streamlit as st
-
 
 # ---------------------------------------------------------------------------
 # Provider / model catalogue

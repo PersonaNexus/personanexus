@@ -22,7 +22,10 @@ from religion_skill.validator import IdentityValidator
 
 app = typer.Typer(
     name="religion-skill",
-    help="PersonaNexus Religion Skill CLI -- validate, compile, and scaffold agent identities with religion support",
+    help=(
+        "PersonaNexus Religion Skill CLI -- validate, compile,"
+        " and scaffold agent identities with religion support"
+    ),
     add_completion=False,
 )
 console = Console()

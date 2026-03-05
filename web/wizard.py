@@ -7,40 +7,36 @@ with live preview, model configuration, and multi-format export.
 from __future__ import annotations
 
 import json
+import os
+import sys
 from typing import Any
 
 import streamlit as st
 import yaml
 
-from components import (
-    APP_CSS,
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
+from components import (  # noqa: E402
     ARCHETYPE_DEFAULTS,
     ARCHETYPE_FULL,
     DISC_LABELS,
     OCEAN_LABELS,
-    TRAIT_COLORS,
     TRAIT_LABELS,
     TRAIT_ORDER,
     build_identity_from_data,
     render_labeled_slider,
-    render_progress_bar,
     render_trait_bars,
 )
-from model_config import ModelConfig, render_model_config, run_chat
+from model_config import ModelConfig, render_model_config, run_chat  # noqa: E402
 
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
-
-from personanexus.compiler import SystemPromptCompiler, compile_identity
-from personanexus.personality import (
+from personanexus.compiler import SystemPromptCompiler, compile_identity  # noqa: E402
+from personanexus.personality import (  # noqa: E402
     disc_to_traits,
     get_disc_preset,
     list_disc_presets,
     ocean_to_traits,
 )
-from personanexus.types import DiscProfile, OceanProfile
+from personanexus.types import AgentIdentity, DiscProfile, OceanProfile  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Step metadata
@@ -88,7 +84,7 @@ def _default_wizard_data() -> dict[str, Any]:
         "scope_primary": "",
         "audience": "",
         # Step 2 — Personality
-        "traits": {t: 0.5 for t in TRAIT_ORDER},
+        "traits": dict.fromkeys(TRAIT_ORDER, 0.5),
         "profile": {"mode": "custom"},
         # Step 3 — Communication
         "tone": "professional and helpful",
@@ -123,14 +119,46 @@ def render_wizard() -> None:
 
     # Progress bar using Streamlit columns
     step_cols = st.columns(NUM_STEPS)
-    for i, (col, label) in enumerate(zip(step_cols, STEP_LABELS)):
+    for i, (col, label) in enumerate(zip(step_cols, STEP_LABELS, strict=False)):
         with col:
+            circle = (
+                "display:inline-block;width:32px;height:32px;"
+                "border-radius:50%;line-height:32px;"
+                "font-weight:600;font-size:0.8rem"
+            )
             if i < step:
-                st.markdown(f"<div style='text-align:center'><span style='display:inline-block;width:32px;height:32px;border-radius:50%;background:#10b981;color:white;line-height:32px;font-weight:600;font-size:0.8rem'>\u2713</span><br><span style='font-size:0.7rem;color:#586069'>{label}</span></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='text-align:center'>"
+                    f"<span style='{circle};"
+                    f"background:#10b981;color:white'>"
+                    f"\u2713</span><br>"
+                    f"<span style='font-size:0.7rem;"
+                    f"color:#586069'>{label}</span></div>",
+                    unsafe_allow_html=True,
+                )
             elif i == step:
-                st.markdown(f"<div style='text-align:center'><span style='display:inline-block;width:32px;height:32px;border-radius:50%;background:#3b82f6;color:white;line-height:32px;font-weight:600;font-size:0.8rem;box-shadow:0 0 0 3px rgba(59,130,246,0.3)'>{i+1}</span><br><span style='font-size:0.7rem;color:#3b82f6;font-weight:600'>{label}</span></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='text-align:center'>"
+                    f"<span style='{circle};"
+                    f"background:#3b82f6;color:white;"
+                    f"box-shadow:0 0 0 3px "
+                    f"rgba(59,130,246,0.3)'>"
+                    f"{i+1}</span><br>"
+                    f"<span style='font-size:0.7rem;"
+                    f"color:#3b82f6;font-weight:600'>"
+                    f"{label}</span></div>",
+                    unsafe_allow_html=True,
+                )
             else:
-                st.markdown(f"<div style='text-align:center'><span style='display:inline-block;width:32px;height:32px;border-radius:50%;background:#e8ecf0;color:#8b949e;line-height:32px;font-weight:600;font-size:0.8rem'>{i+1}</span><br><span style='font-size:0.7rem;color:#586069'>{label}</span></div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='text-align:center'>"
+                    f"<span style='{circle};"
+                    f"background:#e8ecf0;color:#8b949e'>"
+                    f"{i+1}</span><br>"
+                    f"<span style='font-size:0.7rem;"
+                    f"color:#586069'>{label}</span></div>",
+                    unsafe_allow_html=True,
+                )
 
     # Render current step
     renderers = [
@@ -147,16 +175,22 @@ def render_wizard() -> None:
     st.divider()
     col_prev, col_spacer, col_next = st.columns([1, 4, 1])
     with col_prev:
-        if step > 0:
-            if st.button("\u2190 Previous", use_container_width=True):
-                _set_step(step - 1)
-                st.rerun()
+        if step > 0 and st.button(
+            "\u2190 Previous", use_container_width=True
+        ):
+            _set_step(step - 1)
+            st.rerun()
     with col_next:
-        if step < NUM_STEPS - 1:
-            if st.button("Next \u2192", type="primary", use_container_width=True):
-                if _validate_step(step):
-                    _set_step(step + 1)
-                    st.rerun()
+        if (
+            step < NUM_STEPS - 1
+            and st.button(
+                "Next \u2192", type="primary",
+                use_container_width=True,
+            )
+            and _validate_step(step)
+        ):
+            _set_step(step + 1)
+            st.rerun()
 
 
 # ---------------------------------------------------------------------------
@@ -187,9 +221,7 @@ def _render_step_role() -> None:
             data["emoji"] = arch["emoji"]
             data["principles"] = list(arch["principles"])
             data["guardrails"] = list(arch["guardrails"])
-            data["guardrail_severities"] = {
-                i: "critical" for i in range(len(arch["guardrails"]))
-            }
+            data["guardrail_severities"] = dict.fromkeys(range(len(arch["guardrails"])), "critical")
 
             # Pre-seed Step 2 slider widget keys so they reflect the preset
             for trait in TRAIT_ORDER:
@@ -379,7 +411,11 @@ def _render_step_personality() -> None:
                         value=0.5, step=0.05, key=f"wiz_hyb_o_{dim}",
                     )
                 base_traits = ocean_to_traits(OceanProfile(**ocean_scores))
-                profile = {"mode": "hybrid", "ocean": ocean_scores, "override_priority": "explicit_wins"}
+                profile = {
+                    "mode": "hybrid",
+                    "ocean": ocean_scores,
+                    "override_priority": "explicit_wins",
+                }
             else:
                 disc_scores = {}
                 for dim, (label, low, high) in DISC_LABELS.items():
@@ -388,7 +424,11 @@ def _render_step_personality() -> None:
                         value=0.5, step=0.05, key=f"wiz_hyb_d_{dim}",
                     )
                 base_traits = disc_to_traits(DiscProfile(**disc_scores))
-                profile = {"mode": "hybrid", "disc": disc_scores, "override_priority": "explicit_wins"}
+                profile = {
+                    "mode": "hybrid",
+                    "disc": disc_scores,
+                    "override_priority": "explicit_wins",
+                }
 
             st.markdown('<div class="section-label">Trait Overrides</div>', unsafe_allow_html=True)
             for trait in TRAIT_ORDER:
@@ -525,9 +565,10 @@ def _render_step_principles() -> None:
             )
             principles[i] = new_val
         with col_btn:
-            if len(principles) > 1:
-                if st.button("\u2716", key=f"wiz_rm_prin_{i}", help="Remove"):
-                    to_remove_p = i
+            if len(principles) > 1 and st.button(
+                "\u2716", key=f"wiz_rm_prin_{i}", help="Remove"
+            ):
+                to_remove_p = i
 
     if to_remove_p is not None:
         principles.pop(to_remove_p)
@@ -574,9 +615,10 @@ def _render_step_principles() -> None:
                 label_visibility="collapsed",
             )
         with col_btn:
-            if len(guardrails) > 1:
-                if st.button("\u2716", key=f"wiz_rm_guard_{i}", help="Remove"):
-                    to_remove_g = i
+            if len(guardrails) > 1 and st.button(
+                "\u2716", key=f"wiz_rm_guard_{i}", help="Remove"
+            ):
+                to_remove_g = i
 
     if to_remove_g is not None:
         guardrails.pop(to_remove_g)
@@ -604,7 +646,10 @@ def _render_step_principles() -> None:
     st.divider()
 
     # --- Forbidden topics ---
-    st.markdown('<div class="section-label">Forbidden Topics (optional)</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-label">Forbidden Topics (optional)</div>',
+        unsafe_allow_html=True,
+    )
     data["forbidden_topics"] = st.text_area(
         "Topics the agent should never discuss (one per line)",
         value=data.get("forbidden_topics", ""),
@@ -675,7 +720,10 @@ def _render_step_expertise() -> None:
     data["expertise_domains"] = domains
 
     if not domains:
-        st.info("No expertise domains defined yet. Click **+ Add Domain** to add one, or skip this step.")
+        st.info(
+            "No expertise domains defined yet. "
+            "Click **+ Add Domain** to add one, or skip this step."
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -713,7 +761,10 @@ def _render_step_model_export() -> None:
             st.metric("Estimated tokens", f"~{token_est:,}")
 
     with col_preview:
-        st.markdown('<div class="section-label">System Prompt Preview</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-label">System Prompt Preview</div>',
+            unsafe_allow_html=True,
+        )
 
         if build_error:
             st.error(f"Build error: {build_error}")
@@ -877,7 +928,10 @@ def _render_section_editors(
     st.session_state["wiz_section_overrides"] = overrides
 
     # Show compiled preview with note
-    st.caption("Section edits affect the **text export** only. YAML and JSON exports use structured data.")
+    st.caption(
+        "Section edits affect the **text export** only. "
+        "YAML and JSON exports use structured data."
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -907,10 +961,11 @@ def _render_chat(system_prompt: str, model_cfg: ModelConfig) -> None:
             with st.chat_message("assistant"):
                 st.write(reply)
 
-    if messages:
-        if st.button("Clear Chat", key="wiz_clear_chat", use_container_width=True):
-            st.session_state["wiz_messages"] = []
-            st.rerun()
+    if messages and st.button(
+        "Clear Chat", key="wiz_clear_chat", use_container_width=True
+    ):
+        st.session_state["wiz_messages"] = []
+        st.rerun()
 
 
 # ---------------------------------------------------------------------------
@@ -935,7 +990,10 @@ def _validate_step(step: int) -> bool:
         traits = data.get("traits", {})
         non_default = [t for t, v in traits.items() if abs(v - 0.5) > 0.01]
         if len(non_default) < 2:
-            st.warning("Consider adjusting at least 2 traits from their default values for a more distinctive personality.")
+            st.warning(
+                "Consider adjusting at least 2 traits from their "
+                "default values for a more distinctive personality."
+            )
         return True
 
     if step == 2:  # Communication

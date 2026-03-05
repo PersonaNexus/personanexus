@@ -20,29 +20,28 @@ logger = logging.getLogger(__name__)
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 sys.path.insert(0, os.path.abspath(os.path.dirname(__file__)))
 
-from personanexus.compiler import SystemPromptCompiler, compile_identity
-from personanexus.personality import (
+from components import (  # noqa: E402
+    APP_CSS,
+    ARCHETYPE_DEFAULTS,
+    DISC_LABELS,
+    OCEAN_LABELS,
+    TRAIT_LABELS,
+    TRAIT_ORDER,
+    render_labeled_slider,
+    render_trait_bars,
+)
+
+from personanexus.compiler import SystemPromptCompiler, compile_identity  # noqa: E402
+from personanexus.personality import (  # noqa: E402
     disc_to_traits,
     get_disc_preset,
     list_disc_presets,
     ocean_to_traits,
 )
-from personanexus.types import (
+from personanexus.types import (  # noqa: E402
     AgentIdentity,
     DiscProfile,
     OceanProfile,
-)
-
-from components import (
-    APP_CSS,
-    ARCHETYPE_DEFAULTS,
-    DISC_LABELS,
-    OCEAN_LABELS,
-    TRAIT_COLORS,
-    TRAIT_LABELS,
-    TRAIT_ORDER,
-    render_labeled_slider,
-    render_trait_bars,
 )
 
 # ---------------------------------------------------------------------------
@@ -250,7 +249,10 @@ with st.sidebar:
             st.rerun()
 
     elif mode == "OCEAN":
-        st.markdown('<div class="section-label">OCEAN (Big Five) Dimensions</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-label">OCEAN (Big Five) Dimensions</div>',
+            unsafe_allow_html=True,
+        )
         ocean_scores: dict[str, float] = {}
         for dim, (label, low, high) in OCEAN_LABELS.items():
             ocean_scores[dim] = render_labeled_slider(
@@ -301,7 +303,11 @@ with st.sidebar:
                     value=0.5, step=0.05, key=f"hybrid_ocean_{dim}",
                 )
             base_traits = ocean_to_traits(OceanProfile(**ocean_scores))
-            profile_dict = {"mode": "hybrid", "ocean": ocean_scores, "override_priority": "explicit_wins"}
+            profile_dict = {
+                "mode": "hybrid",
+                "ocean": ocean_scores,
+                "override_priority": "explicit_wins",
+            }
         else:
             disc_scores = {}
             for dim, (label, low, high) in DISC_LABELS.items():
@@ -310,7 +316,11 @@ with st.sidebar:
                     value=0.5, step=0.05, key=f"hybrid_disc_{dim}",
                 )
             base_traits = disc_to_traits(DiscProfile(**disc_scores))
-            profile_dict = {"mode": "hybrid", "disc": disc_scores, "override_priority": "explicit_wins"}
+            profile_dict = {
+                "mode": "hybrid",
+                "disc": disc_scores,
+                "override_priority": "explicit_wins",
+            }
 
         st.markdown('<div class="section-label">Trait Overrides</div>', unsafe_allow_html=True)
         st.caption("Adjust any trait to override the computed value")
@@ -412,26 +422,6 @@ except Exception as e:
 # ---------------------------------------------------------------------------
 
 
-def render_trait_bars(traits: dict[str, float]) -> str:
-    """Render horizontal trait bars as HTML."""
-    html_parts = []
-    for trait in TRAIT_ORDER:
-        val = traits.get(trait, 0.5)
-        label = TRAIT_LABELS.get(trait, (trait, "", ""))[0]
-        color = TRAIT_COLORS.get(trait, "#6366f1")
-        pct = max(0, min(100, val * 100))
-        html_parts.append(f"""
-        <div class="trait-bar-container">
-            <span class="trait-bar-label">{label}</span>
-            <div class="trait-bar-bg">
-                <div class="trait-bar-fill" style="width: {pct}%; background: {color};"></div>
-            </div>
-            <span class="trait-bar-value">{val:.2f}</span>
-        </div>
-        """)
-    return "".join(html_parts)
-
-
 # ---------------------------------------------------------------------------
 # Main area
 # ---------------------------------------------------------------------------
@@ -444,8 +434,10 @@ mode_badge = {
     "DISC": "DISC",
     "Hybrid": "Hybrid",
 }
+badge_text = html.escape(mode_badge[mode])
 st.markdown(
-    f'<div class="sub-header">Personality Mode: <strong>{html.escape(mode_badge[mode])}</strong></div>',
+    f'<div class="sub-header">Personality Mode: '
+    f"<strong>{badge_text}</strong></div>",
     unsafe_allow_html=True,
 )
 
@@ -574,7 +566,8 @@ with col_chat:
             )
 
     # Clear chat button
-    if st.session_state.messages:
-        if st.button("Clear Chat", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
+    if st.session_state.messages and st.button(
+        "Clear Chat", use_container_width=True
+    ):
+        st.session_state.messages = []
+        st.rerun()

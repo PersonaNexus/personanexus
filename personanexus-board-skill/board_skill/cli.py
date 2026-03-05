@@ -22,7 +22,11 @@ from board_skill.validator import IdentityValidator
 
 app = typer.Typer(
     name="board-skill",
-    help="PersonaNexus Board Skill CLI -- validate, compile, and scaffold agent identities with Board of Directors support",
+    help=(
+        "PersonaNexus Board Skill CLI -- validate, compile,"
+        " and scaffold agent identities with Board of"
+        " Directors support"
+    ),
     add_completion=False,
 )
 console = Console()
@@ -659,7 +663,9 @@ def board_show(
     table.add_row("Engagement Rules", str(len(board.engagement_rules)))
 
     if board.disclaimer:
-        table.add_row("Disclaimer", board.disclaimer[:80] + "..." if len(board.disclaimer) > 80 else board.disclaimer)
+        disc = board.disclaimer
+        disc_display = disc[:80] + "..." if len(disc) > 80 else disc
+        table.add_row("Disclaimer", disc_display)
 
     console.print(table)
 
@@ -720,7 +726,14 @@ def board_list_members(
         console.print(f"  Modern Relevance: {m.modern_relevance}")
         p = m.personality
         o = p.ocean
-        console.print(f"  OCEAN: O={o.openness:.1f} C={o.conscientiousness:.1f} E={o.extraversion:.1f} A={o.agreeableness:.1f} N={o.neuroticism:.1f}")
+        ocean_line = (
+            f"  OCEAN: O={o.openness:.1f}"
+            f" C={o.conscientiousness:.1f}"
+            f" E={o.extraversion:.1f}"
+            f" A={o.agreeableness:.1f}"
+            f" N={o.neuroticism:.1f}"
+        )
+        console.print(ocean_line)
         console.print(f"  DISC: {p.disc_style.value}")
         console.print(f"  Jungian: {p.jungian_type}")
         if m.key_quote:

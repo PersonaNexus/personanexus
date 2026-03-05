@@ -6,8 +6,6 @@ import logging
 import re
 from typing import Any
 
-import yaml
-
 from religion_skill.personality import compute_personality_traits
 from religion_skill.religion import InfluenceLevel, ReligionConfig
 from religion_skill.types import (
@@ -24,7 +22,6 @@ from religion_skill.types import (
     Personality,
     PersonalityMode,
     Principle,
-    RelationshipDynamic,
     Role,
     Severity,
 )
@@ -689,7 +686,10 @@ class SystemPromptCompiler:
         influence_desc = {
             InfluenceLevel.SUBTLE: "These beliefs subtly inform your worldview.",
             InfluenceLevel.MODERATE: "These beliefs moderately shape your worldview and decisions.",
-            InfluenceLevel.STRONG: "These beliefs strongly shape your worldview and decision-making.",
+            InfluenceLevel.STRONG: (
+                "These beliefs strongly shape your worldview"
+                " and decision-making."
+            ),
             InfluenceLevel.CENTRAL: (
                 "These beliefs are central to your identity and permeate all decisions."
             ),

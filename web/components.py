@@ -7,29 +7,18 @@ utilities used by both the Playground and Setup Wizard modes.
 from __future__ import annotations
 
 import html
-import json
 import os
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import streamlit as st
-import yaml
 
 # Add src to path so we can import the library
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from personanexus.compiler import SystemPromptCompiler, compile_identity
-from personanexus.personality import (
-    disc_to_traits,
-    get_disc_preset,
-    list_disc_presets,
-    ocean_to_traits,
-)
 from personanexus.types import (
     AgentIdentity,
-    DiscProfile,
-    OceanProfile,
 )
 
 # ---------------------------------------------------------------------------
@@ -70,7 +59,7 @@ DISC_LABELS = {
 }
 
 ARCHETYPE_DEFAULTS = {
-    "Blank Slate": {t: 0.5 for t in TRAIT_ORDER},
+    "Blank Slate": dict.fromkeys(TRAIT_ORDER, 0.5),
     "Analyst": {
         "warmth": 0.4, "verbosity": 0.6, "assertiveness": 0.5, "humor": 0.2,
         "empathy": 0.4, "directness": 0.7, "rigor": 0.9, "creativity": 0.4,
@@ -368,7 +357,6 @@ def render_labeled_slider(
 
 def render_progress_bar(current_step: int, labels: list[str]) -> str:
     """Render a wizard progress indicator as HTML."""
-    total = len(labels)
     parts = []
     for i, label in enumerate(labels):
         if i < current_step:
@@ -455,20 +443,48 @@ def render_comparison_bars(
         pct_a = max(0, min(100, va * 100))
         pct_b = max(0, min(100, vb * 100))
         delta = vb - va
-        delta_color = "#10b981" if abs(delta) < 0.1 else "#f59e0b" if abs(delta) < 0.25 else "#ef4444"
+        if abs(delta) < 0.1:
+            delta_color = "#10b981"
+        elif abs(delta) < 0.25:
+            delta_color = "#f59e0b"
+        else:
+            delta_color = "#ef4444"
         sign = "+" if delta > 0 else ""
-        html_parts.append(f"""
-        <div style="margin-bottom: 6px;">
-            <div style="display: flex; align-items: center; font-size: 0.8rem; margin-bottom: 2px;">
-                <span style="width: 140px; font-weight: 500; color: #24292e;">{label}</span>
-                <span style="color: {delta_color}; font-family: monospace; font-size: 0.75rem;">{sign}{delta:.2f}</span>
-            </div>
-            <div style="position: relative; height: 18px; background: #e8ecf0; border-radius: 9px; overflow: hidden;">
-                <div style="position: absolute; height: 9px; top: 0; border-radius: 9px 9px 0 0; background: #3b82f6; width: {pct_a}%; opacity: 0.7;"></div>
-                <div style="position: absolute; height: 9px; bottom: 0; border-radius: 0 0 9px 9px; background: #f97316; width: {pct_b}%; opacity: 0.7;"></div>
-            </div>
-        </div>
-        """)
+        lbl_style = "width:140px;font-weight:500;color:#24292e;"
+        delta_style = (
+            f"color:{delta_color};font-family:monospace;"
+            "font-size:0.75rem;"
+        )
+        row_style = (
+            "display:flex;align-items:center;"
+            "font-size:0.8rem;margin-bottom:2px;"
+        )
+        bar_bg = (
+            "position:relative;height:18px;background:#e8ecf0;"
+            "border-radius:9px;overflow:hidden;"
+        )
+        bar_a = (
+            "position:absolute;height:9px;top:0;"
+            f"border-radius:9px 9px 0 0;background:#3b82f6;"
+            f"width:{pct_a}%;opacity:0.7;"
+        )
+        bar_b = (
+            "position:absolute;height:9px;bottom:0;"
+            f"border-radius:0 0 9px 9px;background:#f97316;"
+            f"width:{pct_b}%;opacity:0.7;"
+        )
+        html_parts.append(
+            f'<div style="margin-bottom:6px;">'
+            f'<div style="{row_style}">'
+            f'<span style="{lbl_style}">{label}</span>'
+            f'<span style="{delta_style}">'
+            f"{sign}{delta:.2f}</span>"
+            f"</div>"
+            f'<div style="{bar_bg}">'
+            f'<div style="{bar_a}"></div>'
+            f'<div style="{bar_b}"></div>'
+            f"</div></div>"
+        )
     return "".join(html_parts)
 
 
@@ -497,7 +513,7 @@ def build_identity_from_data(data: dict[str, Any]) -> AgentIdentity:
     metadata, role, personality, communication, principles, guardrails,
     expertise, etc.  Missing keys are filled with sensible defaults.
     """
-    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    now_iso = datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
     name = data.get("name") or "AI Assistant"
     title = data.get("role_title") or name
@@ -539,7 +555,7 @@ def build_identity_from_data(data: dict[str, Any]) -> AgentIdentity:
         role["audience"] = {"primary": data["audience"]}
 
     # Personality
-    traits = data.get("traits", {t: 0.5 for t in TRAIT_ORDER})
+    traits = data.get("traits", dict.fromkeys(TRAIT_ORDER, 0.5))
     profile = data.get("profile", {"mode": "custom"})
     personality: dict[str, Any] = {"traits": traits}
     if profile.get("mode") != "custom":
@@ -598,7 +614,8 @@ def build_identity_from_data(data: dict[str, Any]) -> AgentIdentity:
         }]
 
     # Guardrails
-    guardrail_rules = data.get("guardrails", ["Never generate harmful, illegal, or unethical content"])
+    default_guardrail = "Never generate harmful, illegal, or unethical content"
+    guardrail_rules = data.get("guardrails", [default_guardrail])
     guardrail_severities = data.get("guardrail_severities", {})
     hard_guardrails = []
     for i, rule in enumerate(guardrail_rules):
