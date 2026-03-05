@@ -198,6 +198,55 @@ Define teams with governance, workflow patterns, and performance metrics using s
 personanexus validate-team teams/research-team.yaml
 ```
 
+### Dynamic & Stateful Personality (v1.1)
+
+Agents can adapt their personality in real-time based on context and evolve over time through memory:
+
+```yaml
+dynamics:
+  default_mood: "neutral"
+  default_mode: "stranger"
+
+  moods:
+    - name: "stressed"
+      trait_deltas: { warmth: -0.15, rigor: +0.20 }
+      triggers:
+        - type: "keyword"
+          value: "urgent"
+        - type: "sentiment_below"
+          value: 0.3
+
+  modes:
+    - name: "familiar"
+      trait_overrides: { warmth: 0.70, humor: 0.45 }
+      triggers:
+        - type: "interaction_count_above"
+          value: 5
+
+  memory_influences:
+    - condition: "positive_interactions > 10"
+      effect: "warmth +0.10 permanent"
+```
+
+**Runtime flow:** Load user state → evaluate triggers → adjust traits → recompile prompt → update memory.
+
+Per-user state is persisted as JSON files (`.personanexus/memory/`), tracking interaction count, sentiment, trust score, and custom counters.
+
+```python
+from personanexus import DynamicSession
+
+session = DynamicSession(identity, user_id="user_123")
+result = session.process("Hello!", sentiment=0.7)
+print(result.active_mood, result.active_mode, result.adjusted_traits)
+session.save()
+```
+
+Simulate personality shifts from the CLI:
+
+```bash
+personanexus simulate agents/mira-dynamics.yaml --user stranger --steps 10
+```
+
 ### Additional Features
 
 - **Mood states** — dynamic emotional states that modify personality expression
@@ -218,6 +267,7 @@ personanexus validate-team teams/research-team.yaml
 | `personanexus init <name>` | Scaffold a new identity |
 | `personanexus build` | Interactive wizard with optional `--llm-enhance` |
 | `personanexus migrate <from> <to> <file>` | Migrate between schema versions |
+| `personanexus simulate <file>` | Simulate dynamic personality shifts in a mock chat loop |
 | `personanexus validate-team <file>` | Validate a team configuration |
 | `personanexus personality <subcommand>` | Framework mapping utilities |
 
@@ -243,6 +293,7 @@ from personanexus import (
     IdentityResolver,
     compile_identity,
     SoulAnalyzer,
+    DynamicSession,
 )
 
 # Parse and validate
@@ -267,6 +318,14 @@ print(result.traits, result.ocean, result.disc, result.jungian)
 
 comparison = analyzer.compare(result_a, result_b)
 print(comparison.similarity_score)
+
+# Dynamic sessions — stateful personality that adapts per user
+session = DynamicSession(resolved, user_id="user_42")
+result = session.process("I need urgent help!", sentiment=0.3)
+print(result.active_mood)    # e.g. "stressed"
+print(result.active_mode)    # e.g. "stranger" → "familiar" as trust grows
+print(result.adjusted_traits) # traits with mood/mode adjustments applied
+session.save()  # persist user state to .personanexus/memory/
 ```
 
 ## Examples
@@ -288,6 +347,7 @@ examples/
 │   ├── hybrid-jungian.yaml    # Jungian base + trait overrides
 │   ├── mira-mood.yaml         # Dynamic mood states
 │   ├── mira-modes.yaml        # Behavioral modes (formal, crisis, etc.)
+│   ├── mira-dynamics.yaml     # Dynamic personality with mood/mode shifting + memory influences
 │   ├── composition-example.yaml  # Overrides + composition conflict resolution
 │   ├── voice-and-memory.yaml  # Voice settings + detailed memory config
 │   ├── storyteller.yaml       # Narrative identity + voice examples
