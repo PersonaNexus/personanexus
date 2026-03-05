@@ -179,10 +179,26 @@ openclaw --skill personanexus optimize-workflows
 openclaw --skill personanexus export-team --target crewai
 ```
 
+### Dynamic Personality at Runtime
+OpenClaw can now consume the `dynamics` section in `personality.json` to adapt agent personality per-user:
+- **Moods** shift traits based on sentiment, keywords, or trust thresholds
+- **Modes** switch between operating profiles (stranger → familiar → trusted)
+- **Memory influences** permanently evolve traits based on accumulated interaction history
+- Per-user state persisted in `.personanexus/memory/` as JSON files
+
+```python
+# OpenClaw can use the dynamics pipeline directly:
+from personanexus import DynamicSession
+session = DynamicSession(identity, user_id="user_123")
+result = session.process(message, sentiment=0.7)
+# result.compiled_prompt contains the adjusted system prompt
+```
+
 ### Maintains Backward Compatibility
 - ✅ Existing agents continue working unchanged
 - ✅ Current TASKBOARD.md and shared workspace patterns preserved
 - ✅ All existing OpenClaw commands and workflows unaffected
+- ✅ Dynamics section in personality.json is optional — agents without it behave identically
 - ✅ Skill provides additional insights without disrupting operations
 
 ## Example Workflows

@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.5.0] - 2026-03-05
+
+### Added
+
+- **Dynamic & Stateful Personality Layer** — mood/mode shifting engine with per-user persistent memory
+  - `DynamicsConfig` YAML section with moods (trait deltas), modes (trait overrides), and triggers
+  - Trigger types: `sentiment_below`, `sentiment_above`, `keyword`, `interaction_count_above`, `user_known`, `trust_above`, `trust_below`, `custom`
+  - `MemoryInfluenceRule` system for permanent trait modifications based on accumulated state (e.g. "warmth +0.10 permanent" after 10 positive interactions)
+  - `DynamicSession` class for managing multi-turn stateful interactions
+  - Per-user JSON-file persistence backend (`MemoryBackendJSON`) with sentiment tracking, trust scores, and custom counters
+  - New module: `dynamics.py` — trigger evaluation, mood/mode resolution, trait adjustment pipeline
+  - New module: `memory.py` — persistent per-user state backend
+  - CLI command: `personanexus simulate` — mock chat loop showing personality shifts over time
+  - OpenClaw compiler now includes `dynamics` section in `personality.json` output for runtime consumption
+  - Example: `mira-dynamics.yaml` — complete dynamics configuration with 4 moods, 3 modes, and 4 memory influences
+  - 51 new tests covering memory backend, triggers, mood/mode resolution, trait adjustment, memory influences, pipeline, and session management
+
 ## [1.4.1] - 2026-02-28
 
 ### Changed

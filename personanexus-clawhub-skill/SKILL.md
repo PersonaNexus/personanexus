@@ -1,7 +1,7 @@
 ---
 name: personanexus
-description: "Build structured AI agent personalities using OCEAN, DISC, and Jungian frameworks. Define traits, communication styles, guardrails, and compile to system prompts."
-version: 1.0.0
+description: "Build structured AI agent personalities using OCEAN, DISC, and Jungian frameworks. Dynamic mood/mode shifting, memory-based personality evolution, and compile to system prompts."
+version: 1.5.0
 metadata:
   openclaw:
     emoji: "🧬"
@@ -25,6 +25,9 @@ business-grade personality frameworks (OCEAN Big Five, DISC, Jungian 16-type).
 - **Map** between OCEAN, DISC, and Jungian frameworks automatically
 - **Compile** identity specs into system prompts for any LLM platform
 - **Validate** identity files against a strict Pydantic schema
+- **Dynamic personality** -- mood/mode shifting based on context, sentiment, and trust
+- **Memory influences** -- permanent trait evolution based on accumulated interaction history
+- **Simulate** -- preview personality shifts in a mock chat loop
 
 ## Setup
 
@@ -51,6 +54,7 @@ Copy a template from `templates/` and customize it:
 - `templates/ocean-example.yaml` -- Using OCEAN Big Five framework
 - `templates/disc-example.yaml` -- Using DISC personality framework
 - `templates/jungian-example.yaml` -- Using Jungian 16-type framework
+- `templates/dynamics-example.yaml` -- Dynamic mood/mode shifting with memory influences
 
 ### 2. Validate the Identity
 
@@ -90,6 +94,29 @@ jungian = get_jungian_preset("intj")
 traits = jungian_to_traits(jungian)
 ```
 
+### 5. Dynamic Personality (v1.5)
+
+Add a `dynamics` section to your YAML for context-adaptive personality:
+
+```python
+from personanexus_skill import DynamicSession, parse_identity_file
+
+identity = parse_identity_file("templates/dynamics-example.yaml")
+session = DynamicSession(identity, user_id="user_123")
+
+# Process interactions — traits shift based on mood/mode triggers
+result = session.process("This is urgent!", sentiment=0.2)
+print(result.active_mood)      # "stressed"
+print(result.adjusted_traits)  # warmth decreased, rigor increased
+
+# Over time, memory influences permanently evolve traits
+for _ in range(15):
+    session.process("Great work!", sentiment=0.9, positive=True, trust_delta=0.05)
+session.save()  # persist to .personanexus/memory/
+```
+
+Templates: `templates/dynamics-example.yaml`
+
 ## CLI
 
 The skill includes a CLI for common operations:
@@ -105,6 +132,7 @@ python -m personanexus_skill --help
 | `validate FILE` | Parse and validate a YAML identity file |
 | `compile FILE --target TARGET` | Compile identity to a system prompt |
 | `init NAME --type TYPE` | Scaffold a new agent identity YAML |
+| `simulate FILE` | Simulate dynamic personality shifts in a mock chat loop |
 | `personality ocean-to-traits` | Map OCEAN scores to personality traits |
 | `personality disc-to-traits` | Map DISC scores to personality traits |
 | `personality jungian-to-traits` | Map Jungian scores to personality traits |
@@ -122,6 +150,9 @@ python -m personanexus_skill compile my-agent.yaml --target anthropic --output p
 
 # Compile to OpenClaw personality.json
 python -m personanexus_skill compile my-agent.yaml --target openclaw --output personality.json
+
+# Simulate dynamic personality shifts
+python -m personanexus_skill simulate templates/dynamics-example.yaml --steps 10
 
 # Scaffold a new minimal agent
 python -m personanexus_skill init "My Agent"

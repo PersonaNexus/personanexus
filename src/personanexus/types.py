@@ -1114,6 +1114,85 @@ class MixinHeader(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Dynamics — mood/mode shifting with triggers & memory influences (v1.1)
+# ---------------------------------------------------------------------------
+
+
+class DynamicTrigger(BaseModel):
+    """A trigger condition that can activate a mood or mode."""
+
+    type: str = Field(
+        ...,
+        description=(
+            "Trigger type: 'sentiment_below', 'sentiment_above', "
+            "'keyword', 'interaction_count_above', 'user_known', "
+            "'trust_above', 'trust_below', 'custom'"
+        ),
+    )
+    value: str | float | int | bool = Field(
+        ...,
+        description="Threshold or value for the trigger (e.g. 0.3, 'help', true, 5)",
+    )
+
+
+class DynamicMood(BaseModel):
+    """A named mood with trait deltas and optional triggers."""
+
+    name: str
+    description: str | None = None
+    trait_deltas: dict[str, float] = Field(
+        default_factory=dict,
+        description="Trait name → delta value (e.g. {'warmth': -0.15, 'rigor': 0.20})",
+    )
+    tone_override: str | None = None
+    triggers: list[DynamicTrigger] = Field(default_factory=list)
+
+
+class DynamicMode(BaseModel):
+    """A named operating mode with base trait overrides and triggers."""
+
+    name: str
+    description: str | None = None
+    trait_overrides: dict[str, float] = Field(
+        default_factory=dict,
+        description="Trait name → absolute value (e.g. {'warmth': 0.40})",
+    )
+    tone_override: str | None = None
+    triggers: list[DynamicTrigger] = Field(default_factory=list)
+
+
+class MemoryInfluenceRule(BaseModel):
+    """A rule that permanently modifies traits based on accumulated memory state."""
+
+    condition: str = Field(
+        ...,
+        description=(
+            "Condition expression, e.g. 'positive_interactions > 10', "
+            "'trust_score > 0.7', 'interaction_count > 5'"
+        ),
+    )
+    effect: str = Field(
+        ...,
+        description=(
+            "Effect description, e.g. 'warmth +0.10 permanent', "
+            "'unlock_mode familiar'"
+        ),
+    )
+
+
+class DynamicsConfig(BaseModel):
+    """Configuration for the dynamic & stateful personality layer."""
+
+    default_mood: str = "neutral"
+    default_mode: str = "stranger"
+    moods: list[DynamicMood] = Field(default_factory=list)
+    modes: list[DynamicMode] = Field(default_factory=list)
+    memory_influences: list[MemoryInfluenceRule] = Field(default_factory=list)
+    trait_clamp_min: float = Field(0.0, ge=0.0, le=1.0)
+    trait_clamp_max: float = Field(1.0, ge=0.0, le=1.0)
+
+
+# ---------------------------------------------------------------------------
 # Top-Level PersonaNexus
 # ---------------------------------------------------------------------------
 
@@ -1151,6 +1230,7 @@ class AgentIdentity(BaseModel):
     composition: CompositionConfig = Field(default_factory=CompositionConfig)
     behavioral_modes: BehavioralModeConfig | None = None  # NEW v1.4
     interaction: InteractionConfig | None = None  # NEW v1.4
+    dynamics: DynamicsConfig | None = None  # NEW v1.1 — dynamic & stateful personality
 
     @field_validator("principles")
     @classmethod
