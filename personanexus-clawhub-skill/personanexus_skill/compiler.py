@@ -801,6 +801,10 @@ class OpenClawCompiler:
                 profile_meta["disc_preset"] = profile.disc_preset
             result["personality_profile"] = profile_meta
 
+        # Include dynamics configuration if present
+        if identity.dynamics is not None:
+            result["dynamics"] = self._extract_dynamics(identity)
+
         return result
 
     def _simplify_role(self, title: str) -> str:
@@ -834,6 +838,55 @@ class OpenClawCompiler:
         for guardrail in identity.guardrails.soft:
             settings[guardrail.id] = True
         return settings
+
+    def _extract_dynamics(self, identity: AgentIdentity) -> dict[str, Any]:
+        """Extract dynamics configuration for OpenClaw runtime consumption."""
+        dynamics = identity.dynamics
+        if dynamics is None:
+            return {}
+
+        result: dict[str, Any] = {
+            "default_mood": dynamics.default_mood,
+            "default_mode": dynamics.default_mode,
+            "trait_clamp": {
+                "min": dynamics.trait_clamp_min,
+                "max": dynamics.trait_clamp_max,
+            },
+        }
+
+        if dynamics.moods:
+            result["moods"] = {
+                mood.name: {
+                    "description": mood.description or "",
+                    "trait_deltas": mood.trait_deltas,
+                    **({"tone_override": mood.tone_override} if mood.tone_override else {}),
+                    "triggers": [
+                        {"type": t.type, "value": t.value} for t in mood.triggers
+                    ],
+                }
+                for mood in dynamics.moods
+            }
+
+        if dynamics.modes:
+            result["modes"] = {
+                mode.name: {
+                    "description": mode.description or "",
+                    "trait_overrides": mode.trait_overrides,
+                    **({"tone_override": mode.tone_override} if mode.tone_override else {}),
+                    "triggers": [
+                        {"type": t.type, "value": t.value} for t in mode.triggers
+                    ],
+                }
+                for mode in dynamics.modes
+            }
+
+        if dynamics.memory_influences:
+            result["memory_influences"] = [
+                {"condition": rule.condition, "effect": rule.effect}
+                for rule in dynamics.memory_influences
+            ]
+
+        return result
 
     def _extract_response_format(self, identity: AgentIdentity) -> dict[str, Any]:
         result: dict[str, Any] = {"tone": identity.communication.tone.default}
