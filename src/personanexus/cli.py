@@ -1732,14 +1732,15 @@ def simulate(
     persona: Annotated[Path, typer.Argument(help="Path to persona YAML with dynamics section")],
     user: Annotated[str, typer.Option(help="Simulated user ID")] = "stranger",
     steps: Annotated[int, typer.Option(help="Number of interaction steps to simulate")] = 10,
-    show_prompt: Annotated[bool, typer.Option("--show-prompt", help="Show compiled prompt")] = False,
+    show_prompt: Annotated[
+        bool, typer.Option("--show-prompt", help="Show compiled prompt")
+    ] = False,
     memory_dir: Annotated[
         str | None, typer.Option(help="Directory for memory persistence")
     ] = None,
 ) -> None:
     """Simulate a multi-turn chat loop showing dynamic personality shifts."""
     from personanexus.dynamics import DynamicSession
-    from personanexus.memory import UserState, record_interaction
     from personanexus.resolver import IdentityResolver
 
     try:
@@ -1800,7 +1801,10 @@ def simulate(
             delta = adj_val - base_val
             delta_str = f"{delta:+.2f}" if delta != 0 else "—"
             delta_style = "green" if delta > 0 else "red" if delta < 0 else "dim"
-            table.add_row(trait, f"{base_val:.2f}", f"{adj_val:.2f}", f"[{delta_style}]{delta_str}[/]")
+            table.add_row(
+                trait, f"{base_val:.2f}", f"{adj_val:.2f}",
+                f"[{delta_style}]{delta_str}[/]",
+            )
 
         console.print(table)
         console.print(
@@ -1826,7 +1830,11 @@ def simulate(
             console.print()
             console.print(
                 Panel(
-                    Markdown(result.compiled_prompt[:500] + "..." if len(result.compiled_prompt) > 500 else result.compiled_prompt),
+                    Markdown(
+                        result.compiled_prompt[:500] + "..."
+                        if len(result.compiled_prompt) > 500
+                        else result.compiled_prompt
+                    ),
                     title="Compiled Prompt (truncated)",
                     border_style="dim",
                 )

@@ -7,20 +7,6 @@ from personanexus.analyzer import (
     ComparisonResult,
     SoulAnalyzer,
 )
-from personanexus.dynamics import (
-    DynamicSession,
-    DynamicsResult,
-    InteractionContext,
-    apply_dynamics_to_traits,
-    run_dynamics_pipeline,
-)
-from personanexus.memory import (
-    MemoryBackendJSON,
-    UserState,
-    record_interaction,
-    update_sentiment,
-    update_trust,
-)
 from personanexus.compiler import (
     OpenClawCompiler,
     SystemPromptCompiler,
@@ -33,7 +19,21 @@ from personanexus.drift import (
     detect_drift_from_files,
     format_drift_report,
 )
+from personanexus.dynamics import (
+    DynamicSession,
+    DynamicsResult,
+    InteractionContext,
+    apply_dynamics_to_traits,
+    run_dynamics_pipeline,
+)
 from personanexus.linter import IdentityLinter, LintWarning
+from personanexus.memory import (
+    MemoryBackendJSON,
+    UserState,
+    record_interaction,
+    update_sentiment,
+    update_trust,
+)
 from personanexus.parser import IdentityParser, parse_file, parse_identity_file, parse_yaml
 from personanexus.personality import (
     compute_personality_traits,
@@ -58,9 +58,9 @@ from personanexus.types import (
     TRAIT_ORDER,
     AgentIdentity,
     DiscProfile,
-    DynamicsConfig,
-    DynamicMood,
     DynamicMode,
+    DynamicMood,
+    DynamicsConfig,
     DynamicTrigger,
     JungianProfile,
     MemoryInfluenceRule,
