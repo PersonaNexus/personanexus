@@ -1735,9 +1735,7 @@ def simulate(
     show_prompt: Annotated[
         bool, typer.Option("--show-prompt", help="Show compiled prompt")
     ] = False,
-    memory_dir: Annotated[
-        str | None, typer.Option(help="Directory for memory persistence")
-    ] = None,
+    memory_dir: Annotated[str | None, typer.Option(help="Directory for memory persistence")] = None,
 ) -> None:
     """Simulate a multi-turn chat loop showing dynamic personality shifts."""
     from personanexus.dynamics import DynamicSession
@@ -1802,14 +1800,15 @@ def simulate(
             delta_str = f"{delta:+.2f}" if delta != 0 else "—"
             delta_style = "green" if delta > 0 else "red" if delta < 0 else "dim"
             table.add_row(
-                trait, f"{base_val:.2f}", f"{adj_val:.2f}",
+                trait,
+                f"{base_val:.2f}",
+                f"{adj_val:.2f}",
                 f"[{delta_style}]{delta_str}[/]",
             )
 
         console.print(table)
         console.print(
-            f"  [bold]Mood:[/bold] {result.active_mood}  "
-            f"[bold]Mode:[/bold] {result.active_mode}"
+            f"  [bold]Mood:[/bold] {result.active_mood}  [bold]Mode:[/bold] {result.active_mode}"
         )
         if result.tone_override:
             console.print(f"  [bold]Tone override:[/bold] {result.tone_override}")

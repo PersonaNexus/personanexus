@@ -35,7 +35,9 @@ def render_analyze() -> None:
     """Render the soul analysis panel."""
     st.markdown(
         '<div class="main-header">🔬 Soul Analysis</div>'
-        '<div class="sub-header">Upload a personality file to analyze traits and framework mappings</div>',
+        '<div class="sub-header">'
+        'Upload a personality file to analyze traits and framework mappings'
+        '</div>',
         unsafe_allow_html=True,
     )
 
@@ -82,7 +84,7 @@ def render_analyze() -> None:
         _render_single(result_a)
 
 
-def _analyze_uploaded(analyzer: SoulAnalyzer, uploaded_file) -> AnalysisResult | None:
+def _analyze_uploaded(analyzer: SoulAnalyzer, uploaded_file):  # noqa: ANN001
     """Write uploaded file to temp dir and analyze it."""
 
     try:
@@ -131,7 +133,11 @@ def _render_single(result) -> None:
         # Per-trait confidence details
         with st.expander("Extraction details"):
             for ext in result.trait_extractions:
-                conf_color = "#10b981" if ext.confidence >= 0.8 else "#f59e0b" if ext.confidence >= 0.5 else "#ef4444"
+                conf_color = (
+                    "#10b981" if ext.confidence >= 0.8
+                    else "#f59e0b" if ext.confidence >= 0.5
+                    else "#ef4444"
+                )
                 source = f' — *{ext.source_text}*' if ext.source_text else ""
                 st.markdown(
                     f"- **{ext.name}**: {ext.value:.2f} "
@@ -158,7 +164,11 @@ def _render_single(result) -> None:
         if result.closest_preset:
             preset = result.closest_preset
             label = preset.preset_name.replace("_", " ").title()
-            dist_color = "#10b981" if preset.distance < 0.3 else "#f59e0b" if preset.distance < 0.6 else "#ef4444"
+            dist_color = (
+                "#10b981" if preset.distance < 0.3
+                else "#f59e0b" if preset.distance < 0.6
+                else "#ef4444"
+            )
             st.markdown(
                 f'**Closest preset:** {label} '
                 f'<span style="color: {dist_color};">(distance: {preset.distance:.3f})</span>',
@@ -221,7 +231,11 @@ def _render_comparison(analyzer, result_a, result_b) -> None:
         # Delta table
         st.markdown("**Deltas**")
         delta_parts = []
-        for dim in ["openness", "conscientiousness", "extraversion", "agreeableness", "neuroticism"]:
+        ocean_dims = [
+            "openness", "conscientiousness", "extraversion",
+            "agreeableness", "neuroticism",
+        ]
+        for dim in ocean_dims:
             d = comparison.ocean_deltas[dim]
             color = "#10b981" if abs(d) < 0.05 else "#f59e0b" if abs(d) < 0.15 else "#ef4444"
             sign = "+" if d > 0 else ""
