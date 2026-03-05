@@ -7,6 +7,20 @@ from personanexus.analyzer import (
     ComparisonResult,
     SoulAnalyzer,
 )
+from personanexus.dynamics import (
+    DynamicSession,
+    DynamicsResult,
+    InteractionContext,
+    apply_dynamics_to_traits,
+    run_dynamics_pipeline,
+)
+from personanexus.memory import (
+    MemoryBackendJSON,
+    UserState,
+    record_interaction,
+    update_sentiment,
+    update_trust,
+)
 from personanexus.compiler import (
     OpenClawCompiler,
     SystemPromptCompiler,
@@ -44,7 +58,12 @@ from personanexus.types import (
     TRAIT_ORDER,
     AgentIdentity,
     DiscProfile,
+    DynamicsConfig,
+    DynamicMood,
+    DynamicMode,
+    DynamicTrigger,
     JungianProfile,
+    MemoryInfluenceRule,
     OceanProfile,
     PersonalityMode,
     PersonalityProfile,
@@ -53,6 +72,21 @@ from personanexus.validator import IdentityValidator, ValidationResult
 
 __all__ = [
     "AgentIdentity",
+    "DynamicSession",
+    "DynamicsConfig",
+    "DynamicMood",
+    "DynamicMode",
+    "DynamicTrigger",
+    "DynamicsResult",
+    "InteractionContext",
+    "MemoryBackendJSON",
+    "MemoryInfluenceRule",
+    "UserState",
+    "apply_dynamics_to_traits",
+    "record_interaction",
+    "run_dynamics_pipeline",
+    "update_sentiment",
+    "update_trust",
     "IdentityLinter",
     "LintWarning",
     "AnalysisResult",

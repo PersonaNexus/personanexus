@@ -1709,6 +1709,150 @@ def validate_team(
 
 
 # ---------------------------------------------------------------------------
+# Simulate — dynamics mock chat loop
+# ---------------------------------------------------------------------------
+
+
+_SIMULATE_MESSAGES = [
+    ("Hello, I need help with my data.", 0.5),
+    ("This is really frustrating, nothing works!", 0.15),
+    ("Oh wait, I think I see the issue now.", 0.55),
+    ("Wow, that's an interesting pattern in the data!", 0.85),
+    ("We have an urgent deadline, can you be quick?", 0.35),
+    ("Thanks so much, this is really helpful!", 0.9),
+    ("Could you explain that in simpler terms? I'm confused.", 0.3),
+    ("Great work! Let's keep going.", 0.8),
+    ("I found a discovery in the dataset!", 0.9),
+    ("Can we wrap up? I think we're done.", 0.6),
+]
+
+
+@app.command()
+def simulate(
+    persona: Annotated[Path, typer.Argument(help="Path to persona YAML with dynamics section")],
+    user: Annotated[str, typer.Option(help="Simulated user ID")] = "stranger",
+    steps: Annotated[int, typer.Option(help="Number of interaction steps to simulate")] = 10,
+    show_prompt: Annotated[bool, typer.Option("--show-prompt", help="Show compiled prompt")] = False,
+    memory_dir: Annotated[
+        str | None, typer.Option(help="Directory for memory persistence")
+    ] = None,
+) -> None:
+    """Simulate a multi-turn chat loop showing dynamic personality shifts."""
+    from personanexus.dynamics import DynamicSession
+    from personanexus.memory import UserState, record_interaction
+    from personanexus.resolver import IdentityResolver
+
+    try:
+        resolver = IdentityResolver()
+        identity = resolver.resolve_file(persona)
+    except Exception as e:
+        console.print(f"[red]Error loading persona: {e}[/red]")
+        raise typer.Exit(code=1)
+
+    if identity.dynamics is None:
+        console.print("[yellow]Warning: This persona has no 'dynamics' section.[/yellow]")
+        console.print("[dim]The simulation will run with static personality.[/dim]")
+
+    session = DynamicSession(identity, user_id=user, memory_dir=memory_dir)
+
+    console.print(
+        Panel(
+            f"[bold]Dynamics Simulation[/bold]\n"
+            f"Persona: {identity.metadata.name} ({identity.metadata.id})\n"
+            f"User: {user}\n"
+            f"Steps: {steps}",
+            title="PersonaNexus Simulate",
+            border_style="blue",
+        )
+    )
+
+    messages = _SIMULATE_MESSAGES
+    actual_steps = min(steps, len(messages))
+
+    for i in range(actual_steps):
+        msg, sentiment = messages[i % len(messages)]
+        positive = sentiment > 0.6
+
+        console.print()
+        console.print(f"[bold cyan]─── Step {i + 1}/{actual_steps} ───[/bold cyan]")
+        console.print(f"[dim]User says:[/dim] {msg}")
+        console.print(f"[dim]Sentiment:[/dim] {sentiment:.2f}")
+
+        result = session.process(
+            message=msg,
+            sentiment=sentiment,
+            positive=positive if positive else None,
+            trust_delta=0.05 if positive else -0.02,
+            compile_prompt=show_prompt,
+        )
+
+        # Build a trait change table
+        table = Table(show_header=True, header_style="bold green", expand=False)
+        table.add_column("Trait", style="cyan", width=20)
+        table.add_column("Base", justify="right", width=8)
+        table.add_column("Adjusted", justify="right", width=10)
+        table.add_column("Delta", justify="right", width=8)
+
+        base_traits = identity.personality.traits.defined_traits()
+        for trait in sorted(result.adjusted_traits.keys()):
+            base_val = base_traits.get(trait, 0.5)
+            adj_val = result.adjusted_traits[trait]
+            delta = adj_val - base_val
+            delta_str = f"{delta:+.2f}" if delta != 0 else "—"
+            delta_style = "green" if delta > 0 else "red" if delta < 0 else "dim"
+            table.add_row(trait, f"{base_val:.2f}", f"{adj_val:.2f}", f"[{delta_style}]{delta_str}[/]")
+
+        console.print(table)
+        console.print(
+            f"  [bold]Mood:[/bold] {result.active_mood}  "
+            f"[bold]Mode:[/bold] {result.active_mode}"
+        )
+        if result.tone_override:
+            console.print(f"  [bold]Tone override:[/bold] {result.tone_override}")
+        if result.influences_applied:
+            for inf in result.influences_applied:
+                console.print(f"  [yellow]★ Influence applied:[/yellow] {inf}")
+
+        # Show state summary
+        st = session.state
+        console.print(
+            f"  [dim]Interactions: {st.interaction_count} | "
+            f"Sentiment: {st.avg_sentiment:.2f} | "
+            f"Trust: {st.trust_score:.2f} | "
+            f"Positive: {st.custom.get('positive_interactions', 0)}[/dim]"
+        )
+
+        if show_prompt and result.compiled_prompt:
+            console.print()
+            console.print(
+                Panel(
+                    Markdown(result.compiled_prompt[:500] + "..." if len(result.compiled_prompt) > 500 else result.compiled_prompt),
+                    title="Compiled Prompt (truncated)",
+                    border_style="dim",
+                )
+            )
+
+    console.print()
+    console.print("[bold green]✓ Simulation complete.[/bold green]")
+
+    # Final summary
+    st = session.state
+    console.print(
+        Panel(
+            f"Final State:\n"
+            f"  Interactions: {st.interaction_count}\n"
+            f"  Avg Sentiment: {st.avg_sentiment:.3f}\n"
+            f"  Trust Score: {st.trust_score:.3f}\n"
+            f"  Current Mood: {st.current_mood}\n"
+            f"  Current Mode: {st.current_mode}\n"
+            f"  Applied Influences: {len(st.applied_influences)}",
+            title="Session Summary",
+            border_style="green",
+        )
+    )
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
