@@ -860,9 +860,7 @@ class OpenClawCompiler:
                     "description": mood.description or "",
                     "trait_deltas": mood.trait_deltas,
                     **({"tone_override": mood.tone_override} if mood.tone_override else {}),
-                    "triggers": [
-                        {"type": t.type, "value": t.value} for t in mood.triggers
-                    ],
+                    "triggers": [{"type": t.type, "value": t.value} for t in mood.triggers],
                 }
                 for mood in dynamics.moods
             }
@@ -873,9 +871,7 @@ class OpenClawCompiler:
                     "description": mode.description or "",
                     "trait_overrides": mode.trait_overrides,
                     **({"tone_override": mode.tone_override} if mode.tone_override else {}),
-                    "triggers": [
-                        {"type": t.type, "value": t.value} for t in mode.triggers
-                    ],
+                    "triggers": [{"type": t.type, "value": t.value} for t in mode.triggers],
                 }
                 for mode in dynamics.modes
             }

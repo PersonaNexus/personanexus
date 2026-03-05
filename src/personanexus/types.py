@@ -1173,10 +1173,7 @@ class MemoryInfluenceRule(BaseModel):
     )
     effect: str = Field(
         ...,
-        description=(
-            "Effect description, e.g. 'warmth +0.10 permanent', "
-            "'unlock_mode familiar'"
-        ),
+        description=("Effect description, e.g. 'warmth +0.10 permanent', 'unlock_mode familiar'"),
     )
 
 

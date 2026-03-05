@@ -54,7 +54,9 @@ class InteractionContext:
 
 
 def context_from_state(
-    state: UserState, message: str = "", sentiment: float = 0.5,
+    state: UserState,
+    message: str = "",
+    sentiment: float = 0.5,
 ) -> InteractionContext:
     """Build an InteractionContext from a UserState and incoming message."""
     return InteractionContext(
