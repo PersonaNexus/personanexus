@@ -24,14 +24,12 @@ from personanexus_skill.memory import (
     record_interaction,
 )
 from personanexus_skill.types import (
-    TRAIT_ORDER,
     AgentIdentity,
-    DynamicMood,
     DynamicMode,
+    DynamicMood,
     DynamicsConfig,
     DynamicTrigger,
     MemoryInfluenceRule,
-    PersonalityTraits,
 )
 
 logger = logging.getLogger(__name__)
@@ -55,7 +53,9 @@ class InteractionContext:
     keywords: list[str] = field(default_factory=list)
 
 
-def context_from_state(state: UserState, message: str = "", sentiment: float = 0.5) -> InteractionContext:
+def context_from_state(
+    state: UserState, message: str = "", sentiment: float = 0.5,
+) -> InteractionContext:
     """Build an InteractionContext from a UserState and incoming message."""
     return InteractionContext(
         message=message,
@@ -106,6 +106,19 @@ def evaluate_trigger(trigger: DynamicTrigger, ctx: InteractionContext) -> bool:
         return False
 
 
+def _compare(op: str, a: float, b: float) -> bool:
+    """Compare two floats using the given operator string."""
+    ops = {
+        ">": a > b,
+        "<": a < b,
+        ">=": a >= b,
+        "<=": a <= b,
+        "==": a == b,
+        "!=": a != b,
+    }
+    return ops.get(op, False)
+
+
 def _evaluate_custom_trigger(expr: str, custom: dict[str, Any]) -> bool:
     """Evaluate a simple custom trigger expression like 'positive_interactions > 10'."""
     for op in (">=", "<=", "!=", "==", ">", "<"):
@@ -120,18 +133,7 @@ def _evaluate_custom_trigger(expr: str, custom: dict[str, Any]) -> bool:
                     actual_val = float(actual)
                 except (ValueError, TypeError):
                     return str(actual) == threshold if op == "==" else str(actual) != threshold
-                if op == ">":
-                    return actual_val > threshold_val
-                elif op == "<":
-                    return actual_val < threshold_val
-                elif op == ">=":
-                    return actual_val >= threshold_val
-                elif op == "<=":
-                    return actual_val <= threshold_val
-                elif op == "==":
-                    return actual_val == threshold_val
-                elif op == "!=":
-                    return actual_val != threshold_val
+                return _compare(op, actual_val, threshold_val)
             break
     return False
 
@@ -270,19 +272,7 @@ def _check_condition(condition: str, state: UserState) -> bool:
     except (ValueError, TypeError):
         return False
 
-    if op == ">":
-        return actual > threshold
-    elif op == "<":
-        return actual < threshold
-    elif op == ">=":
-        return actual >= threshold
-    elif op == "<=":
-        return actual <= threshold
-    elif op == "==":
-        return actual == threshold
-    elif op == "!=":
-        return actual != threshold
-    return False
+    return _compare(op, actual, threshold)
 
 
 def _parse_effect(effect: str) -> dict[str, Any]:

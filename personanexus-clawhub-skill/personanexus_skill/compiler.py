@@ -6,8 +6,6 @@ import logging
 import re
 from typing import Any
 
-import yaml
-
 from personanexus_skill.personality import compute_personality_traits
 from personanexus_skill.types import (
     AgentIdentity,
@@ -23,7 +21,6 @@ from personanexus_skill.types import (
     Personality,
     PersonalityMode,
     Principle,
-    RelationshipDynamic,
     Role,
     Severity,
 )
