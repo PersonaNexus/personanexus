@@ -315,6 +315,7 @@ def evaluate_memory_influences(
     base_traits: dict[str, float],
     lo: float = 0.0,
     hi: float = 1.0,
+    valid_modes: set[str] | None = None,
 ) -> tuple[dict[str, float], list[str]]:
     """Evaluate memory influence rules and apply permanent trait changes.
 
@@ -324,6 +325,7 @@ def evaluate_memory_influences(
         base_traits: The current base traits (may be modified in place conceptually).
         lo: Minimum trait clamp.
         hi: Maximum trait clamp.
+        valid_modes: Set of defined mode names for unlock_mode validation.
 
     Returns:
         Tuple of (adjusted_traits, list of newly applied influence descriptions).
@@ -349,6 +351,12 @@ def evaluate_memory_influences(
                 logger.info("Memory influence applied: %s", rule_key)
             elif effect["type"] == "unlock_mode":
                 mode_name = effect["mode"]
+                if valid_modes is not None and mode_name not in valid_modes:
+                    logger.warning(
+                        "unlock_mode target '%s' is not a defined mode — skipping",
+                        mode_name,
+                    )
+                    continue
                 state.current_mode = mode_name
                 state.applied_influences.append(rule_key)
                 newly_applied.append(rule_key)
@@ -430,12 +438,14 @@ def run_dynamics_pipeline(
     adjusted = apply_dynamics_to_traits(base_traits, dynamics, active_mood, active_mode)
 
     # 5. Evaluate memory influences
+    valid_modes = {m.name for m in dynamics.modes}
     adjusted, newly_applied = evaluate_memory_influences(
         dynamics.memory_influences,
         state,
         adjusted,
         dynamics.trait_clamp_min,
         dynamics.trait_clamp_max,
+        valid_modes=valid_modes,
     )
 
     # Determine tone override (mood takes precedence over mode)

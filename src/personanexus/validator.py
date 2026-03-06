@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from personanexus.parser import IdentityParser, ParseError
-from personanexus.types import AgentIdentity, PersonalityMode
+from personanexus.types import TRAIT_ORDER, AgentIdentity, PersonalityMode
 
 logger = logging.getLogger(__name__)
 
@@ -91,6 +91,7 @@ class IdentityValidator:
         warnings.extend(self._check_personality_profile(identity))
         warnings.extend(self._check_principle_ordering(identity))
         warnings.extend(self._check_scope_overlap(identity))
+        warnings.extend(self._check_dynamics(identity))
         return warnings
 
     def _check_trait_tensions(self, identity: AgentIdentity) -> list[ValidationWarning]:
@@ -247,6 +248,97 @@ class IdentityValidator:
                         ),
                         severity="high",
                         path="personality.profile.jungian_preset",
+                    )
+                )
+
+        return warnings
+
+    def _check_dynamics(self, identity: AgentIdentity) -> list[ValidationWarning]:
+        """Check dynamics config for potential issues."""
+        warnings: list[ValidationWarning] = []
+        dynamics = identity.dynamics
+        if dynamics is None:
+            return warnings
+
+        known_traits = set(TRAIT_ORDER)
+
+        # Check mood trait_deltas reference known traits
+        for mood in dynamics.moods:
+            for trait_name in mood.trait_deltas:
+                if trait_name not in known_traits:
+                    warnings.append(
+                        ValidationWarning(
+                            type="dynamics_unknown_trait",
+                            message=(
+                                f"Mood '{mood.name}' references unknown trait "
+                                f"'{trait_name}' in trait_deltas"
+                            ),
+                            severity="medium",
+                            path=f"dynamics.moods.{mood.name}.trait_deltas",
+                        )
+                    )
+
+        # Check mode trait_overrides reference known traits
+        for mode in dynamics.modes:
+            for trait_name in mode.trait_overrides:
+                if trait_name not in known_traits:
+                    warnings.append(
+                        ValidationWarning(
+                            type="dynamics_unknown_trait",
+                            message=(
+                                f"Mode '{mode.name}' references unknown trait "
+                                f"'{trait_name}' in trait_overrides"
+                            ),
+                            severity="medium",
+                            path=f"dynamics.modes.{mode.name}.trait_overrides",
+                        )
+                    )
+
+        # Check memory influence unlock_mode targets reference defined modes
+        mode_names = {m.name for m in dynamics.modes}
+        for rule in dynamics.memory_influences:
+            parts = rule.effect.strip().split()
+            if len(parts) >= 2 and parts[0] == "unlock_mode":
+                target = parts[1]
+                if target not in mode_names:
+                    warnings.append(
+                        ValidationWarning(
+                            type="dynamics_invalid_unlock",
+                            message=(
+                                f"Memory influence effect 'unlock_mode {target}' "
+                                f"references undefined mode (defined: "
+                                f"{', '.join(sorted(mode_names)) or 'none'})"
+                            ),
+                            severity="high",
+                            path="dynamics.memory_influences",
+                        )
+                    )
+
+        # Check for moods/modes without triggers (they can never activate)
+        for mood in dynamics.moods:
+            if mood.name != dynamics.default_mood and not mood.triggers:
+                warnings.append(
+                    ValidationWarning(
+                        type="dynamics_unreachable",
+                        message=(
+                            f"Mood '{mood.name}' has no triggers and is not "
+                            f"the default — it can never be activated"
+                        ),
+                        severity="low",
+                        path=f"dynamics.moods.{mood.name}",
+                    )
+                )
+        for mode in dynamics.modes:
+            if mode.name != dynamics.default_mode and not mode.triggers:
+                warnings.append(
+                    ValidationWarning(
+                        type="dynamics_unreachable",
+                        message=(
+                            f"Mode '{mode.name}' has no triggers and is not "
+                            f"the default — it can never be activated"
+                        ),
+                        severity="low",
+                        path=f"dynamics.modes.{mode.name}",
                     )
                 )
 

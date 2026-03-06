@@ -172,6 +172,7 @@ class IdentityBuilder:
         self._phase_behavioral_modes(data)  # Phase 7
         self._phase_interaction(data)  # Phase 8
         self._phase_expertise(data)  # Phase 9
+        self._phase_dynamics(data)  # Phase 10
 
         self.console.print("\n[green]Identity created successfully![/green]")
 
@@ -926,6 +927,272 @@ class IdentityBuilder:
             data["expertise"] = {"domains": domains}
 
     # ------------------------------------------------------------------
+    # Phase 10: Dynamics (optional)
+    # ------------------------------------------------------------------
+
+    _TRIGGER_TYPES = [
+        "sentiment_below",
+        "sentiment_above",
+        "keyword",
+        "interaction_count_above",
+        "user_known",
+        "trust_above",
+        "trust_below",
+        "custom",
+    ]
+
+    def _phase_dynamics(self, data: dict[str, Any]) -> None:
+        """Configure the dynamic personality layer: moods, modes, and memory influences."""
+        self.console.print("\n[bold blue]Phase 10: Dynamics (Optional)[/bold blue]")
+        self.console.rule()
+        self.console.print(
+            "[dim]The dynamics layer lets your agent adapt its personality at runtime.\n"
+            "Moods apply temporary trait adjustments, modes set absolute trait values,\n"
+            "and memory influences create permanent changes over time.[/dim]\n"
+        )
+
+        add_dynamics = Confirm.ask("Add dynamic personality features?", default=False)
+        if not add_dynamics:
+            return
+
+        dynamics: dict[str, Any] = {}
+
+        # --- Moods ---
+        self.console.print("\n[bold]Moods[/bold]")
+        self.console.print(
+            "[dim]Moods are temporary emotional states that adjust traits additively.\n"
+            "Example: a 'stressed' mood might lower warmth by 0.15.[/dim]\n"
+        )
+
+        moods = self._collect_dynamic_moods()
+        if moods:
+            dynamics["moods"] = moods
+            # Ask for default mood
+            mood_names = [m["name"] for m in moods]
+            default_mood = self._prompt_choice("  Default mood", mood_names, default=mood_names[0])
+            dynamics["default_mood"] = default_mood
+
+        # --- Modes ---
+        self.console.print("\n[bold]Modes[/bold]")
+        self.console.print(
+            "[dim]Modes are operating contexts that override traits with absolute values.\n"
+            "Example: a 'stranger' mode might set warmth to 0.40.[/dim]\n"
+        )
+
+        modes = self._collect_dynamic_modes()
+        if modes:
+            dynamics["modes"] = modes
+            mode_names = [m["name"] for m in modes]
+            default_mode = self._prompt_choice("  Default mode", mode_names, default=mode_names[0])
+            dynamics["default_mode"] = default_mode
+
+        # --- Memory Influences ---
+        self.console.print("\n[bold]Memory Influences[/bold]")
+        self.console.print(
+            "[dim]Memory influences permanently modify traits based on accumulated\n"
+            "interaction history (e.g., after 10 positive interactions, warmth +0.10).[/dim]\n"
+        )
+
+        influences = self._collect_memory_influences()
+        if influences:
+            dynamics["memory_influences"] = influences
+
+        # --- Trait clamping ---
+        if moods or modes or influences:
+            self.console.print("\n[bold]Trait Clamping[/bold]")
+            self.console.print(
+                "[dim]Set bounds for how far traits can shift (default 0.0–1.0).[/dim]"
+            )
+            clamp_min = self._prompt_float("Clamp min (0.0–1.0)", 0.0, 1.0)
+            clamp_max = self._prompt_float("Clamp max (0.0–1.0)", 0.0, 1.0)
+            if clamp_min is not None:
+                dynamics["trait_clamp_min"] = clamp_min
+            if clamp_max is not None:
+                dynamics["trait_clamp_max"] = clamp_max
+
+        if dynamics:
+            data["dynamics"] = dynamics
+            self.console.print("\n  [green]Dynamics configured.[/green]")
+
+    def _collect_triggers(self, label: str) -> list[dict[str, Any]]:
+        """Prompt user for a list of triggers."""
+        triggers: list[dict[str, Any]] = []
+        self.console.print(
+            f"  [dim]Add triggers for {label}. Empty type to finish.[/dim]"
+        )
+        counter = 1
+        while True:
+            trigger_type = Prompt.ask(
+                f"    Trigger {counter} type ({', '.join(self._TRIGGER_TYPES)})",
+                default="",
+            )
+            if not trigger_type.strip():
+                break
+            if trigger_type.strip() not in self._TRIGGER_TYPES:
+                self.console.print(
+                    f"    [red]Invalid type. Choose from: {', '.join(self._TRIGGER_TYPES)}[/red]"
+                )
+                continue
+
+            ttype = trigger_type.strip()
+            # Prompt for value with guidance based on type
+            if ttype == "keyword":
+                raw_val = Prompt.ask(
+                    "    Keywords (comma-separated)", default=""
+                )
+                value: Any = [k.strip() for k in raw_val.split(",") if k.strip()]
+                if not value:
+                    self.console.print("    [yellow]No keywords entered, skipping trigger.[/yellow]")
+                    continue
+            elif ttype == "user_known":
+                value = Confirm.ask("    User is known?", default=True)
+            elif ttype in ("sentiment_below", "sentiment_above", "trust_above", "trust_below"):
+                val = self._prompt_float("Value (0.0–1.0)", 0.0, 1.0, allow_skip=False)
+                value = val
+            elif ttype == "interaction_count_above":
+                raw_count = Prompt.ask("    Count threshold", default="5")
+                try:
+                    value = int(raw_count.strip())
+                except ValueError:
+                    self.console.print("    [red]Must be an integer.[/red]")
+                    continue
+            else:
+                value = Prompt.ask("    Custom value", default="")
+
+            triggers.append({"type": ttype, "value": value})
+            counter += 1
+
+        return triggers
+
+    def _collect_trait_adjustments(
+        self, label: str, absolute: bool = False
+    ) -> dict[str, float]:
+        """Prompt user for trait adjustments (deltas or absolute values)."""
+        adjustments: dict[str, float] = {}
+        kind = "override value" if absolute else "delta"
+        low = 0.0 if absolute else -1.0
+        high = 1.0
+
+        self.console.print(
+            f"  [dim]Set trait {kind}s for {label}. "
+            f"Available traits: {', '.join(TRAIT_ORDER)}. Empty to finish.[/dim]"
+        )
+
+        while True:
+            trait_name = Prompt.ask("    Trait name (empty to finish)", default="")
+            if not trait_name.strip():
+                break
+            if trait_name.strip() not in TRAIT_ORDER:
+                self.console.print(
+                    f"    [red]Unknown trait. Choose from: {', '.join(TRAIT_ORDER)}[/red]"
+                )
+                continue
+            val = self._prompt_float(f"{trait_name.strip()} {kind} ({low}–{high})", low, high, allow_skip=False)
+            if val is not None:
+                adjustments[trait_name.strip()] = val
+
+        return adjustments
+
+    def _collect_dynamic_moods(self) -> list[dict[str, Any]]:
+        """Prompt user for dynamic moods."""
+        moods: list[dict[str, Any]] = []
+
+        while True:
+            name = Prompt.ask("  Mood name (empty to finish)", default="")
+            if not name.strip():
+                break
+
+            mood: dict[str, Any] = {"name": name.strip()}
+
+            description = Prompt.ask("  Description (optional)", default="")
+            if description.strip():
+                mood["description"] = description.strip()
+
+            # Triggers
+            triggers = self._collect_triggers(name.strip())
+            if triggers:
+                mood["triggers"] = triggers
+
+            # Trait deltas
+            deltas = self._collect_trait_adjustments(name.strip(), absolute=False)
+            if deltas:
+                mood["trait_deltas"] = deltas
+
+            # Tone override
+            tone = Prompt.ask("  Tone override (optional)", default="")
+            if tone.strip():
+                mood["tone_override"] = tone.strip()
+
+            moods.append(mood)
+            self.console.print(f"  [green]Added mood: {name.strip()}[/green]\n")
+
+        return moods
+
+    def _collect_dynamic_modes(self) -> list[dict[str, Any]]:
+        """Prompt user for dynamic modes."""
+        modes: list[dict[str, Any]] = []
+
+        while True:
+            name = Prompt.ask("  Mode name (empty to finish)", default="")
+            if not name.strip():
+                break
+
+            mode: dict[str, Any] = {"name": name.strip()}
+
+            description = Prompt.ask("  Description (optional)", default="")
+            if description.strip():
+                mode["description"] = description.strip()
+
+            # Triggers
+            triggers = self._collect_triggers(name.strip())
+            if triggers:
+                mode["triggers"] = triggers
+
+            # Trait overrides (absolute values)
+            overrides = self._collect_trait_adjustments(name.strip(), absolute=True)
+            if overrides:
+                mode["trait_overrides"] = overrides
+
+            # Tone override
+            tone = Prompt.ask("  Tone override (optional)", default="")
+            if tone.strip():
+                mode["tone_override"] = tone.strip()
+
+            modes.append(mode)
+            self.console.print(f"  [green]Added mode: {name.strip()}[/green]\n")
+
+        return modes
+
+    def _collect_memory_influences(self) -> list[dict[str, str]]:
+        """Prompt user for memory influence rules."""
+        influences: list[dict[str, str]] = []
+
+        self.console.print(
+            "  [dim]Conditions: 'positive_interactions > 10', 'trust_score > 0.7', etc.\n"
+            "  Effects: 'warmth +0.10 permanent', 'unlock_mode familiar', etc.\n"
+            "  Empty condition to finish.[/dim]\n"
+        )
+
+        counter = 1
+        while True:
+            condition = Prompt.ask(f"  Influence {counter} condition", default="")
+            if not condition.strip():
+                break
+
+            effect = Prompt.ask(f"  Influence {counter} effect", default="")
+            if not effect.strip():
+                self.console.print("  [yellow]Effect is required, skipping.[/yellow]")
+                continue
+
+            influences.append({
+                "condition": condition.strip(),
+                "effect": effect.strip(),
+            })
+            counter += 1
+
+        return influences
+
+    # ------------------------------------------------------------------
     # Edit-existing mode
     # ------------------------------------------------------------------
 
@@ -940,6 +1207,7 @@ class IdentityBuilder:
         ("behavioral_modes", "Behavioral Modes", "_phase_behavioral_modes"),
         ("interaction", "Interaction Protocols", "_phase_interaction"),
         ("expertise", "Expertise", "_phase_expertise"),
+        ("dynamics", "Dynamics", "_phase_dynamics"),
     ]
 
     def _phase_personality_edit_wrapper(self, data: dict[str, Any]) -> None:

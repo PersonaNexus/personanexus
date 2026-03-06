@@ -554,6 +554,47 @@ def _generate_full_template(name: str, agent_id: str, timestamp: str, extends: s
             "    defaults:",
             "      max_response_length: 2000",
             "      format: markdown",
+            "",
+            "# Dynamic personality — moods, modes, and memory influences",
+            "dynamics:",
+            "  default_mood: neutral",
+            "  default_mode: stranger",
+            "  moods:",
+            "    - name: neutral",
+            "      description: Default balanced state",
+            "      trait_deltas: {}",
+            "    - name: empathetic",
+            "      description: Activated when user seems frustrated",
+            "      triggers:",
+            "        - type: sentiment_below",
+            "          value: 0.3",
+            "      trait_deltas:",
+            "        warmth: 0.20",
+            "        empathy: 0.15",
+            "        patience: 0.10",
+            "      tone_override: warm and supportive",
+            "  modes:",
+            "    - name: stranger",
+            "      description: Default mode for unknown users",
+            "      triggers:",
+            "        - type: user_known",
+            "          value: false",
+            "      trait_overrides:",
+            "        warmth: 0.50",
+            "      tone_override: professional and helpful",
+            "    - name: familiar",
+            "      description: Mode for returning users",
+            "      triggers:",
+            "        - type: interaction_count_above",
+            "          value: 5",
+            "      trait_overrides:",
+            "        warmth: 0.75",
+            "      tone_override: friendly and personable",
+            "  memory_influences:",
+            "    - condition: 'positive_interactions > 10'",
+            "      effect: 'warmth +0.10 permanent'",
+            "    - condition: 'positive_interactions > 5'",
+            "      effect: 'unlock_mode familiar'",
         ]
     )
 
@@ -1395,6 +1436,84 @@ def build(
             console.print("[green]✓ Validation passed[/green]")
         else:
             console.print("[yellow]⚠ Validation warnings:[/yellow]")
+            for error in result.errors:
+                console.print(f"  [yellow]• {error}[/yellow]")
+    except Exception as exc:
+        console.print(f"[yellow]⚠ Could not validate: {exc}[/yellow]")
+
+
+# ---------------------------------------------------------------------------
+# add-dynamics command
+# ---------------------------------------------------------------------------
+
+
+@app.command("add-dynamics")
+def add_dynamics(
+    file: Annotated[Path, typer.Argument(help="Path to existing PersonaNexus YAML file")],
+) -> None:
+    """Add dynamic personality features (moods, modes, memory influences) to an existing identity."""
+    if not file.exists():
+        console.print(f"[red]Error: File not found: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    if not file.is_file():
+        console.print(f"[red]Error: Not a file: {file}[/red]")
+        raise typer.Exit(code=1)
+
+    # Validate first
+    validator = IdentityValidator()
+    try:
+        result = validator.validate_file(file)
+    except Exception as exc:
+        console.print(f"[red]Error validating file: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    if not result.valid:
+        console.print(f"[red]File has validation errors — fix them first:[/red]")
+        for error in result.errors:
+            console.print(f"  [red]• {error}[/red]")
+        raise typer.Exit(code=1)
+
+    # Load existing data
+    with open(file, encoding="utf-8") as f:
+        data = yaml.safe_load(f)
+
+    if data.get("dynamics"):
+        console.print("[yellow]This file already has a dynamics section.[/yellow]")
+        from rich.prompt import Confirm as RichConfirm
+
+        if not RichConfirm.ask("Overwrite existing dynamics?", default=False):
+            console.print("[dim]No changes made.[/dim]")
+            raise typer.Exit(code=0)
+
+    # Run the dynamics wizard
+    from personanexus.builder import IdentityBuilder
+
+    builder = IdentityBuilder(console=console)
+    builder._phase_dynamics(data)
+
+    if "dynamics" not in data:
+        console.print("[dim]No dynamics added.[/dim]")
+        raise typer.Exit(code=0)
+
+    # Write back
+    from datetime import UTC, datetime
+
+    if "metadata" in data:
+        data["metadata"]["updated_at"] = datetime.now(UTC).isoformat()
+
+    yaml_str = yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)
+    _atomic_write(file, yaml_str)
+
+    console.print(f"\n[green]✓ Dynamics added to {file}[/green]")
+
+    # Re-validate
+    try:
+        result = validator.validate_file(file)
+        if result.valid:
+            console.print("[green]✓ Validation passed[/green]")
+        else:
+            console.print("[yellow]⚠ Validation issues:[/yellow]")
             for error in result.errors:
                 console.print(f"  [yellow]• {error}[/yellow]")
     except Exception as exc:
