@@ -1017,9 +1017,7 @@ class IdentityBuilder:
     def _collect_triggers(self, label: str) -> list[dict[str, Any]]:
         """Prompt user for a list of triggers."""
         triggers: list[dict[str, Any]] = []
-        self.console.print(
-            f"  [dim]Add triggers for {label}. Empty type to finish.[/dim]"
-        )
+        self.console.print(f"  [dim]Add triggers for {label}. Empty type to finish.[/dim]")
         counter = 1
         while True:
             trigger_type = Prompt.ask(
@@ -1037,12 +1035,12 @@ class IdentityBuilder:
             ttype = trigger_type.strip()
             # Prompt for value with guidance based on type
             if ttype == "keyword":
-                raw_val = Prompt.ask(
-                    "    Keywords (comma-separated)", default=""
-                )
+                raw_val = Prompt.ask("    Keywords (comma-separated)", default="")
                 value: Any = [k.strip() for k in raw_val.split(",") if k.strip()]
                 if not value:
-                    self.console.print("    [yellow]No keywords entered, skipping trigger.[/yellow]")
+                    self.console.print(
+                        "    [yellow]No keywords entered, skipping trigger.[/yellow]"
+                    )
                     continue
             elif ttype == "user_known":
                 value = Confirm.ask("    User is known?", default=True)
@@ -1064,9 +1062,7 @@ class IdentityBuilder:
 
         return triggers
 
-    def _collect_trait_adjustments(
-        self, label: str, absolute: bool = False
-    ) -> dict[str, float]:
+    def _collect_trait_adjustments(self, label: str, absolute: bool = False) -> dict[str, float]:
         """Prompt user for trait adjustments (deltas or absolute values)."""
         adjustments: dict[str, float] = {}
         kind = "override value" if absolute else "delta"
@@ -1087,7 +1083,8 @@ class IdentityBuilder:
                     f"    [red]Unknown trait. Choose from: {', '.join(TRAIT_ORDER)}[/red]"
                 )
                 continue
-            val = self._prompt_float(f"{trait_name.strip()} {kind} ({low}–{high})", low, high, allow_skip=False)
+            prompt = f"{trait_name.strip()} {kind} ({low}–{high})"
+            val = self._prompt_float(prompt, low, high, allow_skip=False)
             if val is not None:
                 adjustments[trait_name.strip()] = val
 
@@ -1184,10 +1181,12 @@ class IdentityBuilder:
                 self.console.print("  [yellow]Effect is required, skipping.[/yellow]")
                 continue
 
-            influences.append({
-                "condition": condition.strip(),
-                "effect": effect.strip(),
-            })
+            influences.append(
+                {
+                    "condition": condition.strip(),
+                    "effect": effect.strip(),
+                }
+            )
             counter += 1
 
         return influences
