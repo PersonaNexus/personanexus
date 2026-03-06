@@ -133,7 +133,7 @@ def render_wizard() -> None:
                     f"background:#10b981;color:white'>"
                     f"\u2713</span><br>"
                     f"<span style='font-size:0.7rem;"
-                    f"color:#586069'>{label}</span></div>",
+                    f"color:#4a5568'>{label}</span></div>",
                     unsafe_allow_html=True,
                 )
             elif i == step:
@@ -153,10 +153,10 @@ def render_wizard() -> None:
                 st.markdown(
                     f"<div style='text-align:center'>"
                     f"<span style='{circle};"
-                    f"background:#e8ecf0;color:#8b949e'>"
+                    f"background:#d1d5db;color:#4b5563'>"
                     f"{i+1}</span><br>"
                     f"<span style='font-size:0.7rem;"
-                    f"color:#586069'>{label}</span></div>",
+                    f"color:#4a5568'>{label}</span></div>",
                     unsafe_allow_html=True,
                 )
 
