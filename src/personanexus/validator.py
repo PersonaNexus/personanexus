@@ -10,7 +10,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from personanexus.parser import IdentityParser, ParseError
-from personanexus.types import AgentIdentity, PersonalityMode, TRAIT_ORDER
+from personanexus.types import TRAIT_ORDER, AgentIdentity, PersonalityMode
 
 logger = logging.getLogger(__name__)
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 
 from personanexus.dynamics import (
     DynamicSession,
@@ -194,7 +195,7 @@ class TestTriggerEvaluation:
 
     def test_unknown_trigger_type_rejected_by_schema(self):
         """Unknown trigger types are now rejected at schema validation time."""
-        with pytest.raises(Exception):  # pydantic ValidationError
+        with pytest.raises(ValidationError):  # pydantic ValidationError
             DynamicTrigger(type="nonexistent", value="x")
 
     def test_evaluate_triggers_or_logic(self):
@@ -492,7 +493,7 @@ class TestDynamicsSecurityHardening:
 
     def test_invalid_trigger_type_rejected(self):
         """Arbitrary strings are rejected as trigger types."""
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicTrigger(type="sql_injection; DROP TABLE;", value="x")
 
     def test_valid_trigger_types_accepted(self):
@@ -508,11 +509,11 @@ class TestDynamicsSecurityHardening:
     # -- Trait delta bounds --
 
     def test_trait_delta_too_large_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMood(name="bad", trait_deltas={"warmth": 999.0})
 
     def test_trait_delta_too_negative_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMood(name="bad", trait_deltas={"warmth": -5.0})
 
     def test_trait_delta_boundary_accepted(self):
@@ -523,46 +524,46 @@ class TestDynamicsSecurityHardening:
     # -- Trait override bounds --
 
     def test_trait_override_too_large_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMode(name="bad", trait_overrides={"warmth": 1.5})
 
     def test_trait_override_negative_rejected(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMode(name="bad", trait_overrides={"warmth": -0.1})
 
     # -- Max length constraints --
 
     def test_mood_name_max_length(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMood(name="x" * 101)
 
     def test_mode_name_max_length(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMode(name="x" * 101)
 
     def test_tone_override_max_length(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             DynamicMood(name="ok", tone_override="x" * 501)
 
     def test_condition_max_length(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             MemoryInfluenceRule(condition="x" * 201, effect="warmth +0.1")
 
     def test_effect_max_length(self):
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             MemoryInfluenceRule(condition="x > 1", effect="x" * 201)
 
     # -- Default mood/mode validation --
 
     def test_default_mood_must_exist(self):
-        with pytest.raises(Exception, match="default_mood"):
+        with pytest.raises(ValidationError, match="default_mood"):
             DynamicsConfig(
                 default_mood="nonexistent",
                 moods=[DynamicMood(name="neutral")],
             )
 
     def test_default_mode_must_exist(self):
-        with pytest.raises(Exception, match="default_mode"):
+        with pytest.raises(ValidationError, match="default_mode"):
             DynamicsConfig(
                 default_mode="nonexistent",
                 modes=[DynamicMode(name="stranger")],
@@ -574,7 +575,7 @@ class TestDynamicsSecurityHardening:
         assert config.default_mood == "neutral"
 
     def test_clamp_min_must_be_less_than_max(self):
-        with pytest.raises(Exception, match="trait_clamp_min"):
+        with pytest.raises(ValidationError, match="trait_clamp_min"):
             DynamicsConfig(trait_clamp_min=0.8, trait_clamp_max=0.2)
 
     # -- unlock_mode validation in engine --
