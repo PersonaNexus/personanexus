@@ -168,8 +168,8 @@ ARCHETYPE_FULL = {
 
 APP_CSS = """
 <style>
-.stApp { background-color: #fafbfc; }
-.stSidebar { background-color: #ffffff; border-right: 1px solid #e1e4e8; }
+.stApp { background-color: #f0f2f6; }
+.stSidebar { background-color: #ffffff; border-right: 1px solid #d0d7de; }
 .stSidebar [data-testid="stSidebarContent"] { padding-top: 1rem; }
 
 .main-header {
@@ -180,7 +180,7 @@ APP_CSS = """
 }
 .sub-header {
     font-size: 1rem;
-    color: #586069;
+    color: #4a5568;
     margin-bottom: 1.5rem;
 }
 .trait-bar-container {
@@ -192,18 +192,18 @@ APP_CSS = """
 .trait-bar-label {
     width: 140px;
     font-weight: 500;
-    color: #24292e;
+    color: #1a1a2e;
 }
 .trait-bar-value {
     width: 45px;
     text-align: right;
     font-family: monospace;
-    color: #586069;
+    color: #4a5568;
 }
 .trait-bar-bg {
     flex: 1;
     height: 14px;
-    background: #e8ecf0;
+    background: #d1d5db;
     border-radius: 7px;
     margin: 0 8px;
     overflow: hidden;
@@ -218,7 +218,7 @@ APP_CSS = """
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: #8b949e;
+    color: #6b7280;
     margin: 1rem 0 0.5rem 0;
 }
 .wizard-progress {
@@ -256,12 +256,12 @@ APP_CSS = """
     box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
 }
 .wizard-step-circle.pending {
-    background: #e8ecf0;
-    color: #8b949e;
+    background: #d1d5db;
+    color: #4b5563;
 }
 .wizard-step-label {
     font-size: 0.7rem;
-    color: #586069;
+    color: #4a5568;
     margin-top: 4px;
     text-align: center;
     white-space: nowrap;
@@ -274,24 +274,18 @@ APP_CSS = """
 /* Landing page cards */
 .landing-card {
     background: white;
-    border: 1px solid #e1e4e8;
+    border: 1px solid #d0d7de;
     border-radius: 12px;
     padding: 2rem;
     text-align: center;
     min-height: 220px;
-    transition: all 0.2s ease;
-}
-.landing-card:hover {
-    border-color: #3b82f6;
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
-    transform: translateY(-2px);
 }
 .landing-card h3 {
     margin: 0 0 0.5rem 0;
     color: #1a1a2e;
 }
 .landing-card p {
-    color: #586069;
+    color: #4a5568;
     font-size: 0.9rem;
     line-height: 1.5;
 }
@@ -450,7 +444,7 @@ def render_comparison_bars(
         else:
             delta_color = "#ef4444"
         sign = "+" if delta > 0 else ""
-        lbl_style = "width:140px;font-weight:500;color:#24292e;"
+        lbl_style = "width:140px;font-weight:500;color:#1a1a2e;"
         delta_style = (
             f"color:{delta_color};font-family:monospace;"
             "font-size:0.75rem;"
@@ -460,7 +454,7 @@ def render_comparison_bars(
             "font-size:0.8rem;margin-bottom:2px;"
         )
         bar_bg = (
-            "position:relative;height:18px;background:#e8ecf0;"
+            "position:relative;height:18px;background:#d1d5db;"
             "border-radius:9px;overflow:hidden;"
         )
         bar_a = (

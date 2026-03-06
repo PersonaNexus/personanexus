@@ -70,7 +70,7 @@ def _render_landing() -> None:
         "<h1 style='font-size:2.5rem;font-weight:700;color:#1a1a2e;margin:0'>"
         "🧬 Identity Lab"
         "</h1>"
-        "<p style='font-size:1.1rem;color:#586069;margin-top:0.5rem'>"
+        "<p style='font-size:1.1rem;color:#4a5568;margin-top:0.5rem'>"
         "Design AI Agent Personalities"
         "</p>"
         "</div>",
