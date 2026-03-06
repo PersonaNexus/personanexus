@@ -1118,10 +1118,23 @@ class MixinHeader(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class DynamicTriggerType(enum.StrEnum):
+    """Allowed trigger types for dynamic mood/mode activation."""
+
+    SENTIMENT_BELOW = "sentiment_below"
+    SENTIMENT_ABOVE = "sentiment_above"
+    KEYWORD = "keyword"
+    INTERACTION_COUNT_ABOVE = "interaction_count_above"
+    USER_KNOWN = "user_known"
+    TRUST_ABOVE = "trust_above"
+    TRUST_BELOW = "trust_below"
+    CUSTOM = "custom"
+
+
 class DynamicTrigger(BaseModel):
     """A trigger condition that can activate a mood or mode."""
 
-    type: str = Field(
+    type: DynamicTriggerType = Field(
         ...,
         description=(
             "Trigger type: 'sentiment_below', 'sentiment_above', "
@@ -1138,27 +1151,47 @@ class DynamicTrigger(BaseModel):
 class DynamicMood(BaseModel):
     """A named mood with trait deltas and optional triggers."""
 
-    name: str
-    description: str | None = None
+    name: str = Field(..., max_length=100)
+    description: str | None = Field(None, max_length=500)
     trait_deltas: dict[str, float] = Field(
         default_factory=dict,
         description="Trait name → delta value (e.g. {'warmth': -0.15, 'rigor': 0.20})",
     )
-    tone_override: str | None = None
-    triggers: list[DynamicTrigger] = Field(default_factory=list)
+    tone_override: str | None = Field(None, max_length=500)
+    triggers: list[DynamicTrigger] = Field(default_factory=list, max_length=50)
+
+    @field_validator("trait_deltas")
+    @classmethod
+    def validate_trait_deltas(cls, v: dict[str, float]) -> dict[str, float]:
+        for trait, delta in v.items():
+            if not -1.0 <= delta <= 1.0:
+                raise ValueError(
+                    f"Trait delta for '{trait}' must be in [-1.0, 1.0], got {delta}"
+                )
+        return v
 
 
 class DynamicMode(BaseModel):
     """A named operating mode with base trait overrides and triggers."""
 
-    name: str
-    description: str | None = None
+    name: str = Field(..., max_length=100)
+    description: str | None = Field(None, max_length=500)
     trait_overrides: dict[str, float] = Field(
         default_factory=dict,
         description="Trait name → absolute value (e.g. {'warmth': 0.40})",
     )
-    tone_override: str | None = None
-    triggers: list[DynamicTrigger] = Field(default_factory=list)
+    tone_override: str | None = Field(None, max_length=500)
+    triggers: list[DynamicTrigger] = Field(default_factory=list, max_length=50)
+
+    @field_validator("trait_overrides")
+    @classmethod
+    def validate_trait_overrides(cls, v: dict[str, float]) -> dict[str, float]:
+        for trait, value in v.items():
+            if not 0.0 <= value <= 1.0:
+                raise ValueError(
+                    f"Trait override for '{trait}' must be in [0.0, 1.0], got {value}"
+                )
+        return v
 
 
 class MemoryInfluenceRule(BaseModel):
@@ -1166,6 +1199,7 @@ class MemoryInfluenceRule(BaseModel):
 
     condition: str = Field(
         ...,
+        max_length=200,
         description=(
             "Condition expression, e.g. 'positive_interactions > 10', "
             "'trust_score > 0.7', 'interaction_count > 5'"
@@ -1173,6 +1207,7 @@ class MemoryInfluenceRule(BaseModel):
     )
     effect: str = Field(
         ...,
+        max_length=200,
         description=("Effect description, e.g. 'warmth +0.10 permanent', 'unlock_mode familiar'"),
     )
 
@@ -1180,13 +1215,37 @@ class MemoryInfluenceRule(BaseModel):
 class DynamicsConfig(BaseModel):
     """Configuration for the dynamic & stateful personality layer."""
 
-    default_mood: str = "neutral"
-    default_mode: str = "stranger"
-    moods: list[DynamicMood] = Field(default_factory=list)
-    modes: list[DynamicMode] = Field(default_factory=list)
-    memory_influences: list[MemoryInfluenceRule] = Field(default_factory=list)
+    default_mood: str = Field("neutral", max_length=100)
+    default_mode: str = Field("stranger", max_length=100)
+    moods: list[DynamicMood] = Field(default_factory=list, max_length=50)
+    modes: list[DynamicMode] = Field(default_factory=list, max_length=50)
+    memory_influences: list[MemoryInfluenceRule] = Field(default_factory=list, max_length=100)
     trait_clamp_min: float = Field(0.0, ge=0.0, le=1.0)
     trait_clamp_max: float = Field(1.0, ge=0.0, le=1.0)
+
+    @model_validator(mode="after")
+    def validate_defaults_exist(self) -> DynamicsConfig:
+        """Ensure default_mood and default_mode reference defined entries."""
+        if self.moods:
+            mood_names = {m.name for m in self.moods}
+            if self.default_mood not in mood_names:
+                raise ValueError(
+                    f"default_mood '{self.default_mood}' is not defined in moods "
+                    f"(available: {', '.join(sorted(mood_names))})"
+                )
+        if self.modes:
+            mode_names = {m.name for m in self.modes}
+            if self.default_mode not in mode_names:
+                raise ValueError(
+                    f"default_mode '{self.default_mode}' is not defined in modes "
+                    f"(available: {', '.join(sorted(mode_names))})"
+                )
+        if self.trait_clamp_min >= self.trait_clamp_max:
+            raise ValueError(
+                f"trait_clamp_min ({self.trait_clamp_min}) must be less than "
+                f"trait_clamp_max ({self.trait_clamp_max})"
+            )
+        return self
 
 
 # ---------------------------------------------------------------------------

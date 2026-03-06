@@ -192,10 +192,10 @@ class TestTriggerEvaluation:
         ctx = InteractionContext(trust_score=0.1)
         assert evaluate_trigger(trigger, ctx) is True
 
-    def test_unknown_trigger_type(self):
-        trigger = DynamicTrigger(type="nonexistent", value="x")
-        ctx = InteractionContext()
-        assert evaluate_trigger(trigger, ctx) is False
+    def test_unknown_trigger_type_rejected_by_schema(self):
+        """Unknown trigger types are now rejected at schema validation time."""
+        with pytest.raises(Exception):  # pydantic ValidationError
+            DynamicTrigger(type="nonexistent", value="x")
 
     def test_evaluate_triggers_or_logic(self):
         triggers = [
@@ -478,3 +478,267 @@ class TestDynamicsConfig:
     def test_identity_without_dynamics(self):
         identity = _make_minimal_identity(None)
         assert identity.dynamics is None
+
+
+# ---------------------------------------------------------------------------
+# Security hardening tests
+# ---------------------------------------------------------------------------
+
+
+class TestDynamicsSecurityHardening:
+    """Tests for adversarial inputs and schema-level validation."""
+
+    # -- Trigger type whitelist --
+
+    def test_invalid_trigger_type_rejected(self):
+        """Arbitrary strings are rejected as trigger types."""
+        with pytest.raises(Exception):
+            DynamicTrigger(type="sql_injection; DROP TABLE;", value="x")
+
+    def test_valid_trigger_types_accepted(self):
+        """All documented trigger types are accepted."""
+        for ttype in [
+            "sentiment_below", "sentiment_above", "keyword",
+            "interaction_count_above", "user_known",
+            "trust_above", "trust_below", "custom",
+        ]:
+            trigger = DynamicTrigger(type=ttype, value=0.5)
+            assert trigger.type == ttype
+
+    # -- Trait delta bounds --
+
+    def test_trait_delta_too_large_rejected(self):
+        with pytest.raises(Exception):
+            DynamicMood(name="bad", trait_deltas={"warmth": 999.0})
+
+    def test_trait_delta_too_negative_rejected(self):
+        with pytest.raises(Exception):
+            DynamicMood(name="bad", trait_deltas={"warmth": -5.0})
+
+    def test_trait_delta_boundary_accepted(self):
+        mood = DynamicMood(name="edge", trait_deltas={"warmth": -1.0, "rigor": 1.0})
+        assert mood.trait_deltas["warmth"] == -1.0
+        assert mood.trait_deltas["rigor"] == 1.0
+
+    # -- Trait override bounds --
+
+    def test_trait_override_too_large_rejected(self):
+        with pytest.raises(Exception):
+            DynamicMode(name="bad", trait_overrides={"warmth": 1.5})
+
+    def test_trait_override_negative_rejected(self):
+        with pytest.raises(Exception):
+            DynamicMode(name="bad", trait_overrides={"warmth": -0.1})
+
+    # -- Max length constraints --
+
+    def test_mood_name_max_length(self):
+        with pytest.raises(Exception):
+            DynamicMood(name="x" * 101)
+
+    def test_mode_name_max_length(self):
+        with pytest.raises(Exception):
+            DynamicMode(name="x" * 101)
+
+    def test_tone_override_max_length(self):
+        with pytest.raises(Exception):
+            DynamicMood(name="ok", tone_override="x" * 501)
+
+    def test_condition_max_length(self):
+        with pytest.raises(Exception):
+            MemoryInfluenceRule(condition="x" * 201, effect="warmth +0.1")
+
+    def test_effect_max_length(self):
+        with pytest.raises(Exception):
+            MemoryInfluenceRule(condition="x > 1", effect="x" * 201)
+
+    # -- Default mood/mode validation --
+
+    def test_default_mood_must_exist(self):
+        with pytest.raises(Exception, match="default_mood"):
+            DynamicsConfig(
+                default_mood="nonexistent",
+                moods=[DynamicMood(name="neutral")],
+            )
+
+    def test_default_mode_must_exist(self):
+        with pytest.raises(Exception, match="default_mode"):
+            DynamicsConfig(
+                default_mode="nonexistent",
+                modes=[DynamicMode(name="stranger")],
+            )
+
+    def test_empty_moods_skips_default_check(self):
+        """When moods list is empty, default_mood is not validated."""
+        config = DynamicsConfig(moods=[], modes=[])
+        assert config.default_mood == "neutral"
+
+    def test_clamp_min_must_be_less_than_max(self):
+        with pytest.raises(Exception, match="trait_clamp_min"):
+            DynamicsConfig(trait_clamp_min=0.8, trait_clamp_max=0.2)
+
+    # -- unlock_mode validation in engine --
+
+    def test_unlock_mode_invalid_target_skipped(self):
+        """unlock_mode to undefined mode is skipped when valid_modes provided."""
+        rules = [
+            MemoryInfluenceRule(
+                condition="trust_score > 0.5",
+                effect="unlock_mode nonexistent_mode",
+            )
+        ]
+        state = UserState(user_id="u1", trust_score=0.8)
+        traits = {"warmth": 0.5}
+        valid_modes = {"stranger", "familiar"}
+        result, applied = evaluate_memory_influences(
+            rules, state, traits, valid_modes=valid_modes
+        )
+        assert state.current_mode != "nonexistent_mode"
+        assert len(applied) == 0
+
+    def test_unlock_mode_valid_target_works(self):
+        """unlock_mode to a defined mode succeeds when valid_modes provided."""
+        rules = [
+            MemoryInfluenceRule(
+                condition="trust_score > 0.5",
+                effect="unlock_mode familiar",
+            )
+        ]
+        state = UserState(user_id="u1", trust_score=0.8)
+        traits = {"warmth": 0.5}
+        valid_modes = {"stranger", "familiar"}
+        _, applied = evaluate_memory_influences(
+            rules, state, traits, valid_modes=valid_modes
+        )
+        assert state.current_mode == "familiar"
+        assert len(applied) == 1
+
+    # -- Malformed conditions/effects handled safely --
+
+    def test_malformed_condition_returns_false(self):
+        """Malformed SQL-like conditions don't crash, just don't fire."""
+        rules = [
+            MemoryInfluenceRule(
+                condition="'; DROP TABLE;--",
+                effect="warmth +0.10",
+            )
+        ]
+        state = UserState(user_id="u1")
+        traits = {"warmth": 0.5}
+        result, applied = evaluate_memory_influences(rules, state, traits)
+        assert result["warmth"] == 0.5
+        assert len(applied) == 0
+
+    def test_malformed_effect_ignored(self):
+        """Unrecognized effect format is silently ignored."""
+        rules = [
+            MemoryInfluenceRule(
+                condition="interaction_count > 0",
+                effect="execute_code os.system('rm -rf /')",
+            )
+        ]
+        state = UserState(user_id="u1", interaction_count=5)
+        traits = {"warmth": 0.5}
+        result, applied = evaluate_memory_influences(rules, state, traits)
+        assert result["warmth"] == 0.5
+        assert len(applied) == 0
+
+    # -- Runtime clamping always enforced --
+
+    def test_extreme_deltas_clamped_at_runtime(self):
+        """Even at boundary delta values, runtime clamping holds."""
+        dynamics = DynamicsConfig(
+            default_mood="extreme",
+            moods=[
+                DynamicMood(
+                    name="extreme",
+                    trait_deltas={"warmth": -1.0, "rigor": 1.0},
+                ),
+            ],
+        )
+        base = {"warmth": 0.3, "rigor": 0.8}
+        result = apply_dynamics_to_traits(base, dynamics, "extreme", "nonexistent")
+        assert result["warmth"] == 0.0  # clamped at 0
+        assert result["rigor"] == 1.0  # clamped at 1
+
+
+# ---------------------------------------------------------------------------
+# Validator dynamics checks
+# ---------------------------------------------------------------------------
+
+
+class TestValidatorDynamicsChecks:
+    """Test that the IdentityValidator catches dynamics issues."""
+
+    def test_unknown_trait_in_mood_warns(self):
+        from personanexus.validator import IdentityValidator
+
+        dynamics = DynamicsConfig(
+            default_mood="bad",
+            moods=[DynamicMood(name="bad", trait_deltas={"fake_trait": 0.1})],
+        )
+        identity = _make_minimal_identity(dynamics)
+        validator = IdentityValidator()
+        result = validator.validate_identity(identity)
+        warns = [w for w in result.warnings if w.type == "dynamics_unknown_trait"]
+        assert len(warns) == 1
+        assert "fake_trait" in warns[0].message
+
+    def test_unknown_trait_in_mode_warns(self):
+        from personanexus.validator import IdentityValidator
+
+        dynamics = DynamicsConfig(
+            default_mode="bad",
+            modes=[DynamicMode(name="bad", trait_overrides={"fake_trait": 0.5})],
+        )
+        identity = _make_minimal_identity(dynamics)
+        validator = IdentityValidator()
+        result = validator.validate_identity(identity)
+        warns = [w for w in result.warnings if w.type == "dynamics_unknown_trait"]
+        assert len(warns) == 1
+
+    def test_invalid_unlock_target_warns(self):
+        from personanexus.validator import IdentityValidator
+
+        dynamics = DynamicsConfig(
+            default_mode="real",
+            modes=[DynamicMode(name="real")],
+            memory_influences=[
+                MemoryInfluenceRule(
+                    condition="trust_score > 0.5",
+                    effect="unlock_mode ghost_mode",
+                )
+            ],
+        )
+        identity = _make_minimal_identity(dynamics)
+        validator = IdentityValidator()
+        result = validator.validate_identity(identity)
+        warns = [w for w in result.warnings if w.type == "dynamics_invalid_unlock"]
+        assert len(warns) == 1
+        assert "ghost_mode" in warns[0].message
+
+    def test_unreachable_mood_warns(self):
+        from personanexus.validator import IdentityValidator
+
+        dynamics = DynamicsConfig(
+            default_mood="neutral",
+            moods=[
+                DynamicMood(name="neutral"),
+                DynamicMood(name="orphan"),  # no triggers, not default
+            ],
+        )
+        identity = _make_minimal_identity(dynamics)
+        validator = IdentityValidator()
+        result = validator.validate_identity(identity)
+        warns = [w for w in result.warnings if w.type == "dynamics_unreachable"]
+        assert len(warns) == 1
+        assert "orphan" in warns[0].message
+
+    def test_no_dynamics_no_warnings(self):
+        from personanexus.validator import IdentityValidator
+
+        identity = _make_minimal_identity(None)
+        validator = IdentityValidator()
+        result = validator.validate_identity(identity)
+        dynamics_warns = [w for w in result.warnings if w.type.startswith("dynamics_")]
+        assert len(dynamics_warns) == 0
