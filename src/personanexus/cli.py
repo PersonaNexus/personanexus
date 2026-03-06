@@ -1451,7 +1451,7 @@ def build(
 def add_dynamics(
     file: Annotated[Path, typer.Argument(help="Path to existing PersonaNexus YAML file")],
 ) -> None:
-    """Add dynamic personality features (moods, modes, memory influences) to an existing identity."""
+    """Add dynamic personality features to an existing identity."""
     if not file.exists():
         console.print(f"[red]Error: File not found: {file}[/red]")
         raise typer.Exit(code=1)
@@ -1469,7 +1469,7 @@ def add_dynamics(
         raise typer.Exit(code=1)
 
     if not result.valid:
-        console.print(f"[red]File has validation errors — fix them first:[/red]")
+        console.print("[red]File has validation errors — fix them first:[/red]")
         for error in result.errors:
             console.print(f"  [red]• {error}[/red]")
         raise typer.Exit(code=1)

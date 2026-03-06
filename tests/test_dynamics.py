@@ -499,9 +499,14 @@ class TestDynamicsSecurityHardening:
     def test_valid_trigger_types_accepted(self):
         """All documented trigger types are accepted."""
         for ttype in [
-            "sentiment_below", "sentiment_above", "keyword",
-            "interaction_count_above", "user_known",
-            "trust_above", "trust_below", "custom",
+            "sentiment_below",
+            "sentiment_above",
+            "keyword",
+            "interaction_count_above",
+            "user_known",
+            "trust_above",
+            "trust_below",
+            "custom",
         ]:
             trigger = DynamicTrigger(type=ttype, value=0.5)
             assert trigger.type == ttype
@@ -591,9 +596,7 @@ class TestDynamicsSecurityHardening:
         state = UserState(user_id="u1", trust_score=0.8)
         traits = {"warmth": 0.5}
         valid_modes = {"stranger", "familiar"}
-        result, applied = evaluate_memory_influences(
-            rules, state, traits, valid_modes=valid_modes
-        )
+        result, applied = evaluate_memory_influences(rules, state, traits, valid_modes=valid_modes)
         assert state.current_mode != "nonexistent_mode"
         assert len(applied) == 0
 
@@ -608,9 +611,7 @@ class TestDynamicsSecurityHardening:
         state = UserState(user_id="u1", trust_score=0.8)
         traits = {"warmth": 0.5}
         valid_modes = {"stranger", "familiar"}
-        _, applied = evaluate_memory_influences(
-            rules, state, traits, valid_modes=valid_modes
-        )
+        _, applied = evaluate_memory_influences(rules, state, traits, valid_modes=valid_modes)
         assert state.current_mode == "familiar"
         assert len(applied) == 1
 

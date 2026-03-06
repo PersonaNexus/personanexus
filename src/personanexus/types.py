@@ -1165,9 +1165,7 @@ class DynamicMood(BaseModel):
     def validate_trait_deltas(cls, v: dict[str, float]) -> dict[str, float]:
         for trait, delta in v.items():
             if not -1.0 <= delta <= 1.0:
-                raise ValueError(
-                    f"Trait delta for '{trait}' must be in [-1.0, 1.0], got {delta}"
-                )
+                raise ValueError(f"Trait delta for '{trait}' must be in [-1.0, 1.0], got {delta}")
         return v
 
 
@@ -1188,9 +1186,7 @@ class DynamicMode(BaseModel):
     def validate_trait_overrides(cls, v: dict[str, float]) -> dict[str, float]:
         for trait, value in v.items():
             if not 0.0 <= value <= 1.0:
-                raise ValueError(
-                    f"Trait override for '{trait}' must be in [0.0, 1.0], got {value}"
-                )
+                raise ValueError(f"Trait override for '{trait}' must be in [0.0, 1.0], got {value}")
         return v
 
 
