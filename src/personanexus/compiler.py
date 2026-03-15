@@ -219,9 +219,7 @@ class SystemPromptCompiler:
         ]
 
         # Running token count for required sections
-        tokens_used = sum(
-            self.estimate_tokens(content) for _, content in named_sections
-        )
+        tokens_used = sum(self.estimate_tokens(content) for _, content in named_sections)
         # Account for "\n\n" separators between sections
         tokens_used += len(named_sections) - 1
 
@@ -273,16 +271,26 @@ class SystemPromptCompiler:
                 budget_exhausted = True
                 logger.info(
                     "Skipping section '%s' and remaining — budget exhausted (%d/%d tokens).",
-                    name, tokens_used, self.token_budget,
+                    name,
+                    tokens_used,
+                    self.token_budget,
                 )
 
         # --- 3. Assemble final prompt in the correct display order ---
         # Required sections first, then optional sections interleaved in
         # their natural document order.
         display_order = [
-            "header", "role", "personality", "communication", "expertise",
-            "principles", "behavior", "guardrails", "behavioral_modes",
-            "relationships", "interaction",
+            "header",
+            "role",
+            "personality",
+            "communication",
+            "expertise",
+            "principles",
+            "behavior",
+            "guardrails",
+            "behavioral_modes",
+            "relationships",
+            "interaction",
         ]
 
         all_sections = dict(named_sections + optional_sections)
