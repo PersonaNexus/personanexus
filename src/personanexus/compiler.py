@@ -193,6 +193,12 @@ class SystemPromptCompiler:
         """
         Compile an identity into a system prompt string.
 
+        Uses incremental budget tracking: required sections (header, role,
+        guardrails) are always rendered, then optional sections are added in
+        priority order.  Sections that would exceed the token budget are
+        skipped entirely — avoiding the cost of rendering content that would
+        be thrown away.
+
         Args:
             identity: A fully resolved AgentIdentity.
             format: "text" (generic markdown), "anthropic", or "openai".
@@ -205,62 +211,109 @@ class SystemPromptCompiler:
         self._sections_omitted = []
         self._was_truncated = False
 
-        # Build named sections as (name, content) pairs
-        named_sections: list[tuple[str, str]] = []
+        # --- 1. Render required sections (always kept) ---
+        named_sections: list[tuple[str, str]] = [
+            ("header", self._render_header(identity)),
+            ("role", self._render_role(identity.role)),
+            ("guardrails", self._render_guardrails(identity.guardrails)),
+        ]
 
-        named_sections.append(("header", self._render_header(identity)))
-        named_sections.append(("role", self._render_role(identity.role)))
-        named_sections.append(("personality", self._render_personality(identity.personality)))
-        named_sections.append(("communication", self._render_communication(identity.communication)))
+        # Running token count for required sections
+        tokens_used = sum(
+            self.estimate_tokens(content) for _, content in named_sections
+        )
+        # Account for "\n\n" separators between sections
+        tokens_used += len(named_sections) - 1
 
-        expertise_section = self._render_expertise(identity.expertise)
-        if expertise_section:
-            named_sections.append(("expertise", expertise_section))
+        # --- 2. Build lazy renderers for optional sections in priority order ---
+        # _OPTIONAL_SECTION_PRIORITY is ordered highest-to-lowest priority.
+        # We render in that order and stop adding when budget is exhausted.
+        optional_renderers: list[tuple[str, Any]] = [
+            ("personality", lambda: self._render_personality(identity.personality)),
+            ("communication", lambda: self._render_communication(identity.communication)),
+            ("principles", lambda: self._render_principles(identity.principles)),
+            ("expertise", lambda: self._render_expertise(identity.expertise)),
+            ("behavior", lambda: self._render_behavior(identity.behavior)),
+            ("relationships", lambda: self._render_relationships(identity.memory)),
+            ("behavioral_modes", lambda: self._render_behavioral_modes(identity.behavioral_modes)),
+            ("interaction", lambda: self._render_interaction(identity.interaction)),
+        ]
+        # Allow subclasses (skill extensions) to inject additional sections
+        optional_renderers.extend(self._get_extra_optional_renderers(identity))
 
-        named_sections.append(("principles", self._render_principles(identity.principles)))
+        optional_sections: list[tuple[str, str]] = []
+        budget_exhausted = False
 
-        behavior_section = self._render_behavior(identity.behavior)
-        if behavior_section:
-            named_sections.append(("behavior", behavior_section))
+        for name, renderer in optional_renderers:
+            if budget_exhausted:
+                self._sections_omitted.append(name)
+                continue
 
-        named_sections.append(("guardrails", self._render_guardrails(identity.guardrails)))
+            content = renderer()
+            if not content:
+                continue
 
-        modes_section = self._render_behavioral_modes(identity.behavioral_modes)
-        if modes_section:
-            named_sections.append(("behavioral_modes", modes_section))
+            section_tokens = self.estimate_tokens(content) + 1  # +1 for separator
+            if tokens_used + section_tokens <= self.token_budget:
+                optional_sections.append((name, content))
+                tokens_used += section_tokens
+            else:
+                # Budget would be exceeded — try truncating principles if applicable
+                if name == "principles":
+                    truncated = self._truncate_principles(content, max_count=5)
+                    truncated_tokens = self.estimate_tokens(truncated) + 1
+                    if tokens_used + truncated_tokens <= self.token_budget:
+                        optional_sections.append((name, truncated))
+                        tokens_used += truncated_tokens
+                        logger.info("Truncated principles to top 5 to fit token budget.")
+                        continue
 
-        relationships_section = self._render_relationships(identity.memory)
-        if relationships_section:
-            named_sections.append(("relationships", relationships_section))
+                self._sections_omitted.append(name)
+                self._was_truncated = True
+                budget_exhausted = True
+                logger.info(
+                    "Skipping section '%s' and remaining — budget exhausted (%d/%d tokens).",
+                    name, tokens_used, self.token_budget,
+                )
 
-        interaction_section = self._render_interaction(identity.interaction)
-        if interaction_section:
-            named_sections.append(("interaction", interaction_section))
+        # --- 3. Assemble final prompt in the correct display order ---
+        # Required sections first, then optional sections interleaved in
+        # their natural document order.
+        display_order = [
+            "header", "role", "personality", "communication", "expertise",
+            "principles", "behavior", "guardrails", "behavioral_modes",
+            "relationships", "interaction",
+        ]
 
-        # Join all sections for initial prompt
-        prompt = "\n\n".join(content for _name, content in named_sections if content)
+        all_sections = {name: content for name, content in named_sections + optional_sections}
+        ordered_sections: list[tuple[str, str]] = []
+        seen: set[str] = set()
+        for name in display_order:
+            if name in all_sections:
+                ordered_sections.append((name, all_sections[name]))
+                seen.add(name)
+        # Append any extra sections (from skill subclasses) not in display_order
+        for name, content in named_sections + optional_sections:
+            if name not in seen and content:
+                ordered_sections.append((name, content))
 
-        # Check token budget and truncate if necessary
-        estimated = self.estimate_tokens(prompt)
-        if estimated > self.token_budget:
-            logger.warning(
-                "Prompt estimated at %d tokens, exceeds budget of %d. Truncating.",
-                estimated,
-                self.token_budget,
-            )
-            named_sections = self._truncate_to_budget(named_sections, self.token_budget)
-            prompt = "\n\n".join(content for _name, content in named_sections if content)
-            self._was_truncated = True
-        else:
-            # All sections included, nothing omitted
-            self._sections_included = [name for name, _ in named_sections]
-            self._sections_omitted = []
+        self._sections_included = [name for name, _ in ordered_sections]
+
+        prompt = "\n\n".join(content for _name, content in ordered_sections if content)
 
         if format == "anthropic":
             return self._wrap_anthropic(prompt, identity)
         elif format == "openai":
             return self._wrap_openai(prompt, identity)
         return prompt
+
+    def _get_extra_optional_renderers(self, identity: AgentIdentity) -> list[tuple[str, Any]]:
+        """Extension point for skill subclasses to inject additional sections.
+
+        Override this method to return a list of (section_name, renderer_callable)
+        tuples that will be appended to the optional section renderers.
+        """
+        return []
 
     def estimate_tokens(self, text: str) -> int:
         """Rough token estimate (~4 chars per token)."""
@@ -746,6 +799,7 @@ class OpenClawCompiler:
         self,
         identity: AgentIdentity,
         model_config: dict[str, Any] | None = None,
+        include_system_prompt: bool = True,
     ) -> dict[str, Any]:
         """
         Compile identity into OpenClaw personality.json format.
@@ -754,11 +808,16 @@ class OpenClawCompiler:
             identity: The resolved PersonaNexus.
             model_config: Optional model configuration dict to override defaults.
                           Expected keys: primary_model, temperature, max_tokens, top_p.
+            include_system_prompt: If False, skip the expensive system prompt
+                compilation and set system_prompt to an empty string.  Useful
+                when only the structured personality data is needed.
 
         Returns:
             Dictionary matching the OpenClaw personality.json schema.
         """
-        system_prompt = self.prompt_compiler.compile(identity, format="text")
+        system_prompt = ""
+        if include_system_prompt:
+            system_prompt = self.prompt_compiler.compile(identity, format="text")
 
         # Compute traits from profile if mode is not custom
         if identity.personality.profile.mode != PersonalityMode.CUSTOM:
@@ -919,20 +978,27 @@ class SoulCompiler:
         Returns:
             Dict with keys "soul_md" and "style_md", each containing Markdown text.
         """
+        # Compute traits once and reuse across both SOUL.md and STYLE.md
+        if identity.personality.profile.mode != PersonalityMode.CUSTOM:
+            computed = compute_personality_traits(identity.personality)
+            traits = computed.defined_traits()
+        else:
+            traits = identity.personality.traits.defined_traits()
+
         return {
-            "soul_md": self._render_soul(identity),
-            "style_md": self._render_style(identity),
+            "soul_md": self._render_soul(identity, traits),
+            "style_md": self._render_style(identity, traits),
         }
 
     # ------------------------------------------------------------------
     # SOUL.md rendering
     # ------------------------------------------------------------------
 
-    def _render_soul(self, identity: AgentIdentity) -> str:
+    def _render_soul(self, identity: AgentIdentity, traits: dict[str, float]) -> str:
         sections: list[str] = []
 
         sections.append(self._soul_header(identity))
-        sections.append(self._soul_who_i_am(identity))
+        sections.append(self._soul_who_i_am(identity, traits))
         sections.append(self._soul_worldview(identity))
 
         opinions = self._soul_opinions(identity.narrative)
@@ -969,7 +1035,7 @@ class SoulCompiler:
         desc = identity.metadata.description.strip()
         return f"# {identity.metadata.name}\n\n{desc}"
 
-    def _soul_who_i_am(self, identity: AgentIdentity) -> str:
+    def _soul_who_i_am(self, identity: AgentIdentity, traits: dict[str, float]) -> str:
         lines = ["## Who I Am"]
 
         # Use narrative backstory if available, otherwise build from role
@@ -982,13 +1048,7 @@ class SoulCompiler:
         if identity.personality.notes:
             lines.append(f"\n{identity.personality.notes.strip()}")
 
-        # Add personality trait descriptions
-        if identity.personality.profile.mode != PersonalityMode.CUSTOM:
-            computed = compute_personality_traits(identity.personality)
-            traits = computed.defined_traits()
-        else:
-            traits = identity.personality.traits.defined_traits()
-
+        # Add personality trait descriptions (using pre-computed traits)
         if traits:
             trait_lines: list[str] = []
             for trait_name, value in sorted(traits.items()):
@@ -1101,11 +1161,11 @@ class SoulCompiler:
     # STYLE.md rendering
     # ------------------------------------------------------------------
 
-    def _render_style(self, identity: AgentIdentity) -> str:
+    def _render_style(self, identity: AgentIdentity, traits: dict[str, float]) -> str:
         sections: list[str] = []
 
         sections.append("# Voice & Style Guide")
-        sections.append(self._style_voice_principles(identity))
+        sections.append(self._style_voice_principles(identity, traits))
         sections.append(self._style_vocabulary(identity))
         sections.append(self._style_formatting(identity))
 
@@ -1123,7 +1183,7 @@ class SoulCompiler:
 
         return "\n\n".join(s for s in sections if s)
 
-    def _style_voice_principles(self, identity: AgentIdentity) -> str:
+    def _style_voice_principles(self, identity: AgentIdentity, traits: dict[str, float]) -> str:
         lines = ["## Voice Principles"]
         comm = identity.communication
 
@@ -1131,13 +1191,7 @@ class SoulCompiler:
         if comm.tone.register:
             lines.append(f"- Register: {comm.tone.register.value}")
 
-        # Add trait-derived voice description
-        if identity.personality.profile.mode != PersonalityMode.CUSTOM:
-            computed = compute_personality_traits(identity.personality)
-            traits = computed.defined_traits()
-        else:
-            traits = identity.personality.traits.defined_traits()
-
+        # Add trait-derived voice description (using pre-computed traits)
         if traits:
             voice_notes: list[str] = []
             for trait_name, value in sorted(traits.items()):
