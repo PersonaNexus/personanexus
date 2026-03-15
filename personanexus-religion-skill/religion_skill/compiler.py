@@ -10,21 +10,24 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from religion_skill.religion import InfluenceLevel, ReligionConfig
-
-from personanexus.compiler import (
-    CompilerError,  # noqa: F401 – re-export
-    MarkdownCompiler,  # noqa: F401 – re-export
-    OpenClawCompiler,  # noqa: F401 – re-export
-    SoulCompiler as _BaseSoulCompiler,
-    SystemPromptCompiler as _BaseSystemPromptCompiler,
-    compile_identity as _base_compile_identity,
-)
 from personanexus.compiler import (
     AutoGenCompiler,  # noqa: F401 – re-export
+    CompilerError,  # noqa: F401 – re-export
     CrewAICompiler,  # noqa: F401 – re-export
     LangChainCompiler,  # noqa: F401 – re-export
+    MarkdownCompiler,  # noqa: F401 – re-export
+    OpenClawCompiler,  # noqa: F401 – re-export
 )
+from personanexus.compiler import (
+    SoulCompiler as _BaseSoulCompiler,
+)
+from personanexus.compiler import (
+    SystemPromptCompiler as _BaseSystemPromptCompiler,
+)
+from personanexus.compiler import (
+    compile_identity as _base_compile_identity,
+)
+from religion_skill.religion import InfluenceLevel, ReligionConfig
 
 logger = logging.getLogger(__name__)
 
