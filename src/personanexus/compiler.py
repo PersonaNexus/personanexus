@@ -285,7 +285,7 @@ class SystemPromptCompiler:
             "relationships", "interaction",
         ]
 
-        all_sections = {name: content for name, content in named_sections + optional_sections}
+        all_sections = dict(named_sections + optional_sections)
         ordered_sections: list[tuple[str, str]] = []
         seen: set[str] = set()
         for name in display_order:
