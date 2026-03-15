@@ -511,6 +511,9 @@ def compile_with_adjusted_traits(
 class DynamicSession:
     """Manages a multi-turn session with dynamics for a single user + persona.
 
+    Caches the compiled prompt and only recompiles when the active mood, mode,
+    or adjusted traits actually change between interactions.
+
     Usage::
 
         session = DynamicSession(identity, user_id="user_123")
@@ -533,6 +536,12 @@ class DynamicSession:
         self.state = self.backend.load(user_id)
         self.auto_save = auto_save
         self.history: list[DynamicsResult] = []
+        # Prompt cache — avoids recompilation when dynamics state is unchanged
+        self._cached_prompt: str | None = None
+        self._cached_mood: str | None = None
+        self._cached_mode: str | None = None
+        self._cached_traits: dict[str, float] | None = None
+        self._cached_tone_override: str | None = None
 
     def process(
         self,
@@ -559,8 +568,35 @@ class DynamicSession:
             self.state,
             message=message,
             sentiment=sentiment,
-            compile_prompt=compile_prompt,
+            compile_prompt=False,  # We handle compilation with caching below
         )
+
+        # Only recompile if dynamics state actually changed
+        if compile_prompt:
+            needs_recompile = (
+                self._cached_prompt is None
+                or result.active_mood != self._cached_mood
+                or result.active_mode != self._cached_mode
+                or result.adjusted_traits != self._cached_traits
+                or result.tone_override != self._cached_tone_override
+            )
+
+            if needs_recompile:
+                compiled = compile_with_adjusted_traits(
+                    self.identity,
+                    result.adjusted_traits,
+                    result.tone_override,
+                )
+                self._cached_prompt = compiled
+                self._cached_mood = result.active_mood
+                self._cached_mode = result.active_mode
+                self._cached_traits = dict(result.adjusted_traits)
+                self._cached_tone_override = result.tone_override
+                logger.debug("Prompt recompiled (dynamics state changed).")
+            else:
+                logger.debug("Prompt cache hit — skipping recompilation.")
+
+            result.compiled_prompt = self._cached_prompt
 
         # Record the interaction in memory
         record_interaction(
@@ -577,6 +613,10 @@ class DynamicSession:
 
         return result
 
+    def invalidate_cache(self) -> None:
+        """Force the next process() call to recompile the prompt."""
+        self._cached_prompt = None
+
     def save(self) -> None:
         """Persist user state to disk."""
         self.backend.save(self.state)
@@ -585,3 +625,8 @@ class DynamicSession:
         """Reset user state to defaults."""
         self.state = UserState(user_id=self.user_id)
         self.history.clear()
+        self._cached_prompt = None
+        self._cached_mood = None
+        self._cached_mode = None
+        self._cached_traits = None
+        self._cached_tone_override = None
