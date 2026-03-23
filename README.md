@@ -377,6 +377,12 @@ uv run ruff check src/ tests/
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and code style guidelines.
 
+## Related Projects
+
+| Project | Description |
+|---------|-------------|
+| [**AgentForge**](https://github.com/PersonaNexus/AgentSkillFactory) | Transform job descriptions into deployable PersonaNexus agent blueprints — extracts skills, maps traits, and outputs ready-to-use identities. |
+
 ## Trademark Notice
 
 PersonaNexus uses established public-domain personality frameworks:
