@@ -153,7 +153,8 @@ def evolution_state_path(persona_path: str | Path) -> Path:
 
 
 def load_persona_data(persona_path: str | Path) -> dict[str, Any]:
-    return yaml.safe_load(Path(persona_path).read_text(encoding="utf-8"))
+    result: dict[str, Any] = yaml.safe_load(Path(persona_path).read_text(encoding="utf-8"))
+    return result
 
 
 def save_persona_data(persona_path: str | Path, data: dict[str, Any]) -> None:
@@ -527,6 +528,7 @@ def promote_all(persona: str | Path) -> tuple[list[CandidateProposal], list[str]
     for candidate in state.pending_candidates:
         if candidate.status != "pending":
             continue
+        key: tuple[str, str]
         if candidate.type == "soft":
             key = (candidate.type, candidate.guidance or candidate.reason)
         else:
