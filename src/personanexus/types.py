@@ -161,6 +161,23 @@ class AvatarType(enum.StrEnum):
     NONE = "none"
 
 
+class EvolutionMode(enum.StrEnum):
+    SOFT = "soft"
+    HARD = "hard"
+    BOTH = "both"
+
+
+class LearningRate(enum.StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ReviewMode(enum.StrEnum):
+    PROMPT = "prompt"
+    AUTO = "auto"
+
+
 # ---------------------------------------------------------------------------
 # Interaction Protocols
 # ---------------------------------------------------------------------------
@@ -961,6 +978,13 @@ class Versioning(BaseModel):
 
 
 class Evolution(BaseModel):
+    enabled: bool = False
+    mode: EvolutionMode = EvolutionMode.SOFT
+    learning_rate: LearningRate = LearningRate.MEDIUM
+    consensus_threshold: int = Field(3, ge=1, le=20)
+    protected_traits: list[str] = Field(default_factory=list)
+    judge_model: str | None = None
+    review_mode: ReviewMode = ReviewMode.PROMPT
     immutable_fields: list[str] = Field(default_factory=list)
     admin_mutable_fields: list[str] = Field(default_factory=list)
     runtime_mutable_fields: list[RuntimeMutableField] = Field(default_factory=list)

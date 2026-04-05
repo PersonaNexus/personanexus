@@ -26,6 +26,15 @@ from personanexus.dynamics import (
     apply_dynamics_to_traits,
     run_dynamics_pipeline,
 )
+from personanexus.evolution import (
+    EvolutionState,
+    apply_deltas,
+    evolve_persona,
+    export_evolved_persona,
+    get_candidates,
+    load_evolution_state,
+    load_identity_with_evolution,
+)
 from personanexus.linter import IdentityLinter, LintWarning
 from personanexus.memory import (
     MemoryBackendJSON,
@@ -87,6 +96,13 @@ __all__ = [
     "run_dynamics_pipeline",
     "update_sentiment",
     "update_trust",
+    "EvolutionState",
+    "apply_deltas",
+    "evolve_persona",
+    "export_evolved_persona",
+    "get_candidates",
+    "load_evolution_state",
+    "load_identity_with_evolution",
     "IdentityLinter",
     "LintWarning",
     "AnalysisResult",

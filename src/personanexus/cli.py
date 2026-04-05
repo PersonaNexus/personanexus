@@ -744,6 +744,10 @@ def compile(
         int,
         typer.Option("--token-budget", help="Estimated token budget for system prompt"),
     ] = 3000,
+    apply_evolution: Annotated[
+        bool,
+        typer.Option("--apply-evolution", help="Apply .evolution deltas before compiling"),
+    ] = False,
 ) -> None:
     """Compile a resolved identity into a system prompt or platform format."""
     if not file.exists():
@@ -779,6 +783,10 @@ def compile(
     try:
         resolver = IdentityResolver(search_paths=search_paths)
         identity = resolver.resolve_file(file)
+        if apply_evolution:
+            from personanexus.evolution import apply_deltas, load_evolution_state
+
+            identity = apply_deltas(identity, load_evolution_state(file, create=False))
     except ParseError as exc:
         console.print(f"[red]Parse error: {exc}[/red]")
         raise typer.Exit(code=1)
@@ -1976,6 +1984,209 @@ def simulate(
             border_style="green",
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# evolve subcommand group
+# ---------------------------------------------------------------------------
+
+evolve_app = typer.Typer(
+    name="evolve",
+    help="Persona evolution engine commands",
+    add_completion=False,
+)
+app.add_typer(evolve_app, name="evolve")
+
+
+@evolve_app.command("enable")
+def evolve_enable(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    mode: Annotated[str, typer.Option("--mode", help="Evolution mode: soft, hard, or both")] = "soft",
+    learning_rate: Annotated[str, typer.Option("--learning-rate", help="low, medium, or high")] = "medium",
+    consensus_threshold: Annotated[int, typer.Option("--consensus-threshold", help="Signals required for hard evolution")] = 3,
+    review_mode: Annotated[str, typer.Option("--review-mode", help="prompt or auto")] = "prompt",
+) -> None:
+    """Enable evolution settings on a persona YAML file."""
+    from personanexus.evolution import configure_evolution, resolve_persona_path
+    from personanexus.types import EvolutionMode, LearningRate, ReviewMode
+
+    try:
+        persona_path = resolve_persona_path(persona)
+        configure_evolution(
+            persona_path,
+            mode=EvolutionMode(mode),
+            learning_rate=LearningRate(learning_rate),
+            consensus_threshold=consensus_threshold,
+            review_mode=ReviewMode(review_mode),
+        )
+    except Exception as exc:
+        console.print(f"[red]Enable failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Evolution enabled for {persona_path}[/green]")
+
+
+@evolve_app.command("feedback")
+def evolve_feedback(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    feedback: Annotated[str, typer.Argument(help="Feedback to record")],
+    type: Annotated[str | None, typer.Option("--type", help="soft or hard")] = None,
+    trait: Annotated[str | None, typer.Option("--trait", help="Trait to evolve for hard changes")] = None,
+    change: Annotated[float | None, typer.Option("--change", help="Hard-delta value before caps are applied")] = None,
+    source: Annotated[str, typer.Option("--source", help="Source label for audit log")] = "manual_feedback",
+    thumbs_down: Annotated[bool, typer.Option("--thumbs-down", help="Treat this as negative feedback")] = False,
+    response_id: Annotated[str | None, typer.Option("--response-id", help="Optional response identifier")] = None,
+) -> None:
+    """Queue a feedback signal as a pending evolution candidate."""
+    from personanexus.evolution import evolve_persona
+
+    kind = None if type is None else type  # keep name explicit for Typer
+    try:
+        candidate = evolve_persona(
+            persona,
+            feedback=feedback,
+            source=source,
+            candidate_type=kind,
+            trait=trait,
+            change=change,
+            thumbs_down=thumbs_down,
+            response_id=response_id,
+        )
+    except Exception as exc:
+        console.print(f"[red]Feedback failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Queued {candidate.type} candidate {candidate.id}[/green]")
+    if candidate.trait:
+        console.print(f"[dim]Trait: {candidate.trait}[/dim]")
+    if candidate.change is not None:
+        console.print(f"[dim]Change: {candidate.change:+.2f}[/dim]")
+    if candidate.guidance:
+        console.print(f"[dim]Guidance: {candidate.guidance}[/dim]")
+
+
+@evolve_app.command("pending")
+def evolve_pending(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+) -> None:
+    """List pending evolution candidates."""
+    from personanexus.evolution import get_candidates
+
+    candidates = get_candidates(persona)
+    if not candidates:
+        console.print("[yellow]No pending evolution candidates.[/yellow]")
+        return
+
+    table = Table(title="Pending Evolution Candidates", show_header=True, header_style="bold")
+    table.add_column("ID", style="cyan")
+    table.add_column("Type")
+    table.add_column("Target")
+    table.add_column("Change")
+    table.add_column("Signals")
+    table.add_column("Reason")
+
+    for candidate in candidates:
+        table.add_row(
+            candidate.id,
+            candidate.type,
+            candidate.trait or "tone_guidance",
+            f"{candidate.change:+.2f}" if candidate.change is not None else "—",
+            str(candidate.signals_supporting),
+            candidate.reason,
+        )
+
+    console.print(table)
+
+
+@evolve_app.command("promote")
+def evolve_promote(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    candidate_id: Annotated[str | None, typer.Argument(help="Candidate ID", show_default=False)] = None,
+    accept: Annotated[bool, typer.Option("--accept", help="Accept the specified candidate")] = False,
+    reject: Annotated[bool, typer.Option("--reject", help="Reject the specified candidate")] = False,
+    accept_all: Annotated[bool, typer.Option("--accept-all", help="Promote all pending candidates")] = False,
+) -> None:
+    """Promote pending candidates into active deltas."""
+    from personanexus.evolution import promote_all, promote_candidate
+
+    try:
+        if accept_all:
+            accepted, errors = promote_all(persona)
+            console.print(f"[green]✓ Accepted {len(accepted)} candidate(s)[/green]")
+            for err in errors:
+                console.print(f"[yellow]Skipped: {err}[/yellow]")
+            return
+
+        if not candidate_id:
+            console.print("[red]Error: candidate_id is required unless --accept-all is used[/red]")
+            raise typer.Exit(code=1)
+        if accept == reject:
+            console.print("[red]Error: choose exactly one of --accept or --reject[/red]")
+            raise typer.Exit(code=1)
+
+        promote_candidate(persona, candidate_id, accept=accept)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        console.print(f"[red]Promote failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    action = "accepted" if accept else "rejected"
+    console.print(f"[green]✓ Candidate {candidate_id} {action}[/green]")
+
+
+@evolve_app.command("reset")
+def evolve_reset(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+) -> None:
+    """Clear active evolution deltas and pending candidates."""
+    from personanexus.evolution import reset_evolution
+
+    try:
+        state = reset_evolution(persona)
+    except Exception as exc:
+        console.print(f"[red]Reset failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Evolution reset. Current version: {state.version}[/green]")
+
+
+@evolve_app.command("rollback")
+def evolve_rollback(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    version: Annotated[int, typer.Option("--version", help="Historical version snapshot to restore")],
+) -> None:
+    """Restore a previous evolution snapshot."""
+    from personanexus.evolution import rollback_evolution
+
+    try:
+        state = rollback_evolution(persona, version)
+    except Exception as exc:
+        console.print(f"[red]Rollback failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Rolled back using snapshot {version}. Current version: {state.version}[/green]")
+
+
+@evolve_app.command("export")
+def evolve_export(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Where to write the evolved YAML")],
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option("--search-path", "-s", help="Additional search paths for archetypes/mixins"),
+    ] = None,
+) -> None:
+    """Export a new YAML file with active evolution deltas applied."""
+    from personanexus.evolution import export_evolved_persona
+
+    try:
+        out = export_evolved_persona(persona, output, search_paths=search_path or [])
+    except Exception as exc:
+        console.print(f"[red]Export failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Exported evolved persona to {out}[/green]")
 
 
 # ---------------------------------------------------------------------------
