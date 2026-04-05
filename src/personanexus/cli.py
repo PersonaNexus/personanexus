@@ -2001,9 +2001,15 @@ app.add_typer(evolve_app, name="evolve")
 @evolve_app.command("enable")
 def evolve_enable(
     persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
-    mode: Annotated[str, typer.Option("--mode", help="Evolution mode: soft, hard, or both")] = "soft",
-    learning_rate: Annotated[str, typer.Option("--learning-rate", help="low, medium, or high")] = "medium",
-    consensus_threshold: Annotated[int, typer.Option("--consensus-threshold", help="Signals required for hard evolution")] = 3,
+    mode: Annotated[
+        str, typer.Option("--mode", help="Evolution mode: soft, hard, or both")
+    ] = "soft",
+    learning_rate: Annotated[
+        str, typer.Option("--learning-rate", help="low, medium, or high")
+    ] = "medium",
+    consensus_threshold: Annotated[
+        int, typer.Option("--consensus-threshold", help="Signals required for hard evolution")
+    ] = 3,
     review_mode: Annotated[str, typer.Option("--review-mode", help="prompt or auto")] = "prompt",
 ) -> None:
     """Enable evolution settings on a persona YAML file."""
@@ -2031,11 +2037,21 @@ def evolve_feedback(
     persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
     feedback: Annotated[str, typer.Argument(help="Feedback to record")],
     type: Annotated[str | None, typer.Option("--type", help="soft or hard")] = None,
-    trait: Annotated[str | None, typer.Option("--trait", help="Trait to evolve for hard changes")] = None,
-    change: Annotated[float | None, typer.Option("--change", help="Hard-delta value before caps are applied")] = None,
-    source: Annotated[str, typer.Option("--source", help="Source label for audit log")] = "manual_feedback",
-    thumbs_down: Annotated[bool, typer.Option("--thumbs-down", help="Treat this as negative feedback")] = False,
-    response_id: Annotated[str | None, typer.Option("--response-id", help="Optional response identifier")] = None,
+    trait: Annotated[
+        str | None, typer.Option("--trait", help="Trait to evolve for hard changes")
+    ] = None,
+    change: Annotated[
+        float | None, typer.Option("--change", help="Hard-delta value before caps are applied")
+    ] = None,
+    source: Annotated[
+        str, typer.Option("--source", help="Source label for audit log")
+    ] = "manual_feedback",
+    thumbs_down: Annotated[
+        bool, typer.Option("--thumbs-down", help="Treat this as negative feedback")
+    ] = False,
+    response_id: Annotated[
+        str | None, typer.Option("--response-id", help="Optional response identifier")
+    ] = None,
 ) -> None:
     """Queue a feedback signal as a pending evolution candidate."""
     from personanexus.evolution import evolve_persona
@@ -2101,10 +2117,18 @@ def evolve_pending(
 @evolve_app.command("promote")
 def evolve_promote(
     persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
-    candidate_id: Annotated[str | None, typer.Argument(help="Candidate ID", show_default=False)] = None,
-    accept: Annotated[bool, typer.Option("--accept", help="Accept the specified candidate")] = False,
-    reject: Annotated[bool, typer.Option("--reject", help="Reject the specified candidate")] = False,
-    accept_all: Annotated[bool, typer.Option("--accept-all", help="Promote all pending candidates")] = False,
+    candidate_id: Annotated[
+        str | None, typer.Argument(help="Candidate ID", show_default=False)
+    ] = None,
+    accept: Annotated[
+        bool, typer.Option("--accept", help="Accept the specified candidate")
+    ] = False,
+    reject: Annotated[
+        bool, typer.Option("--reject", help="Reject the specified candidate")
+    ] = False,
+    accept_all: Annotated[
+        bool, typer.Option("--accept-all", help="Promote all pending candidates")
+    ] = False,
 ) -> None:
     """Promote pending candidates into active deltas."""
     from personanexus.evolution import promote_all, promote_candidate
@@ -2154,7 +2178,9 @@ def evolve_reset(
 @evolve_app.command("rollback")
 def evolve_rollback(
     persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
-    version: Annotated[int, typer.Option("--version", help="Historical version snapshot to restore")],
+    version: Annotated[
+        int, typer.Option("--version", help="Historical version snapshot to restore")
+    ],
 ) -> None:
     """Restore a previous evolution snapshot."""
     from personanexus.evolution import rollback_evolution
@@ -2165,7 +2191,9 @@ def evolve_rollback(
         console.print(f"[red]Rollback failed: {exc}[/red]")
         raise typer.Exit(code=1)
 
-    console.print(f"[green]✓ Rolled back using snapshot {version}. Current version: {state.version}[/green]")
+    console.print(
+        f"[green]✓ Rolled back using snapshot {version}. Current version: {state.version}[/green]"
+    )
 
 
 @evolve_app.command("export")

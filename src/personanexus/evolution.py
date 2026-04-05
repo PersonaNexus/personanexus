@@ -6,7 +6,7 @@ import hashlib
 import json
 import uuid
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
@@ -115,7 +115,7 @@ KEYWORD_RULES: list[dict[str, Any]] = [
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def _sha256_text(content: str) -> str:
@@ -472,7 +472,9 @@ def promote_candidate(
             raise ValueError(
                 f"Hard evolution requires {identity.evolution.consensus_threshold} aligned signals"
             )
-        current_delta = state.hard_deltas.get(candidate.trait, HardDeltaRecord(delta=0.0, applied_at=_now_iso())).delta
+        current_delta = state.hard_deltas.get(
+            candidate.trait, HardDeltaRecord(delta=0.0, applied_at=_now_iso())
+        ).delta
         proposed_total = current_delta + candidate.change
         if abs(proposed_total) > TOTAL_HARD_CAP:
             state.rejected_candidates.append(
@@ -491,7 +493,9 @@ def promote_candidate(
             raise ValueError("Hard evolution exceeds ±0.30 total cap")
 
         state.version += 1
-        state.hard_deltas[candidate.trait] = HardDeltaRecord(delta=proposed_total, applied_at=_now_iso())
+        state.hard_deltas[candidate.trait] = HardDeltaRecord(
+            delta=proposed_total, applied_at=_now_iso()
+        )
         candidate.status = "accepted"
         state.adjustments.append(
             AdjustmentRecord(

@@ -11,8 +11,8 @@ from personanexus.evolution import (
     TOTAL_HARD_CAP,
     apply_deltas,
     configure_evolution,
-    evolve_persona,
     evolution_state_path,
+    evolve_persona,
     export_evolved_persona,
     get_candidates,
     load_evolution_state,
@@ -95,7 +95,15 @@ def test_hard_feedback_rejects_protected_trait(tmp_path: Path, minimal_path: Pat
     configure_evolution(persona, mode=EvolutionMode.BOTH)
     data = json.loads(evolution_state_path(persona).read_text())
     yaml_text = persona.read_text(encoding="utf-8")
-    yaml_text += "\nevolution:\n  enabled: true\n  mode: both\n  learning_rate: medium\n  consensus_threshold: 2\n  protected_traits:\n    - agreeableness\n"
+    yaml_text += (
+        "\nevolution:\n"
+        "  enabled: true\n"
+        "  mode: both\n"
+        "  learning_rate: medium\n"
+        "  consensus_threshold: 2\n"
+        "  protected_traits:\n"
+        "    - agreeableness\n"
+    )
     persona.write_text(yaml_text, encoding="utf-8")
     with pytest.raises(ValueError):
         evolve_persona(
@@ -244,7 +252,7 @@ def test_apply_deltas_updates_custom_traits(evolved_persona_path: Path):
 def test_apply_deltas_updates_ocean_profile(tmp_path: Path):
     persona = tmp_path / "ocean.yaml"
     persona.write_text(
-        '''schema_version: "1.0"
+        """schema_version: "1.0"
 metadata:
   id: "agt_ocean_001"
   name: "Ocean"
@@ -280,7 +288,7 @@ guardrails:
       rule: "Stay safe"
       enforcement: "output_filter"
       severity: "critical"
-''',
+""",
         encoding="utf-8",
     )
     configure_evolution(persona, mode=EvolutionMode.BOTH, consensus_threshold=1)
