@@ -8,7 +8,7 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 import yaml
@@ -2056,7 +2056,9 @@ def evolve_feedback(
     """Queue a feedback signal as a pending evolution candidate."""
     from personanexus.evolution import evolve_persona
 
-    kind = None if type is None else type  # keep name explicit for Typer
+    kind: Literal["soft", "hard"] | None = None  # noqa: UP040
+    if type in ("soft", "hard"):
+        kind = type  # type: ignore[assignment]
     try:
         candidate = evolve_persona(
             persona,
