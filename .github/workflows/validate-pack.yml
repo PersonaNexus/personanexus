@@ -1,0 +1,46 @@
+name: Validate Packs
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "packs/**"
+      - "src/personanexus/packs.py"
+      - "src/personanexus/cli.py"
+      - ".github/workflows/validate-pack.yml"
+
+jobs:
+  validate-packs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Validate changed packs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t PACKS < <(find packs -name pack.json -print | sed 's#/pack.json$##' | sort)
+          if [ ${#PACKS[@]} -eq 0 ]; then
+            echo "No packs found"
+            exit 0
+          fi
+          for pack in "${PACKS[@]}"; do
+            echo "Validating $pack"
+            uv run personanexus pack validate "$pack"
+          done
+
+      - name: Rebuild gallery index
+        run: uv run personanexus pack build-gallery
+
+      - name: Ensure gallery index is committed
+        run: git diff --exit-code packs/_gallery/index.json

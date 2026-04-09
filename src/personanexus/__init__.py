@@ -1,6 +1,6 @@
 """AI PersonaNexus Framework — define, validate, and compose AI agent identities."""
 
-__version__ = "1.4.1"
+__version__ = "1.5.0"
 
 from personanexus.analyzer import (
     AnalysisResult,
@@ -76,6 +76,7 @@ from personanexus.types import (
     OceanProfile,
     PersonalityMode,
     PersonalityProfile,
+    PromptLayer,
 )
 from personanexus.validator import IdentityValidator, ValidationResult
 
@@ -122,6 +123,7 @@ __all__ = [
     "OpenClawCompiler",
     "PersonalityMode",
     "PersonalityProfile",
+    "PromptLayer",
     "SoulAnalyzer",
     "SystemPromptCompiler",
     "TeamComposition",

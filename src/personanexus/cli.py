@@ -1987,6 +1987,269 @@ def simulate(
 
 
 # ---------------------------------------------------------------------------
+# pack subcommand group
+# ---------------------------------------------------------------------------
+
+pack_app = typer.Typer(
+    name="pack",
+    help="Community pack marketplace commands",
+    add_completion=False,
+)
+app.add_typer(pack_app, name="pack")
+
+
+@pack_app.command("list")
+def pack_list(
+    category: Annotated[str | None, typer.Option("--category", help="Filter by category")] = None,
+    tag: Annotated[str | None, typer.Option("--tag", help="Filter by tag")] = None,
+    installed: Annotated[
+        bool,
+        typer.Option(
+            "--installed",
+            help="List installed cache entries instead of repo packs",
+        ),
+    ] = False,
+) -> None:
+    """List available packs."""
+    from personanexus.packs import discover_packs, list_installed_packs
+
+    records = list_installed_packs() if installed else discover_packs()
+    if category:
+        records = [record for record in records if record.metadata.category == category]
+    if tag:
+        records = [record for record in records if tag in record.metadata.tags]
+
+    if not records:
+        console.print("[yellow]No packs found.[/yellow]")
+        return
+
+    table = Table(title="Installed Packs" if installed else "Available Packs")
+    table.add_column("Ref", style="cyan")
+    table.add_column("Category")
+    table.add_column("Version")
+    table.add_column("Description")
+    for record in records:
+        table.add_row(
+            record.ref,
+            record.metadata.category,
+            record.metadata.version,
+            record.metadata.description,
+        )
+    console.print(table)
+
+
+@pack_app.command("search")
+def pack_search(
+    query: Annotated[str, typer.Argument(help="Search query")],
+    category: Annotated[str | None, typer.Option("--category", help="Filter by category")] = None,
+    tag: Annotated[str | None, typer.Option("--tag", help="Filter by tag")] = None,
+) -> None:
+    """Search pack metadata."""
+    from personanexus.packs import search_packs
+
+    records = search_packs(query, category=category, tag=tag)
+    if not records:
+        console.print("[yellow]No matching packs found.[/yellow]")
+        return
+
+    for record in records:
+        console.print(
+            f"[cyan]{record.ref}[/cyan] [{record.metadata.category}] {record.metadata.description}"
+        )
+
+
+@pack_app.command("show")
+def pack_show(
+    ref: Annotated[str, typer.Argument(help="Pack name or namespaced ref")],
+    installed: Annotated[
+        bool,
+        typer.Option("--installed", help="Resolve from installed cache"),
+    ] = False,
+) -> None:
+    """Show pack details."""
+    from personanexus.packs import default_pack_cache, default_packs_root, find_pack
+
+    try:
+        record = find_pack(ref, default_pack_cache() if installed else default_packs_root())
+    except Exception as exc:
+        console.print(f"[red]Show failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(
+        Panel.fit(
+            (
+                f"Ref: {record.ref}\n"
+                f"Author: {record.metadata.author}\n"
+                f"Version: {record.metadata.version}\n"
+                f"Category: {record.metadata.category}\n"
+                f"Description: {record.metadata.description}\n"
+                f"Tags: {', '.join(record.metadata.tags) if record.metadata.tags else '-'}\n"
+                f"Path: {record.path}"
+            ),
+            title="Pack Details",
+        )
+    )
+
+
+@pack_app.command("install")
+def pack_install(
+    ref: Annotated[str, typer.Argument(help="Pack name or namespaced ref")],
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Validate and preview without copying"),
+    ] = False,
+) -> None:
+    """Install a pack into ~/.personanexus/packs/."""
+    from personanexus.packs import install_pack, validate_pack_dir
+
+    try:
+        destination = install_pack(ref, dry_run=dry_run)
+        validation = validate_pack_dir(destination if not dry_run else destination)
+    except Exception as exc:
+        console.print(f"[red]Install failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    if dry_run:
+        console.print(f"[green]✓ Dry run passed for {destination}[/green]")
+    else:
+        console.print(f"[green]✓ Installed to {destination}[/green]")
+    for warning in validation.warnings:
+        console.print(f"[yellow]Warning: {warning}[/yellow]")
+
+
+@pack_app.command("installed")
+def pack_installed() -> None:
+    """List installed pack cache entries."""
+    from personanexus.packs import list_installed_packs
+
+    records = list_installed_packs()
+    if not records:
+        console.print("[yellow]No packs found.[/yellow]")
+        return
+
+    table = Table(title="Installed Packs")
+    table.add_column("Ref", style="cyan")
+    table.add_column("Category")
+    table.add_column("Version")
+    table.add_column("Description")
+    for record in records:
+        table.add_row(
+            record.ref,
+            record.metadata.category,
+            record.metadata.version,
+            record.metadata.description,
+        )
+    console.print(table)
+
+
+@pack_app.command("remove")
+def pack_remove(
+    ref: Annotated[str, typer.Argument(help="Installed pack ref")],
+) -> None:
+    """Remove an installed pack from cache."""
+    from personanexus.packs import remove_installed_pack
+
+    try:
+        removed = remove_installed_pack(ref)
+    except Exception as exc:
+        console.print(f"[red]Remove failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Removed {removed}[/green]")
+
+
+@pack_app.command("create")
+def pack_create(
+    persona: Annotated[Path, typer.Argument(help="Persona YAML to package")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output pack directory")],
+    author: Annotated[str, typer.Option("--author", help="Pack author")],
+    category: Annotated[
+        str,
+        typer.Option("--category", help="boards, personas, or frameworks"),
+    ],
+    description: Annotated[str, typer.Option("--description", help="Short pack description")],
+    homepage: Annotated[
+        str | None,
+        typer.Option("--homepage", help="Optional homepage URL"),
+    ] = None,
+    tag: Annotated[list[str] | None, typer.Option("--tag", help="Repeatable tag")] = None,
+    evolved_from: Annotated[
+        str | None,
+        typer.Option("--evolved-from", help="Optional upstream lineage ref"),
+    ] = None,
+) -> None:
+    """Create a pack directory from a persona YAML file."""
+    from personanexus.packs import create_pack
+
+    try:
+        out = create_pack(
+            persona,
+            output,
+            author=author,
+            category=category,
+            description=description,
+            homepage=homepage,
+            tags=tag or [],
+            evolved_from=evolved_from,
+        )
+    except Exception as exc:
+        console.print(f"[red]Create failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Created pack at {out}[/green]")
+
+
+@pack_app.command("publish")
+def pack_publish(
+    pack_dir: Annotated[Path, typer.Argument(help="Local pack directory")],
+    branch_name: Annotated[
+        str | None,
+        typer.Option("--branch-name", help="Optional branch to create before commit"),
+    ] = None,
+    no_pr: Annotated[
+        bool,
+        typer.Option("--no-pr", help="Commit locally without opening a PR"),
+    ] = False,
+) -> None:
+    """Publish a community pack into the repo and optionally open a PR."""
+    from personanexus.packs import publish_pack
+
+    try:
+        destination = publish_pack(pack_dir, branch_name=branch_name, create_pr=not no_pr)
+    except Exception as exc:
+        console.print(f"[red]Publish failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Published pack to {destination}[/green]")
+
+
+@pack_app.command("validate")
+def pack_validate(
+    pack_dir: Annotated[Path, typer.Argument(help="Pack directory to validate")],
+) -> None:
+    """Validate a pack directory."""
+    from personanexus.packs import validate_pack_dir
+
+    result = validate_pack_dir(pack_dir)
+    if result.errors:
+        for error in result.errors:
+            console.print(f"[red]Error: {error}[/red]")
+        raise typer.Exit(code=1)
+    console.print("[green]✓ Pack validation successful[/green]")
+    for warning in result.warnings:
+        console.print(f"[yellow]Warning: {warning}[/yellow]")
+
+
+@pack_app.command("build-gallery")
+def pack_build_gallery() -> None:
+    """Rebuild packs/_gallery/index.json from local packs."""
+    from personanexus.packs import build_gallery_index
+
+    output = build_gallery_index()
+    console.print(f"[green]✓ Built gallery index: {output}[/green]")
+
+
+# ---------------------------------------------------------------------------
 # evolve subcommand group
 # ---------------------------------------------------------------------------
 

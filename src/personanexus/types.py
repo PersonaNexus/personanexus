@@ -271,6 +271,23 @@ class Metadata(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Prompt compilation
+# ---------------------------------------------------------------------------
+
+
+class PromptLayer(BaseModel):
+    """A typed prompt layer emitted by the system prompt compiler."""
+
+    name: str
+    content: str = Field(..., min_length=1)
+    order: int = Field(..., ge=0)
+    required: bool = False
+    included: bool = True
+    format: str = "markdown"
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
 # Role & Purpose
 # ---------------------------------------------------------------------------
 

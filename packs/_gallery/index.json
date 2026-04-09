@@ -1,0 +1,44 @@
+[
+  {
+    "name": "strategic-advisory-council",
+    "author": "official",
+    "ref": "strategic-advisory-council",
+    "scope": "official",
+    "category": "boards",
+    "version": "1.0.0",
+    "description": "A five-seat strategic advisory board for founders.",
+    "tags": [
+      "official",
+      "board"
+    ],
+    "path": "official/boards/strategic-advisory-council"
+  },
+  {
+    "name": "ocean-disc-bridge",
+    "author": "official",
+    "ref": "ocean-disc-bridge",
+    "scope": "official",
+    "category": "frameworks",
+    "version": "1.0.0",
+    "description": "A framework example showing how broad OCEAN and DISC traits can coexist in one identity artifact.",
+    "tags": [
+      "official",
+      "framework"
+    ],
+    "path": "official/frameworks/ocean-disc-bridge"
+  },
+  {
+    "name": "chief-of-staff",
+    "author": "official",
+    "ref": "chief-of-staff",
+    "scope": "official",
+    "category": "personas",
+    "version": "1.0.0",
+    "description": "An execution-focused chief of staff persona for operators and founders.",
+    "tags": [
+      "official",
+      "persona"
+    ],
+    "path": "official/personas/chief-of-staff"
+  }
+]

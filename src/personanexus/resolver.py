@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from personanexus.conflict import ConflictResolver, MergeTrace
 from personanexus.parser import IdentityParser, ParseError
@@ -141,40 +141,79 @@ class IdentityResolver:
         if overrides:
             result = merger.merge(result, overrides, trace=trace, source="override")
 
-        return result
+        return self._resolve_embedded_paths(result, source_path)
+
+    def _resolve_embedded_paths(self, data: dict[str, Any], source_path: Path) -> dict[str, Any]:
+        """Resolve nested path-like fields relative to the source YAML file.
+
+        This keeps non-path strings unchanged and only rewrites values when a
+        matching file or directory exists.
+        """
+
+        def walk(value: Any, *, key: str | None = None) -> Any:
+            if isinstance(value, dict):
+                return {k: walk(v, key=k) for k, v in value.items()}
+            if isinstance(value, list):
+                return [walk(item) for item in value]
+            if isinstance(value, str) and key and self._looks_like_path_key(key):
+                resolved = self._find_reference(value, source_path, allow_directories=True)
+                return str(resolved.resolve()) if resolved else value
+            return value
+
+        return cast(dict[str, Any], walk(data))
+
+    @staticmethod
+    def _looks_like_path_key(key: str) -> bool:
+        lowered = key.lower()
+        return lowered == "path" or lowered == "file" or lowered.endswith(("_path", "_file"))
 
     def _find_file(self, ref: str, source_path: Path) -> Path:
         """Resolve a reference (extends/mixin path) to an actual file path."""
-        # Reject references that attempt path traversal or use absolute paths
+        candidate = self._find_reference(ref, source_path, allow_directories=False, yaml_only=True)
+        if candidate is not None:
+            return candidate
+
+        searched = [str(c) for c in self._reference_candidates(ref, source_path, yaml_only=True)]
+        raise ParseError(
+            f"Cannot resolve reference '{ref}'. Searched:\n  " + "\n  ".join(searched),
+            source=str(source_path),
+        )
+
+    def _find_reference(
+        self,
+        ref: str,
+        source_path: Path,
+        *,
+        allow_directories: bool,
+        yaml_only: bool = False,
+    ) -> Path | None:
+        self._validate_reference(ref, source_path)
+        for candidate in self._reference_candidates(ref, source_path, yaml_only=yaml_only):
+            if candidate.is_file() or (allow_directories and candidate.is_dir()):
+                return candidate
+        return None
+
+    def _reference_candidates(self, ref: str, source_path: Path, *, yaml_only: bool) -> list[Path]:
+        candidates: list[Path] = []
+
+        base_dir = source_path.parent
+        candidates.append(base_dir / ref)
+        if yaml_only and not ref.endswith(".yaml") and not ref.endswith(".yml"):
+            candidates.append(base_dir / f"{ref}.yaml")
+            candidates.append(base_dir / f"{ref}.yml")
+
+        for sp in self.search_paths:
+            candidates.append(sp / ref)
+            if yaml_only and not ref.endswith(".yaml") and not ref.endswith(".yml"):
+                candidates.append(sp / f"{ref}.yaml")
+                candidates.append(sp / f"{ref}.yml")
+
+        return candidates
+
+    def _validate_reference(self, ref: str, source_path: Path) -> None:
         ref_parts = Path(ref).parts
         if ".." in ref_parts or ref.startswith("/") or ref.startswith("\\"):
             raise ParseError(
                 f"Invalid reference '{ref}': must be a relative path without '..' components",
                 source=str(source_path),
             )
-
-        candidates: list[Path] = []
-
-        # Relative to source file's directory
-        base_dir = source_path.parent
-        candidates.append(base_dir / ref)
-        if not ref.endswith(".yaml") and not ref.endswith(".yml"):
-            candidates.append(base_dir / f"{ref}.yaml")
-            candidates.append(base_dir / f"{ref}.yml")
-
-        # Search paths
-        for sp in self.search_paths:
-            candidates.append(sp / ref)
-            if not ref.endswith(".yaml") and not ref.endswith(".yml"):
-                candidates.append(sp / f"{ref}.yaml")
-                candidates.append(sp / f"{ref}.yml")
-
-        for candidate in candidates:
-            if candidate.is_file():
-                return candidate
-
-        searched = [str(c) for c in candidates]
-        raise ParseError(
-            f"Cannot resolve reference '{ref}'. Searched:\n  " + "\n  ".join(searched),
-            source=str(source_path),
-        )

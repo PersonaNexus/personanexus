@@ -1,0 +1,20 @@
+{
+  "name": "chief-of-staff",
+  "author": "official",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "An execution-focused chief of staff persona for operators and founders.",
+  "tags": [
+    "official",
+    "persona"
+  ],
+  "category": "personas",
+  "requires_personanexus": ">=1.5.0",
+  "homepage": "https://github.com/PersonaNexus/personanexus",
+  "example_usage": "README.md#example",
+  "created": "2026-04-09",
+  "stats": {
+    "install_count": 0,
+    "stars": 0
+  }
+}

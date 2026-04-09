@@ -247,7 +247,11 @@ def _candidate_support_count(
 ) -> int:
     if candidate_type == "soft":
         return (
-            sum(1 for c in state.pending_candidates if c.type == "soft" and c.guidance == guidance)
+            sum(
+                1
+                for c in state.pending_candidates
+                if c.status == "pending" and c.type == "soft" and c.guidance == guidance
+            )
             + 1
         )
     direction = 0 if change is None else (1 if change > 0 else -1)
@@ -255,7 +259,8 @@ def _candidate_support_count(
         sum(
             1
             for c in state.pending_candidates
-            if c.type == "hard"
+            if c.status == "pending"
+            and c.type == "hard"
             and c.trait == trait
             and c.change is not None
             and (1 if c.change > 0 else -1) == direction
