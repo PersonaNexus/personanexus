@@ -515,9 +515,6 @@ class Personality(BaseModel):
                 raise ValueError(
                     "At least one framework profile (ocean/disc/jungian) is required in hybrid mode"
                 )
-            has_overrides = len(self.traits.defined_traits()) > 0
-            if not has_overrides:
-                raise ValueError("At least one explicit trait override is required in hybrid mode")
 
         return self
 

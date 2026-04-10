@@ -235,21 +235,23 @@ class TestPersonalityValidation:
                 profile=PersonalityProfile(mode=PersonalityMode.HYBRID),
             )
 
-    def test_hybrid_mode_requires_overrides(self):
-        with pytest.raises(ValidationError, match="explicit trait override"):
-            Personality(
-                traits=PersonalityTraits(),
-                profile=PersonalityProfile(
-                    mode=PersonalityMode.HYBRID,
-                    ocean=OceanProfile(
-                        openness=0.5,
-                        conscientiousness=0.5,
-                        extraversion=0.5,
-                        agreeableness=0.5,
-                        neuroticism=0.5,
-                    ),
+    def test_hybrid_mode_allows_framework_only(self):
+        # Frameworks alone are sufficient in hybrid mode; explicit trait
+        # overrides are optional and applied on top of framework-computed traits.
+        p = Personality(
+            traits=PersonalityTraits(),
+            profile=PersonalityProfile(
+                mode=PersonalityMode.HYBRID,
+                ocean=OceanProfile(
+                    openness=0.5,
+                    conscientiousness=0.5,
+                    extraversion=0.5,
+                    agreeableness=0.5,
+                    neuroticism=0.5,
                 ),
-            )
+            ),
+        )
+        assert p.profile.mode == PersonalityMode.HYBRID
 
     def test_hybrid_mode_valid(self):
         p = Personality(
