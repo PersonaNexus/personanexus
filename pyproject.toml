@@ -1,6 +1,6 @@
 [project]
 name = "personanexus"
-version = "1.4.1"
+version = "1.5.0"
 description = "Production-grade framework for defining, validating, and composing AI agent personas"
 readme = "README.md"
 license = { text = "MIT" }

@@ -23,6 +23,7 @@ from personanexus.types import (
     Personality,
     PersonalityMode,
     Principle,
+    PromptLayer,
     RelationshipDynamic,
     Role,
     Severity,
@@ -180,7 +181,7 @@ _OPTIONAL_SECTION_PRIORITY = [
 
 
 class SystemPromptCompiler:
-    """Compiles a resolved AgentIdentity into a natural-language system prompt."""
+    """Compiles a resolved AgentIdentity into typed prompt layers and prompt text."""
 
     def __init__(self, token_budget: int = 3000):
         self.token_budget = token_budget
@@ -188,44 +189,29 @@ class SystemPromptCompiler:
         self._sections_included: list[str] = []
         self._sections_omitted: list[str] = []
         self._was_truncated: bool = False
+        self._prompt_layers: list[PromptLayer] = []
 
-    def compile(self, identity: AgentIdentity, format: str = "text") -> str:
-        """
-        Compile an identity into a system prompt string.
+    @property
+    def prompt_layers(self) -> list[PromptLayer]:
+        """The most recently compiled prompt layers."""
+        return list(self._prompt_layers)
 
-        Uses incremental budget tracking: required sections (header, role,
-        guardrails) are always rendered, then optional sections are added in
-        priority order.  Sections that would exceed the token budget are
-        skipped entirely — avoiding the cost of rendering content that would
-        be thrown away.
-
-        Args:
-            identity: A fully resolved AgentIdentity.
-            format: "text" (generic markdown), "anthropic", or "openai".
-
-        Returns:
-            The system prompt as a string.
-        """
+    def compile_layers(self, identity: AgentIdentity) -> list[PromptLayer]:
+        """Compile an identity into typed prompt layers."""
         # Reset truncation tracking
         self._sections_included = []
         self._sections_omitted = []
         self._was_truncated = False
 
-        # --- 1. Render required sections (always kept) ---
-        named_sections: list[tuple[str, str]] = [
+        required_sections: list[tuple[str, str]] = [
             ("header", self._render_header(identity)),
             ("role", self._render_role(identity.role)),
             ("guardrails", self._render_guardrails(identity.guardrails)),
         ]
 
-        # Running token count for required sections
-        tokens_used = sum(self.estimate_tokens(content) for _, content in named_sections)
-        # Account for "\n\n" separators between sections
-        tokens_used += len(named_sections) - 1
+        tokens_used = sum(self.estimate_tokens(content) for _, content in required_sections)
+        tokens_used += len(required_sections) - 1
 
-        # --- 2. Build lazy renderers for optional sections in priority order ---
-        # _OPTIONAL_SECTION_PRIORITY is ordered highest-to-lowest priority.
-        # We render in that order and stop adding when budget is exhausted.
         optional_renderers: list[tuple[str, Any]] = [
             ("personality", lambda: self._render_personality(identity.personality)),
             ("communication", lambda: self._render_communication(identity.communication)),
@@ -236,7 +222,6 @@ class SystemPromptCompiler:
             ("behavioral_modes", lambda: self._render_behavioral_modes(identity.behavioral_modes)),
             ("interaction", lambda: self._render_interaction(identity.interaction)),
         ]
-        # Allow subclasses (skill extensions) to inject additional sections
         optional_renderers.extend(self._get_extra_optional_renderers(identity))
 
         optional_sections: list[tuple[str, str]] = []
@@ -251,34 +236,31 @@ class SystemPromptCompiler:
             if not content:
                 continue
 
-            section_tokens = self.estimate_tokens(content) + 1  # +1 for separator
+            section_tokens = self.estimate_tokens(content) + 1
             if tokens_used + section_tokens <= self.token_budget:
                 optional_sections.append((name, content))
                 tokens_used += section_tokens
-            else:
-                # Budget would be exceeded — try truncating principles if applicable
-                if name == "principles":
-                    truncated = self._truncate_principles(content, max_count=5)
-                    truncated_tokens = self.estimate_tokens(truncated) + 1
-                    if tokens_used + truncated_tokens <= self.token_budget:
-                        optional_sections.append((name, truncated))
-                        tokens_used += truncated_tokens
-                        logger.info("Truncated principles to top 5 to fit token budget.")
-                        continue
+                continue
 
-                self._sections_omitted.append(name)
-                self._was_truncated = True
-                budget_exhausted = True
-                logger.info(
-                    "Skipping section '%s' and remaining — budget exhausted (%d/%d tokens).",
-                    name,
-                    tokens_used,
-                    self.token_budget,
-                )
+            if name == "principles":
+                truncated = self._truncate_principles(content, max_count=5)
+                truncated_tokens = self.estimate_tokens(truncated) + 1
+                if tokens_used + truncated_tokens <= self.token_budget:
+                    optional_sections.append((name, truncated))
+                    tokens_used += truncated_tokens
+                    logger.info("Truncated principles to top 5 to fit token budget.")
+                    continue
 
-        # --- 3. Assemble final prompt in the correct display order ---
-        # Required sections first, then optional sections interleaved in
-        # their natural document order.
+            self._sections_omitted.append(name)
+            self._was_truncated = True
+            budget_exhausted = True
+            logger.info(
+                "Skipping section '%s' and remaining — budget exhausted (%d/%d tokens).",
+                name,
+                tokens_used,
+                self.token_budget,
+            )
+
         display_order = [
             "header",
             "role",
@@ -293,27 +275,40 @@ class SystemPromptCompiler:
             "interaction",
         ]
 
-        all_sections = dict(named_sections + optional_sections)
+        all_sections = dict(required_sections + optional_sections)
         ordered_sections: list[tuple[str, str]] = []
         seen: set[str] = set()
         for name in display_order:
             if name in all_sections:
                 ordered_sections.append((name, all_sections[name]))
                 seen.add(name)
-        # Append any extra sections (from skill subclasses) not in display_order
-        for name, content in named_sections + optional_sections:
+        for name, content in required_sections + optional_sections:
             if name not in seen and content:
                 ordered_sections.append((name, content))
 
         self._sections_included = [name for name, _ in ordered_sections]
+        self._prompt_layers = [
+            PromptLayer(
+                name=name,
+                content=content,
+                order=index,
+                required=name in _REQUIRED_SECTIONS,
+                included=True,
+                metadata={"tokens_estimated": self.estimate_tokens(content)},
+            )
+            for index, (name, content) in enumerate(ordered_sections)
+            if content
+        ]
+        return list(self._prompt_layers)
 
-        prompt = "\n\n".join(content for _name, content in ordered_sections if content)
-
+    def compile(self, identity: AgentIdentity, format: str = "text") -> str:
+        """Compile an identity into a system prompt string."""
+        layers = self.compile_layers(identity)
         if format == "anthropic":
-            return self._wrap_anthropic(prompt, identity)
-        elif format == "openai":
-            return self._wrap_openai(prompt, identity)
-        return prompt
+            return self._wrap_anthropic(layers)
+        if format == "openai":
+            return self._wrap_openai(layers, identity)
+        return self._render_layers(layers)
 
     def _get_extra_optional_renderers(self, identity: AgentIdentity) -> list[tuple[str, Any]]:
         """Extension point for skill subclasses to inject additional sections.
@@ -726,69 +721,43 @@ class SystemPromptCompiler:
     # Format wrappers
     # ------------------------------------------------------------------
 
-    def _wrap_anthropic(self, prompt: str, identity: AgentIdentity) -> str:
-        """Wrap for Anthropic Claude — use XML section tags for better parsing."""
-        # Split the prompt into its component sections and wrap each in XML tags
-        wrapped_parts: list[str] = []
+    def _render_layers(self, layers: list[PromptLayer]) -> str:
+        """Render compiled prompt layers back into the legacy monolithic prompt."""
+        return "\n\n".join(layer.content for layer in layers if layer.included and layer.content)
 
-        # Map markdown section headers to XML tag names
+    def _wrap_anthropic(self, layers: list[PromptLayer]) -> str:
+        """Wrap typed prompt layers for Anthropic Claude using XML section tags."""
         section_map = {
-            "# ": "identity",
-            "## Your Role": "role",
-            "## Your Personality": "personality",
-            "## Emotional States": "personality",
-            "## Communication Style": "communication",
-            "## Your Expertise": "expertise",
-            "## Core Principles": "principles",
-            "## Behavioral Strategies": "behavior",
-            "## Non-Negotiable Rules": "guardrails",
-            "## Behavioral Modes": "behavioral_modes",
-            "## Agent Relationships": "relationships",
-            "## Interaction Protocols": "interaction",
+            "header": "identity",
+            "role": "role",
+            "personality": "personality",
+            "communication": "communication",
+            "expertise": "expertise",
+            "principles": "principles",
+            "behavior": "behavior",
+            "guardrails": "guardrails",
+            "behavioral_modes": "behavioral_modes",
+            "relationships": "relationships",
+            "interaction": "interaction",
         }
 
-        # Split on double newlines (section boundaries)
-        raw_sections = prompt.split("\n\n")
-
-        # Group consecutive blocks that belong to the same XML section
-        current_tag: str | None = None
-        current_content: list[str] = []
-
-        def _flush() -> None:
-            nonlocal current_tag, current_content
-            if current_content:
-                text = "\n\n".join(current_content)
-                if current_tag:
-                    wrapped_parts.append(f"<{current_tag}>\n{text}\n</{current_tag}>")
-                else:
-                    wrapped_parts.append(text)
-            current_content = []
-
-        for block in raw_sections:
-            first_line = block.split("\n")[0].strip()
-            matched_tag = None
-
-            for prefix, tag in section_map.items():
-                if first_line.startswith(prefix):
-                    matched_tag = tag
-                    break
-
-            if matched_tag and matched_tag != current_tag:
-                _flush()
-                current_tag = matched_tag
-                current_content = [block]
+        wrapped_parts: list[str] = []
+        for layer in layers:
+            if not layer.included or not layer.content:
+                continue
+            tag = section_map.get(layer.name)
+            if tag:
+                wrapped_parts.append(f"<{tag}>\n{layer.content}\n</{tag}>")
             else:
-                current_content.append(block)
-
-        _flush()
-
+                wrapped_parts.append(layer.content)
         return "\n\n".join(wrapped_parts)
 
-    def _wrap_openai(self, prompt: str, identity: AgentIdentity) -> str:
+    def _wrap_openai(self, layers: list[PromptLayer], identity: AgentIdentity) -> str:
         """Wrap for OpenAI — add a concise summary prefix."""
         name = identity.metadata.name
         role_title = identity.role.title
         prefix = f"You are {name}, a {role_title}."
+        prompt = self._render_layers(layers)
         return f"{prefix}\n\n{prompt}"
 
 
@@ -1590,6 +1559,7 @@ def compile_identity(
         result: dict[str, Any] = {
             "system_prompt": prompt,
             "tokens_estimated": prompt_compiler.estimate_tokens(prompt),
+            "prompt_layers": [layer.model_dump() for layer in prompt_compiler.prompt_layers],
         }
         # Include section tracking in JSON output
         if prompt_compiler._sections_included:

@@ -27,6 +27,7 @@ from personanexus.types import (
     HumanInteraction,
     InteractionConfig,
     InteractionEscalationTrigger,
+    PromptLayer,
     RelationshipDynamic,
     Relationships,
     Severity,
@@ -274,6 +275,26 @@ class TestBehavioralModesRendering:
 # ---------------------------------------------------------------------------
 
 
+class TestPromptLayers:
+    def test_compile_layers_returns_typed_layers(self, compiler, mira_identity):
+        layers = compiler.compile_layers(mira_identity)
+        assert layers
+        assert all(isinstance(layer, PromptLayer) for layer in layers)
+        assert layers[0].name == "header"
+        assert layers[0].required is True
+
+    def test_compile_layers_preserves_text_output(self, compiler, mira_identity):
+        layered_text = compiler._render_layers(compiler.compile_layers(mira_identity))
+        direct_text = compiler.compile(mira_identity)
+        assert layered_text == direct_text
+
+    def test_anthropic_output_comes_from_layers(self, compiler, mira_identity):
+        layers = compiler.compile_layers(mira_identity)
+        result = compiler._wrap_anthropic(layers)
+        assert "<identity>" in result
+        assert "<guardrails>" in result
+
+
 class TestTokenBudgetTruncation:
     def test_truncation_drops_low_priority_sections(self, mira_identity):
         """With a very small budget, optional sections should be dropped."""
@@ -378,6 +399,11 @@ class TestJsonTarget:
         assert "tokens_estimated" in result
         assert isinstance(result["tokens_estimated"], int)
         assert result["tokens_estimated"] > 0
+
+    def test_json_target_has_prompt_layers(self, mira_identity):
+        result = compile_identity(mira_identity, target="json")
+        assert "prompt_layers" in result
+        assert result["prompt_layers"][0]["name"] == "header"
 
     def test_json_target_has_sections_included(self, mira_identity):
         result = compile_identity(mira_identity, target="json")

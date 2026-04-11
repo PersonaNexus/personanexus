@@ -271,6 +271,23 @@ class Metadata(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# Prompt compilation
+# ---------------------------------------------------------------------------
+
+
+class PromptLayer(BaseModel):
+    """A typed prompt layer emitted by the system prompt compiler."""
+
+    name: str
+    content: str = Field(..., min_length=1)
+    order: int = Field(..., ge=0)
+    required: bool = False
+    included: bool = True
+    format: str = "markdown"
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+# ---------------------------------------------------------------------------
 # Role & Purpose
 # ---------------------------------------------------------------------------
 
@@ -498,9 +515,6 @@ class Personality(BaseModel):
                 raise ValueError(
                     "At least one framework profile (ocean/disc/jungian) is required in hybrid mode"
                 )
-            has_overrides = len(self.traits.defined_traits()) > 0
-            if not has_overrides:
-                raise ValueError("At least one explicit trait override is required in hybrid mode")
 
         return self
 

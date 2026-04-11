@@ -136,6 +136,54 @@ def test_pending_support_counts_accumulate(evolved_persona_path: Path):
     assert second.signals_supporting == 2
 
 
+def test_support_count_ignores_accepted_historical_candidates(evolved_persona_path: Path):
+    first = evolve_persona(
+        evolved_persona_path,
+        feedback="be more empathetic",
+        candidate_type="hard",
+        trait="agreeableness",
+        change=0.1,
+    )
+    second = evolve_persona(
+        evolved_persona_path,
+        feedback="be warmer",
+        candidate_type="hard",
+        trait="agreeableness",
+        change=0.1,
+    )
+    promote_candidate(evolved_persona_path, second.id, accept=True)
+
+    third = evolve_persona(
+        evolved_persona_path,
+        feedback="be more empathetic again",
+        candidate_type="hard",
+        trait="agreeableness",
+        change=0.1,
+    )
+    assert third.signals_supporting == 2
+    assert first.id != third.id
+
+
+def test_support_count_ignores_rejected_historical_candidates(evolved_persona_path: Path):
+    first = evolve_persona(
+        evolved_persona_path,
+        feedback="be more empathetic",
+        candidate_type="hard",
+        trait="agreeableness",
+        change=0.1,
+    )
+    promote_candidate(evolved_persona_path, first.id, accept=False)
+
+    second = evolve_persona(
+        evolved_persona_path,
+        feedback="be more empathetic again",
+        candidate_type="hard",
+        trait="agreeableness",
+        change=0.1,
+    )
+    assert second.signals_supporting == 1
+
+
 def test_promote_soft_candidate_applies_guidance(evolved_persona_path: Path):
     candidate = evolve_persona(evolved_persona_path, feedback="be less wordy")
     promote_candidate(evolved_persona_path, candidate.id, accept=True)
@@ -343,6 +391,15 @@ def test_compile_with_apply_evolution_flag(evolved_persona_path: Path, tmp_path:
     )
     assert result.exit_code == 0
     assert "Evolution guidance:" in output.read_text(encoding="utf-8")
+
+
+def test_soft_support_count_ignores_non_pending_candidates(evolved_persona_path: Path):
+    first = evolve_persona(evolved_persona_path, feedback="be less wordy")
+    promote_candidate(evolved_persona_path, first.id, accept=True)
+
+    second = evolve_persona(evolved_persona_path, feedback="be less wordy")
+    assert second.type == "soft"
+    assert second.signals_supporting == 1
 
 
 def test_cli_pending_and_export_commands(evolved_persona_path: Path, tmp_path: Path):
