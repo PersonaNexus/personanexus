@@ -263,6 +263,7 @@ personanexus simulate agents/mira-dynamics.yaml --user stranger --steps 10
 | `personanexus validate <file>` | Validate a YAML identity file |
 | `personanexus resolve <file>` | Show fully resolved identity after inheritance |
 | `personanexus compile <file>` | Compile identity to system prompt or platform format |
+| `personanexus doctor <path>` | Scan a repo or directory for PersonaNexus health issues |
 | `personanexus analyze <file>` | Analyze personality → traits/OCEAN/DISC/Jungian profiles |
 | `personanexus init <name>` | Scaffold a new identity |
 | `personanexus build` | Interactive wizard with optional `--llm-enhance` |
@@ -283,6 +284,13 @@ personanexus personality show-profile examples/identities/mira.yaml --search-pat
 ```
 
 Run `personanexus --help` for full options.
+
+For repo-wide checks:
+
+```bash
+personanexus doctor . --search-path .
+personanexus doctor . --search-path . --check-compile --target text --format json
+```
 
 ## Python API
 
