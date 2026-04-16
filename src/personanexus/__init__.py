@@ -26,6 +26,12 @@ from personanexus.dynamics import (
     apply_dynamics_to_traits,
     run_dynamics_pipeline,
 )
+from personanexus.evals import (
+    EvalComparison,
+    EvalError,
+    EvalRunResult,
+    IdentityEvaluationHarness,
+)
 from personanexus.linter import IdentityLinter, LintWarning
 from personanexus.memory import (
     MemoryBackendJSON,
@@ -95,6 +101,10 @@ __all__ = [
     "detect_drift",
     "detect_drift_from_files",
     "format_drift_report",
+    "EvalComparison",
+    "EvalError",
+    "EvalRunResult",
+    "IdentityEvaluationHarness",
     "DiscProfile",
     "IdentityParser",
     "IdentityResolver",

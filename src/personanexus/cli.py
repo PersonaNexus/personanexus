@@ -21,7 +21,9 @@ from rich.table import Table
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
+from personanexus.doctor import PersonaDoctor, render_doctor_report
 from personanexus.drift import detect_drift_from_files, format_drift_report
+from personanexus.evals import EvalComparison, EvalError, EvalRunResult, IdentityEvaluationHarness
 from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
@@ -1050,6 +1052,150 @@ def _level_label(val: float) -> str:
 
 
 # ---------------------------------------------------------------------------
+# eval command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def eval(
+    identity: Annotated[Path, typer.Argument(help="Path to PersonaNexus YAML file to evaluate")],
+    suite: Annotated[Path, typer.Argument(help="Path to eval suite YAML/JSON")],
+    compare: Annotated[
+        Path | None,
+        typer.Option("--compare", "-c", help="Second identity file for side-by-side comparison"),
+    ] = None,
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option("--search-path", "-s", help="Search paths for YAML resolution"),
+    ] = None,
+    output_format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: table or json"),
+    ] = "table",
+) -> None:
+    """Run a structured identity evaluation suite against one or two identities."""
+    for path, label in ((identity, "Identity file"), (suite, "Eval suite")):
+        if not path.exists():
+            console.print(f"[red]Error: {label} not found: {path}[/red]")
+            raise typer.Exit(code=1)
+        if not path.is_file():
+            console.print(f"[red]Error: {label} is not a file: {path}[/red]")
+            raise typer.Exit(code=1)
+
+    if compare and not compare.exists():
+        console.print(f"[red]Error: Comparison file not found: {compare}[/red]")
+        raise typer.Exit(code=1)
+
+    if output_format not in ("table", "json"):
+        console.print(
+            f"[red]Error: Invalid format '{output_format}'. Must be 'table' or 'json'[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    harness = IdentityEvaluationHarness(search_paths=search_path or [])
+    try:
+        run_a = harness.evaluate(identity, suite)
+        comparison_output: EvalComparison | None = None
+        run_b: EvalRunResult | None = None
+        if compare:
+            run_b = harness.evaluate(compare, suite)
+            comparison_output = harness.compare(run_a, run_b)
+    except EvalError as exc:
+        console.print(f"[red]Evaluation error: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    if output_format == "json":
+        if comparison_output is not None:
+            print(json.dumps(json.loads(comparison_output.model_dump_json()), indent=2))
+        else:
+            print(json.dumps(json.loads(run_a.model_dump_json()), indent=2))
+        return
+
+    _print_eval_run(run_a)
+    if run_b is not None and comparison_output is not None:
+        console.print()
+        _print_eval_run(run_b)
+        console.print()
+        _print_eval_comparison(comparison_output)
+
+
+def _print_eval_run(run: EvalRunResult) -> None:
+    status = "[green]PASS[/green]" if run.passed else "[red]FAIL[/red]"
+    console.print(
+        f"[bold]{run.identity_name}[/bold] [dim]v{run.identity_version}[/dim]  "
+        f"score: [cyan]{run.overall_score:.0%}[/cyan]  {status}"
+    )
+    console.print(f"[dim]Suite: {run.suite_name}[/dim]\n")
+
+    table = Table(title="Scenario Results", show_header=True, header_style="bold")
+    table.add_column("Scenario", style="cyan")
+    table.add_column("Score", justify="right")
+    table.add_column("Persona", justify="right")
+    table.add_column("Instruction", justify="right")
+    table.add_column("Guardrails", justify="right")
+    table.add_column("Tone", justify="right")
+    table.add_column("Status", justify="center")
+
+    for scenario in run.scenarios:
+        persona = scenario.dimensions["persona_consistency"].score
+        instruction = scenario.dimensions["instruction_adherence"].score
+        guardrails = scenario.dimensions["guardrails"].score
+        tone = scenario.dimensions["tone"].score
+        row_status = "PASS" if scenario.passed else "FAIL"
+        status_color = "green" if scenario.passed else "red"
+        table.add_row(
+            scenario.scenario_id,
+            f"{scenario.weighted_score:.0%}",
+            f"{persona:.0%}",
+            f"{instruction:.0%}",
+            f"{guardrails:.0%}",
+            f"{tone:.0%}",
+            f"[{status_color}]{row_status}[/{status_color}]",
+        )
+
+    console.print(table)
+
+
+def _print_eval_comparison(comparison: EvalComparison) -> None:
+    winner_map = {
+        "a": comparison.identity_a,
+        "b": comparison.identity_b,
+        "tie": "Tie",
+    }
+    console.print(
+        f"[bold]Comparison:[/bold] {comparison.identity_a} vs {comparison.identity_b}"
+    )
+    console.print(
+        f"[dim]Winner: {winner_map[comparison.winner]} | "
+        f"Delta: {comparison.overall_delta:+.1%}[/dim]\n"
+    )
+
+    table = Table(title="Scenario Deltas", show_header=True, header_style="bold")
+    table.add_column("Scenario", style="cyan")
+    table.add_column(comparison.identity_a, justify="right")
+    table.add_column(comparison.identity_b, justify="right")
+    table.add_column("Delta", justify="right")
+    table.add_column("Winner", justify="center")
+
+    for scenario in comparison.scenarios:
+        color = (
+            "green"
+            if abs(scenario.delta) < 0.05
+            else "yellow" if abs(scenario.delta) < 0.2 else "red"
+        )
+        winner = winner_map[scenario.winner]
+        table.add_row(
+            scenario.scenario_id,
+            f"{scenario.score_a:.0%}",
+            f"{scenario.score_b:.0%}",
+            f"[{color}]{scenario.delta:+.0%}[/{color}]",
+            winner,
+        )
+
+    console.print(table)
+
+
+# ---------------------------------------------------------------------------
 # personality subcommand group
 # ---------------------------------------------------------------------------
 
@@ -1676,6 +1822,104 @@ def compat(
 
     except Exception as e:
         console.print(f"[red]Error calculating compatibility: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# doctor command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def doctor(
+    path: Annotated[
+        Path,
+        typer.Argument(help="Repo or directory to scan for PersonaNexus files"),
+    ] = Path("."),
+    output_format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: text or json"),
+    ] = "text",
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--search-path",
+            "-s",
+            help="Additional search paths for archetypes/mixins (repeatable)",
+        ),
+    ] = None,
+    check_compile: Annotated[
+        bool,
+        typer.Option(
+            "--check-compile/--no-check-compile",
+            help="Check generated compile artifacts for missing or stale outputs",
+        ),
+    ] = False,
+    target: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            "-t",
+            help="Compile target(s) to verify when --check-compile is enabled",
+        ),
+    ] = None,
+    token_budget: Annotated[
+        int,
+        typer.Option("--token-budget", help="Estimated token budget for compile checks"),
+    ] = 3000,
+) -> None:
+    """Run repo-wide health checks across PersonaNexus files."""
+    if not path.exists():
+        console.print(f"[red]Error: Path not found: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    if not path.is_dir():
+        console.print(f"[red]Error: Expected a directory: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    valid_targets = {
+        "text",
+        "anthropic",
+        "openai",
+        "openclaw",
+        "soul",
+        "json",
+        "langchain",
+        "crewai",
+        "autogen",
+        "markdown",
+    }
+    compile_targets = target or ["text"]
+    invalid_targets = [item for item in compile_targets if item not in valid_targets]
+    if invalid_targets:
+        console.print(
+            "[red]Error: Invalid compile target(s): "
+            f"{', '.join(invalid_targets)}. "
+            f"Must be one of: {', '.join(sorted(valid_targets))}[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    if output_format not in ("text", "json"):
+        console.print(
+            f"[red]Error: Invalid format '{output_format}'. Must be 'text' or 'json'[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    doctor_runner = PersonaDoctor(
+        root=path,
+        search_paths=search_path,
+        check_compile=check_compile,
+        compile_targets=compile_targets,
+        token_budget=token_budget,
+    )
+    report = doctor_runner.run()
+
+    if output_format == "json":
+        typer.echo(report.to_json())
+    else:
+        console.print(render_doctor_report(report))
+
+    if report.summary.files_scanned == 0 or not report.ok:
         raise typer.Exit(code=1)
 
 
