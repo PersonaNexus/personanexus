@@ -6,6 +6,7 @@ import dataclasses
 import json
 import os
 import re
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any, Literal
 
@@ -157,7 +158,7 @@ class PersonaDoctor:
         self,
         *,
         root: str | Path,
-        search_paths: list[str | Path] | None = None,
+        search_paths: Sequence[str | Path] | None = None,
         check_compile: bool = False,
         compile_targets: list[str] | None = None,
         token_budget: int = 3000,
@@ -262,32 +263,31 @@ class PersonaDoctor:
 
         validation = self.validator.validate_file(path)
         if validation.errors:
-            for error in validation.errors:
+            for error_message in validation.errors:
                 report.add_issue(
                     kind="validation_error",
                     severity="error",
-                    message=error,
+                    message=error_message,
                     check="validate",
                 )
             return report
 
-        for warning in validation.warnings:
+        for validation_warning in validation.warnings:
             report.add_issue(
-                kind=warning.type,
-                severity=_validation_warning_severity(warning),
-                message=warning.message,
+                kind=validation_warning.type,
+                severity=_validation_warning_severity(validation_warning),
+                message=validation_warning.message,
                 check="validate",
-                path=warning.path,
+                path=validation_warning.path,
             )
 
-        lint_warnings = self.linter.lint_file(str(path))
-        for warning in lint_warnings:
+        for lint_warning in self.linter.lint_file(str(path)):
             report.add_issue(
-                kind=warning.rule,
-                severity=warning.severity,
-                message=warning.message,
+                kind=lint_warning.rule,
+                severity=lint_warning.severity,
+                message=lint_warning.message,
                 check="lint",
-                path=warning.path,
+                path=lint_warning.path,
             )
 
         try:
@@ -301,12 +301,12 @@ class PersonaDoctor:
             )
             return report
         except ValidationError as exc:
-            for error in exc.errors():
-                loc = " -> ".join(str(part) for part in error["loc"])
+            for pydantic_error in exc.errors():
+                loc = " -> ".join(str(part) for part in pydantic_error["loc"])
                 report.add_issue(
                     kind="resolution_validation_error",
                     severity="error",
-                    message=f"{loc}: {error['msg']}",
+                    message=f"{loc}: {pydantic_error['msg']}",
                     check="resolve",
                 )
             return report
@@ -331,12 +331,12 @@ class PersonaDoctor:
             )
             return report
         except ValidationError as exc:
-            for error in exc.errors():
-                loc = " -> ".join(str(part) for part in error["loc"])
+            for pydantic_error in exc.errors():
+                loc = " -> ".join(str(part) for part in pydantic_error["loc"])
                 report.add_issue(
                     kind="team_validation_error",
                     severity="error",
-                    message=f"{loc}: {error['msg']}",
+                    message=f"{loc}: {pydantic_error['msg']}",
                     check="validate-team",
                 )
             return report
