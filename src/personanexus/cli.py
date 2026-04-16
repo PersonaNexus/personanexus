@@ -29,6 +29,7 @@ from personanexus.doctor import (
     render_doctor_report,
 )
 from personanexus.drift import detect_drift_from_files, format_drift_report
+from personanexus.evals import EvalComparison, EvalError, EvalRunResult, IdentityEvaluationHarness
 from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
@@ -1062,6 +1063,159 @@ def _level_label(val: float) -> str:
     elif val >= 0.2:
         return "Low"
     return "Very Low"
+
+
+# ---------------------------------------------------------------------------
+# eval command
+# ---------------------------------------------------------------------------
+
+
+@app.command("eval")
+def eval_cmd(
+    identity: Annotated[
+        Path,
+        typer.Argument(
+            help="Path to PersonaNexus YAML file to evaluate",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        ),
+    ],
+    suite: Annotated[
+        Path,
+        typer.Argument(
+            help="Path to eval suite YAML/JSON",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        ),
+    ],
+    compare: Annotated[
+        Path | None,
+        typer.Option(
+            "--compare",
+            "-c",
+            help="Second identity file for side-by-side comparison",
+            exists=True,
+            file_okay=True,
+            dir_okay=False,
+        ),
+    ] = None,
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option("--search-path", "-s", help="Search paths for YAML resolution"),
+    ] = None,
+    output_format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: table or json"),
+    ] = "table",
+) -> None:
+    """Run a structured identity evaluation suite against one or two identities."""
+    if output_format not in ("table", "json"):
+        console.print(
+            f"[red]Error: Invalid format '{output_format}'. Must be 'table' or 'json'[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    harness = IdentityEvaluationHarness(search_paths=search_path or [])
+    try:
+        run_a = harness.evaluate(identity, suite)
+        comparison_output: EvalComparison | None = None
+        run_b: EvalRunResult | None = None
+        if compare:
+            run_b = harness.evaluate(compare, suite)
+            comparison_output = harness.compare(run_a, run_b)
+    except EvalError as exc:
+        console.print(f"[red]Evaluation error: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    if output_format == "json":
+        payload = comparison_output if comparison_output is not None else run_a
+        typer.echo(payload.model_dump_json(indent=2))
+        return
+
+    _print_eval_run(run_a)
+    if run_b is not None and comparison_output is not None:
+        console.print()
+        _print_eval_run(run_b)
+        console.print()
+        _print_eval_comparison(comparison_output)
+
+
+def _print_eval_run(run: EvalRunResult) -> None:
+    status = "[green]PASS[/green]" if run.passed else "[red]FAIL[/red]"
+    console.print(
+        f"[bold]{run.identity_name}[/bold] [dim]v{run.identity_version}[/dim]  "
+        f"score: [cyan]{run.overall_score:.0%}[/cyan]  {status}"
+    )
+    console.print(f"[dim]Suite: {run.suite_name}[/dim]\n")
+
+    table = Table(title="Scenario Results", show_header=True, header_style="bold")
+    table.add_column("Scenario", style="cyan")
+    table.add_column("Score", justify="right")
+    table.add_column("Persona", justify="right")
+    table.add_column("Instruction", justify="right")
+    table.add_column("Guardrails", justify="right")
+    table.add_column("Tone", justify="right")
+    table.add_column("Status", justify="center")
+
+    for scenario in run.scenarios:
+        persona = scenario.dimensions["persona_consistency"].score
+        instruction = scenario.dimensions["instruction_adherence"].score
+        guardrails = scenario.dimensions["guardrails"].score
+        tone = scenario.dimensions["tone"].score
+        row_status = "PASS" if scenario.passed else "FAIL"
+        status_color = "green" if scenario.passed else "red"
+        table.add_row(
+            scenario.scenario_id,
+            f"{scenario.weighted_score:.0%}",
+            f"{persona:.0%}",
+            f"{instruction:.0%}",
+            f"{guardrails:.0%}",
+            f"{tone:.0%}",
+            f"[{status_color}]{row_status}[/{status_color}]",
+        )
+
+    console.print(table)
+
+
+def _print_eval_comparison(comparison: EvalComparison) -> None:
+    winner_map = {
+        "a": comparison.identity_a,
+        "b": comparison.identity_b,
+        "tie": "Tie",
+    }
+    console.print(f"[bold]Comparison:[/bold] {comparison.identity_a} vs {comparison.identity_b}")
+    console.print(
+        f"[dim]Winner: {winner_map[comparison.winner]} | "
+        f"Delta: {comparison.overall_delta:+.1%}[/dim]\n"
+    )
+
+    table = Table(title="Scenario Deltas", show_header=True, header_style="bold")
+    table.add_column("Scenario", style="cyan")
+    table.add_column(comparison.identity_a, justify="right")
+    table.add_column(comparison.identity_b, justify="right")
+    table.add_column("Delta", justify="right")
+    table.add_column("Winner", justify="center")
+
+    for scenario in comparison.scenarios:
+        color = (
+            "green"
+            if abs(scenario.delta) < 0.05
+            else "yellow"
+            if abs(scenario.delta) < 0.2
+            else "red"
+        )
+        winner = winner_map[scenario.winner]
+        table.add_row(
+            scenario.scenario_id,
+            f"{scenario.score_a:.0%}",
+            f"{scenario.score_b:.0%}",
+            f"[{color}]{scenario.delta:+.0%}[/{color}]",
+            winner,
+        )
+
+    console.print(table)
 
 
 # ---------------------------------------------------------------------------

@@ -23,6 +23,7 @@ PersonaNexus gives you:
 - **Inheritance and composition** — build agents from reusable archetypes and trait mixins
 - **Validation at build time** — catch misconfigurations before deployment
 - **Multi-target compilation** — YAML → system prompts, SOUL.md files, or platform-specific configs
+- **Identity evaluation harness** — run structured scenario suites with score breakdowns and A/B comparisons
 - **Personality framework mapping** — OCEAN (Big Five), DISC, and Jungian 16-type with bidirectional mapping
 - **Soul analysis** — reverse-map any personality file onto all three frameworks for comparison
 - **Multi-agent teams** — governance frameworks, workflow patterns, and team validation
@@ -101,9 +102,17 @@ $ personanexus compile agents/my-agent.yaml
 $ personanexus compile agents/my-agent.yaml --target soul
 ✓ Compiled Scout → agents/my-agent.SOUL.md
 ✓ Compiled Scout → agents/my-agent.STYLE.md
+
+# Run an identity eval suite
+$ personanexus eval agents/my-agent.yaml docs/evals/identity-smoke-suite.yaml
+Scout v1.0.0  score: 84%  PASS
+
+# Compare two identity versions on the same suite
+$ personanexus eval agents/my-agent.yaml docs/evals/identity-smoke-suite.yaml \
+    --compare agents/my-agent-v2.yaml
 ```
 
-> **Note:** If your agent uses archetype inheritance (`extends:`), add `--search-path` to compilation and analysis commands so archetypes/mixins can be resolved:
+> **Note:** If your agent uses archetype inheritance (`extends:`), add `--search-path` to compilation, analysis, and eval commands so archetypes/mixins can be resolved:
 > ```bash
 > personanexus compile agents/mira.yaml --search-path examples
 > personanexus analyze agents/mira.yaml --search-path examples
@@ -185,6 +194,10 @@ One identity, any platform:
 | `soul` | `.SOUL.md` + `.STYLE.md` | SOUL.md ecosystem format |
 | `openclaw` | `.personality.json` | OpenClaw personality config |
 | `json` | `.json` | Full identity as JSON |
+
+### Identity Evaluation Harness
+
+Define eval suites in YAML or JSON, for example under `docs/evals/`, and score an identity across persona consistency, instruction adherence, guardrails, and tone. The first release is deterministic and contract-based, which makes it CI-friendly and easy to compare version A vs version B before adding live model judges.
 
 ### Soul Analysis
 
