@@ -8,7 +8,8 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field, ValidationError
 
-from personanexus.resolver import IdentityResolver
+from personanexus.parser import ParseError
+from personanexus.resolver import IdentityResolver, ResolutionError
 from personanexus.types import AgentIdentity, Register
 
 
@@ -73,14 +74,20 @@ class EvalAssertions(BaseModel):
     tone: ToneExpectation = Field(default_factory=ToneExpectation)
 
 
+class ConversationTurn(BaseModel):
+    role: Literal["user", "assistant", "system"]
+    content: str
+
+
 class EvalScenario(BaseModel):
     id: str
     description: str | None = None
     prompt: str | None = None
-    conversation: list[dict[str, str]] = Field(default_factory=list)
+    conversation: list[ConversationTurn] = Field(default_factory=list)
     assertions: EvalAssertions = Field(default_factory=EvalAssertions)
     weights: EvalWeights | None = None
-    passing_score: float = Field(0.75, ge=0.0, le=1.0)
+    # `None` means "inherit from suite defaults"; `0.0` means "any score passes".
+    passing_score: float | None = Field(None, ge=0.0, le=1.0)
 
 
 class EvalSuiteDefaults(BaseModel):
@@ -174,19 +181,20 @@ class IdentityEvaluationHarness:
         suite = self.load_suite(suite_path)
         try:
             identity = self.resolver.resolve_file(identity_path)
-        except Exception as exc:  # pragma: no cover - CLI surfaces exact error types upstream
+        except (ParseError, ResolutionError, ValidationError) as exc:
             raise EvalError(f"Failed to resolve identity: {exc}") from exc
 
         scenario_results = [
-            self._evaluate_scenario(identity, scenario, suite)
-            for scenario in suite.scenarios
+            self._evaluate_scenario(identity, scenario, suite) for scenario in suite.scenarios
         ]
         overall = sum(item.weighted_score for item in scenario_results) / len(scenario_results)
         passed = all(item.passed for item in scenario_results)
+        raw_suite_name = suite.metadata.get("name")
+        suite_name = str(raw_suite_name) if raw_suite_name else suite_path.stem
         return EvalRunResult(
             identity_name=identity.metadata.name,
             identity_version=identity.metadata.version,
-            suite_name=str(suite.metadata.get("name") or suite_path.stem),
+            suite_name=suite_name,
             overall_score=overall,
             passed=passed,
             scenarios=scenario_results,
@@ -194,6 +202,19 @@ class IdentityEvaluationHarness:
 
     def compare(self, run_a: EvalRunResult, run_b: EvalRunResult) -> EvalComparison:
         scenario_map_b = {item.scenario_id: item for item in run_b.scenarios}
+        ids_a = {item.scenario_id for item in run_a.scenarios}
+        missing_in_b = ids_a - scenario_map_b.keys()
+        missing_in_a = scenario_map_b.keys() - ids_a
+        if missing_in_b or missing_in_a:
+            detail = []
+            if missing_in_b:
+                detail.append(f"missing in B: {sorted(missing_in_b)}")
+            if missing_in_a:
+                detail.append(f"missing in A: {sorted(missing_in_a)}")
+            raise EvalError(
+                "Cannot compare runs with different scenario sets — " + "; ".join(detail)
+            )
+
         scenarios: list[ScenarioComparison] = []
         for item_a in run_a.scenarios:
             item_b = scenario_map_b[item_a.scenario_id]
@@ -237,7 +258,11 @@ class IdentityEvaluationHarness:
         suite: EvalSuite,
     ) -> ScenarioResult:
         weights = (scenario.weights or suite.defaults.weights).normalized()
-        passing_score = scenario.passing_score or suite.defaults.passing_score
+        passing_score = (
+            scenario.passing_score
+            if scenario.passing_score is not None
+            else suite.defaults.passing_score
+        )
 
         dimensions = {
             "persona_consistency": self._score_persona(identity, scenario),
@@ -246,7 +271,21 @@ class IdentityEvaluationHarness:
             "tone": self._score_tone(identity, scenario),
         }
 
-        weighted_score = sum(dimensions[name].score * weights[name] for name in dimensions)
+        # Dimensions with no checks don't count toward the weighted score — a
+        # scenario that asserts nothing about guardrails shouldn't get a free
+        # 100% in that slot and inflate the overall result.
+        active = {name: dim for name, dim in dimensions.items() if dim.checks}
+        if active:
+            active_weight_total = sum(weights[name] for name in active)
+            if active_weight_total > 0:
+                weighted_score = sum(
+                    dim.score * weights[name] / active_weight_total for name, dim in active.items()
+                )
+            else:
+                weighted_score = sum(dim.score for dim in active.values()) / len(active)
+        else:
+            weighted_score = 1.0
+
         return ScenarioResult(
             scenario_id=scenario.id,
             description=scenario.description,
@@ -347,9 +386,7 @@ class IdentityEvaluationHarness:
             if expected.expected_scope == "in_scope":
                 matched = any(item in prompt_blob for item in scope_primary | scope_secondary)
                 actual = (
-                    "matched primary/secondary scope"
-                    if matched
-                    else "no scope keywords matched"
+                    "matched primary/secondary scope" if matched else "no scope keywords matched"
                 )
             elif expected.expected_scope == "out_of_scope":
                 matched = any(item in prompt_blob for item in scope_out)
@@ -530,7 +567,7 @@ def _scenario_text(scenario: EvalScenario) -> str:
     if scenario.prompt:
         chunks.append(scenario.prompt.lower())
     for turn in scenario.conversation:
-        chunks.append(turn.get("content", "").lower())
+        chunks.append(turn.content.lower())
     return "\n".join(chunks)
 
 
