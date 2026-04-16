@@ -21,6 +21,7 @@ from rich.table import Table
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
+from personanexus.doctor import PersonaDoctor, render_doctor_report
 from personanexus.drift import detect_drift_from_files, format_drift_report
 from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
@@ -1676,6 +1677,104 @@ def compat(
 
     except Exception as e:
         console.print(f"[red]Error calculating compatibility: {e}[/red]")
+        raise typer.Exit(code=1)
+
+
+# ---------------------------------------------------------------------------
+# doctor command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def doctor(
+    path: Annotated[
+        Path,
+        typer.Argument(help="Repo or directory to scan for PersonaNexus files"),
+    ] = Path("."),
+    output_format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: text or json"),
+    ] = "text",
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--search-path",
+            "-s",
+            help="Additional search paths for archetypes/mixins (repeatable)",
+        ),
+    ] = None,
+    check_compile: Annotated[
+        bool,
+        typer.Option(
+            "--check-compile/--no-check-compile",
+            help="Check generated compile artifacts for missing or stale outputs",
+        ),
+    ] = False,
+    target: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            "-t",
+            help="Compile target(s) to verify when --check-compile is enabled",
+        ),
+    ] = None,
+    token_budget: Annotated[
+        int,
+        typer.Option("--token-budget", help="Estimated token budget for compile checks"),
+    ] = 3000,
+) -> None:
+    """Run repo-wide health checks across PersonaNexus files."""
+    if not path.exists():
+        console.print(f"[red]Error: Path not found: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    if not path.is_dir():
+        console.print(f"[red]Error: Expected a directory: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    valid_targets = {
+        "text",
+        "anthropic",
+        "openai",
+        "openclaw",
+        "soul",
+        "json",
+        "langchain",
+        "crewai",
+        "autogen",
+        "markdown",
+    }
+    compile_targets = target or ["text"]
+    invalid_targets = [item for item in compile_targets if item not in valid_targets]
+    if invalid_targets:
+        console.print(
+            "[red]Error: Invalid compile target(s): "
+            f"{', '.join(invalid_targets)}. "
+            f"Must be one of: {', '.join(sorted(valid_targets))}[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    if output_format not in ("text", "json"):
+        console.print(
+            f"[red]Error: Invalid format '{output_format}'. Must be 'text' or 'json'[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    doctor_runner = PersonaDoctor(
+        root=path,
+        search_paths=search_path,
+        check_compile=check_compile,
+        compile_targets=compile_targets,
+        token_budget=token_budget,
+    )
+    report = doctor_runner.run()
+
+    if output_format == "json":
+        typer.echo(report.to_json())
+    else:
+        console.print(render_doctor_report(report))
+
+    if report.summary.files_scanned == 0 or not report.ok:
         raise typer.Exit(code=1)
 
 
