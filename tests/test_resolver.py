@@ -16,6 +16,100 @@ class TestResolveFile:
         identity = resolver.resolve_file(minimal_path)
         assert identity.metadata.name == "Pip"
 
+    def test_resolve_relative_embedded_path_fields(self, tmp_path):
+        golden_dir = tmp_path / "tests" / "golden"
+        golden_dir.mkdir(parents=True)
+        persona = tmp_path / "persona.yaml"
+        persona.write_text(
+            """
+schema_version: "1.0"
+metadata:
+  id: agt_path_test
+  name: Path Test
+  version: "1.0.0"
+  description: Path test
+  created_at: "2026-01-01T00:00:00Z"
+  updated_at: "2026-01-01T00:00:00Z"
+  status: draft
+role:
+  title: Analyst
+  purpose: Verify path resolution
+  scope:
+    primary: ["analysis"]
+personality:
+  traits:
+    warmth: 0.5
+    rigor: 0.5
+communication:
+  tone:
+    default: neutral
+principles:
+  - id: p1
+    priority: 1
+    statement: Test
+guardrails:
+  hard:
+    - id: g1
+      rule: R1
+      enforcement: output_filter
+      severity: critical
+evaluation:
+  regression:
+    golden_tests:
+      path: tests/golden
+"""
+        )
+
+        resolved = IdentityResolver().resolve_file(persona)
+
+        assert resolved.evaluation.regression.golden_tests.path == str(golden_dir.resolve())
+
+    def test_leave_nonexistent_embedded_path_fields_unchanged(self, tmp_path):
+        persona = tmp_path / "persona.yaml"
+        persona.write_text(
+            """
+schema_version: "1.0"
+metadata:
+  id: agt_path_missing
+  name: Path Missing
+  version: "1.0.0"
+  description: Path missing test
+  created_at: "2026-01-01T00:00:00Z"
+  updated_at: "2026-01-01T00:00:00Z"
+  status: draft
+role:
+  title: Analyst
+  purpose: Verify missing path behavior
+  scope:
+    primary: ["analysis"]
+personality:
+  traits:
+    warmth: 0.5
+    rigor: 0.5
+communication:
+  tone:
+    default: neutral
+principles:
+  - id: p1
+    priority: 1
+    statement: Test
+guardrails:
+  hard:
+    - id: g1
+      rule: R1
+      enforcement: output_filter
+      severity: critical
+evaluation:
+  regression:
+    golden_tests:
+      path: tests/missing
+"""
+        )
+
+        resolved = IdentityResolver().resolve_file(persona)
+
+        assert resolved.evaluation.regression.golden_tests.path == "tests/missing"
+
     def test_resolve_ada_with_inheritance(self, resolver, mira_path):
         identity = resolver.resolve_file(mira_path)
         # Ada's own values should be preserved
@@ -258,6 +352,51 @@ guardrails:
 
         with pytest.raises(ResolutionError, match="Circular"):
             resolver.resolve_file(tmp_path / "x.yaml")
+
+    def test_invalid_embedded_path_reference_raises(self, tmp_path):
+        persona = tmp_path / "persona.yaml"
+        persona.write_text(
+            """
+schema_version: "1.0"
+metadata:
+  id: agt_bad_path
+  name: Bad Path
+  version: "1.0.0"
+  description: Bad path test
+  created_at: "2026-01-01T00:00:00Z"
+  updated_at: "2026-01-01T00:00:00Z"
+  status: draft
+role:
+  title: Analyst
+  purpose: Verify invalid path behavior
+  scope:
+    primary: ["analysis"]
+personality:
+  traits:
+    warmth: 0.5
+    rigor: 0.5
+communication:
+  tone:
+    default: neutral
+principles:
+  - id: p1
+    priority: 1
+    statement: Test
+guardrails:
+  hard:
+    - id: g1
+      rule: R1
+      enforcement: output_filter
+      severity: critical
+evaluation:
+  regression:
+    golden_tests:
+      path: ../outside
+"""
+        )
+
+        with pytest.raises(ParseError, match="Invalid reference"):
+            IdentityResolver().resolve_file(persona)
 
     def test_missing_archetype_raises(self, tmp_path):
         resolver = IdentityResolver(search_paths=[tmp_path])

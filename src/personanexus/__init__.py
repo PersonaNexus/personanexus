@@ -1,6 +1,6 @@
 """AI PersonaNexus Framework — define, validate, and compose AI agent identities."""
 
-__version__ = "1.4.1"
+__version__ = "1.5.0"
 
 from personanexus.analyzer import (
     AnalysisResult,
@@ -31,6 +31,15 @@ from personanexus.evals import (
     EvalError,
     EvalRunResult,
     IdentityEvaluationHarness,
+)
+from personanexus.evolution import (
+    EvolutionState,
+    apply_deltas,
+    evolve_persona,
+    export_evolved_persona,
+    get_candidates,
+    load_evolution_state,
+    load_identity_with_evolution,
 )
 from personanexus.linter import IdentityLinter, LintWarning
 from personanexus.memory import (
@@ -73,6 +82,7 @@ from personanexus.types import (
     OceanProfile,
     PersonalityMode,
     PersonalityProfile,
+    PromptLayer,
 )
 from personanexus.validator import IdentityValidator, ValidationResult
 
@@ -93,6 +103,13 @@ __all__ = [
     "run_dynamics_pipeline",
     "update_sentiment",
     "update_trust",
+    "EvolutionState",
+    "apply_deltas",
+    "evolve_persona",
+    "export_evolved_persona",
+    "get_candidates",
+    "load_evolution_state",
+    "load_identity_with_evolution",
     "IdentityLinter",
     "LintWarning",
     "AnalysisResult",
@@ -116,6 +133,7 @@ __all__ = [
     "OpenClawCompiler",
     "PersonalityMode",
     "PersonalityProfile",
+    "PromptLayer",
     "SoulAnalyzer",
     "SystemPromptCompiler",
     "TeamComposition",

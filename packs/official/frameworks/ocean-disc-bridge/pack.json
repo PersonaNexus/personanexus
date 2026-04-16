@@ -1,0 +1,20 @@
+{
+  "name": "ocean-disc-bridge",
+  "author": "official",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "A framework example showing how broad OCEAN and DISC traits can coexist in one identity artifact.",
+  "tags": [
+    "official",
+    "framework"
+  ],
+  "category": "frameworks",
+  "requires_personanexus": ">=1.5.0",
+  "homepage": "https://github.com/PersonaNexus/personanexus",
+  "example_usage": "README.md#example",
+  "created": "2026-04-09",
+  "stats": {
+    "install_count": 0,
+    "stars": 0
+  }
+}

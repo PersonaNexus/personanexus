@@ -8,7 +8,7 @@ import re
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
 import typer
 import yaml
@@ -21,6 +21,13 @@ from rich.table import Table
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
+from personanexus.doctor import (
+    EXIT_ISSUES,
+    EXIT_NO_FILES,
+    SUPPORTED_COMPILE_TARGETS,
+    PersonaDoctor,
+    render_doctor_report,
+)
 from personanexus.drift import detect_drift_from_files, format_drift_report
 from personanexus.evals import EvalComparison, EvalError, EvalRunResult, IdentityEvaluationHarness
 from personanexus.linter import IdentityLinter
@@ -745,6 +752,10 @@ def compile(
         int,
         typer.Option("--token-budget", help="Estimated token budget for system prompt"),
     ] = 3000,
+    apply_evolution: Annotated[
+        bool,
+        typer.Option("--apply-evolution", help="Apply .evolution deltas before compiling"),
+    ] = False,
 ) -> None:
     """Compile a resolved identity into a system prompt or platform format."""
     if not file.exists():
@@ -780,6 +791,10 @@ def compile(
     try:
         resolver = IdentityResolver(search_paths=search_paths)
         identity = resolver.resolve_file(file)
+        if apply_evolution:
+            from personanexus.evolution import apply_deltas, load_evolution_state
+
+            identity = apply_deltas(identity, load_evolution_state(file, create=False))
     except ParseError as exc:
         console.print(f"[red]Parse error: {exc}[/red]")
         raise typer.Exit(code=1)
@@ -1834,6 +1849,94 @@ def compat(
 
 
 # ---------------------------------------------------------------------------
+# doctor command
+# ---------------------------------------------------------------------------
+
+
+@app.command()
+def doctor(
+    path: Annotated[
+        Path,
+        typer.Argument(help="Repo or directory to scan for PersonaNexus files"),
+    ] = Path("."),
+    output_format: Annotated[
+        str,
+        typer.Option("--format", "-f", help="Output format: text or json"),
+    ] = "text",
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--search-path",
+            "-s",
+            help="Additional search paths for archetypes/mixins (repeatable)",
+        ),
+    ] = None,
+    check_compile: Annotated[
+        bool,
+        typer.Option(
+            "--check-compile/--no-check-compile",
+            help="Check generated compile artifacts for missing or stale outputs",
+        ),
+    ] = False,
+    target: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--target",
+            "-t",
+            help="Compile target(s) to verify when --check-compile is enabled",
+        ),
+    ] = None,
+    token_budget: Annotated[
+        int,
+        typer.Option("--token-budget", help="Estimated token budget for compile checks"),
+    ] = 3000,
+) -> None:
+    """Run repo-wide health checks across PersonaNexus files."""
+    if not path.exists():
+        console.print(f"[red]Error: Path not found: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    if not path.is_dir():
+        console.print(f"[red]Error: Expected a directory: {path}[/red]")
+        raise typer.Exit(code=1)
+
+    compile_targets = target or ["text"]
+    invalid_targets = [item for item in compile_targets if item not in SUPPORTED_COMPILE_TARGETS]
+    if invalid_targets:
+        console.print(
+            "[red]Error: Invalid compile target(s): "
+            f"{', '.join(invalid_targets)}. "
+            f"Must be one of: {', '.join(sorted(SUPPORTED_COMPILE_TARGETS))}[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    if output_format not in ("text", "json"):
+        console.print(
+            f"[red]Error: Invalid format '{output_format}'. Must be 'text' or 'json'[/red]"
+        )
+        raise typer.Exit(code=1)
+
+    doctor_runner = PersonaDoctor(
+        root=path,
+        search_paths=search_path,
+        check_compile=check_compile,
+        compile_targets=compile_targets,
+        token_budget=token_budget,
+    )
+    report = doctor_runner.run()
+
+    if output_format == "json":
+        typer.echo(report.to_json())
+    else:
+        console.print(render_doctor_report(report))
+
+    if report.summary.files_scanned == 0:
+        raise typer.Exit(code=EXIT_NO_FILES)
+    if not report.ok:
+        raise typer.Exit(code=EXIT_ISSUES)
+
+
+# ---------------------------------------------------------------------------
 # drift command
 # ---------------------------------------------------------------------------
 
@@ -2130,6 +2233,502 @@ def simulate(
             border_style="green",
         )
     )
+
+
+# ---------------------------------------------------------------------------
+# pack subcommand group
+# ---------------------------------------------------------------------------
+
+pack_app = typer.Typer(
+    name="pack",
+    help="Community pack marketplace commands",
+    add_completion=False,
+)
+app.add_typer(pack_app, name="pack")
+
+
+@pack_app.command("list")
+def pack_list(
+    category: Annotated[str | None, typer.Option("--category", help="Filter by category")] = None,
+    tag: Annotated[str | None, typer.Option("--tag", help="Filter by tag")] = None,
+    installed: Annotated[
+        bool,
+        typer.Option(
+            "--installed",
+            help="List installed cache entries instead of repo packs",
+        ),
+    ] = False,
+) -> None:
+    """List available packs."""
+    from personanexus.packs import discover_packs, list_installed_packs
+
+    records = list_installed_packs() if installed else discover_packs()
+    if category:
+        records = [record for record in records if record.metadata.category == category]
+    if tag:
+        records = [record for record in records if tag in record.metadata.tags]
+
+    if not records:
+        console.print("[yellow]No packs found.[/yellow]")
+        return
+
+    table = Table(title="Installed Packs" if installed else "Available Packs")
+    table.add_column("Ref", style="cyan")
+    table.add_column("Category")
+    table.add_column("Version")
+    table.add_column("Description")
+    for record in records:
+        table.add_row(
+            record.ref,
+            record.metadata.category,
+            record.metadata.version,
+            record.metadata.description,
+        )
+    console.print(table)
+
+
+@pack_app.command("search")
+def pack_search(
+    query: Annotated[str, typer.Argument(help="Search query")],
+    category: Annotated[str | None, typer.Option("--category", help="Filter by category")] = None,
+    tag: Annotated[str | None, typer.Option("--tag", help="Filter by tag")] = None,
+) -> None:
+    """Search pack metadata."""
+    from personanexus.packs import search_packs
+
+    records = search_packs(query, category=category, tag=tag)
+    if not records:
+        console.print("[yellow]No matching packs found.[/yellow]")
+        return
+
+    for record in records:
+        console.print(
+            f"[cyan]{record.ref}[/cyan] [{record.metadata.category}] {record.metadata.description}"
+        )
+
+
+@pack_app.command("show")
+def pack_show(
+    ref: Annotated[str, typer.Argument(help="Pack name or namespaced ref")],
+    installed: Annotated[
+        bool,
+        typer.Option("--installed", help="Resolve from installed cache"),
+    ] = False,
+) -> None:
+    """Show pack details."""
+    from personanexus.packs import default_pack_cache, default_packs_root, find_pack
+
+    try:
+        record = find_pack(ref, default_pack_cache() if installed else default_packs_root())
+    except Exception as exc:
+        console.print(f"[red]Show failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(
+        Panel.fit(
+            (
+                f"Ref: {record.ref}\n"
+                f"Author: {record.metadata.author}\n"
+                f"Version: {record.metadata.version}\n"
+                f"Category: {record.metadata.category}\n"
+                f"Description: {record.metadata.description}\n"
+                f"Tags: {', '.join(record.metadata.tags) if record.metadata.tags else '-'}\n"
+                f"Path: {record.path}"
+            ),
+            title="Pack Details",
+        )
+    )
+
+
+@pack_app.command("install")
+def pack_install(
+    ref: Annotated[str, typer.Argument(help="Pack name or namespaced ref")],
+    dry_run: Annotated[
+        bool,
+        typer.Option("--dry-run", help="Validate and preview without copying"),
+    ] = False,
+) -> None:
+    """Install a pack into ~/.personanexus/packs/."""
+    from personanexus.packs import install_pack, validate_pack_dir
+
+    try:
+        destination = install_pack(ref, dry_run=dry_run)
+        validation = validate_pack_dir(destination if not dry_run else destination)
+    except Exception as exc:
+        console.print(f"[red]Install failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    if dry_run:
+        console.print(f"[green]✓ Dry run passed for {destination}[/green]")
+    else:
+        console.print(f"[green]✓ Installed to {destination}[/green]")
+    for warning in validation.warnings:
+        console.print(f"[yellow]Warning: {warning}[/yellow]")
+
+
+@pack_app.command("installed")
+def pack_installed() -> None:
+    """List installed pack cache entries."""
+    from personanexus.packs import list_installed_packs
+
+    records = list_installed_packs()
+    if not records:
+        console.print("[yellow]No packs found.[/yellow]")
+        return
+
+    table = Table(title="Installed Packs")
+    table.add_column("Ref", style="cyan")
+    table.add_column("Category")
+    table.add_column("Version")
+    table.add_column("Description")
+    for record in records:
+        table.add_row(
+            record.ref,
+            record.metadata.category,
+            record.metadata.version,
+            record.metadata.description,
+        )
+    console.print(table)
+
+
+@pack_app.command("remove")
+def pack_remove(
+    ref: Annotated[str, typer.Argument(help="Installed pack ref")],
+) -> None:
+    """Remove an installed pack from cache."""
+    from personanexus.packs import remove_installed_pack
+
+    try:
+        removed = remove_installed_pack(ref)
+    except Exception as exc:
+        console.print(f"[red]Remove failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Removed {removed}[/green]")
+
+
+@pack_app.command("create")
+def pack_create(
+    persona: Annotated[Path, typer.Argument(help="Persona YAML to package")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Output pack directory")],
+    author: Annotated[str, typer.Option("--author", help="Pack author")],
+    category: Annotated[
+        str,
+        typer.Option("--category", help="boards, personas, or frameworks"),
+    ],
+    description: Annotated[str, typer.Option("--description", help="Short pack description")],
+    homepage: Annotated[
+        str | None,
+        typer.Option("--homepage", help="Optional homepage URL"),
+    ] = None,
+    tag: Annotated[list[str] | None, typer.Option("--tag", help="Repeatable tag")] = None,
+    evolved_from: Annotated[
+        str | None,
+        typer.Option("--evolved-from", help="Optional upstream lineage ref"),
+    ] = None,
+) -> None:
+    """Create a pack directory from a persona YAML file."""
+    from personanexus.packs import create_pack
+
+    try:
+        out = create_pack(
+            persona,
+            output,
+            author=author,
+            category=category,
+            description=description,
+            homepage=homepage,
+            tags=tag or [],
+            evolved_from=evolved_from,
+        )
+    except Exception as exc:
+        console.print(f"[red]Create failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Created pack at {out}[/green]")
+
+
+@pack_app.command("publish")
+def pack_publish(
+    pack_dir: Annotated[Path, typer.Argument(help="Local pack directory")],
+    branch_name: Annotated[
+        str | None,
+        typer.Option("--branch-name", help="Optional branch to create before commit"),
+    ] = None,
+    no_pr: Annotated[
+        bool,
+        typer.Option("--no-pr", help="Commit locally without opening a PR"),
+    ] = False,
+) -> None:
+    """Publish a community pack into the repo and optionally open a PR."""
+    from personanexus.packs import publish_pack
+
+    try:
+        destination = publish_pack(pack_dir, branch_name=branch_name, create_pr=not no_pr)
+    except Exception as exc:
+        console.print(f"[red]Publish failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Published pack to {destination}[/green]")
+
+
+@pack_app.command("validate")
+def pack_validate(
+    pack_dir: Annotated[Path, typer.Argument(help="Pack directory to validate")],
+) -> None:
+    """Validate a pack directory."""
+    from personanexus.packs import validate_pack_dir
+
+    result = validate_pack_dir(pack_dir)
+    if result.errors:
+        for error in result.errors:
+            console.print(f"[red]Error: {error}[/red]")
+        raise typer.Exit(code=1)
+    console.print("[green]✓ Pack validation successful[/green]")
+    for warning in result.warnings:
+        console.print(f"[yellow]Warning: {warning}[/yellow]")
+
+
+@pack_app.command("build-gallery")
+def pack_build_gallery() -> None:
+    """Rebuild packs/_gallery/index.json from local packs."""
+    from personanexus.packs import build_gallery_index
+
+    output = build_gallery_index()
+    console.print(f"[green]✓ Built gallery index: {output}[/green]")
+
+
+# ---------------------------------------------------------------------------
+# evolve subcommand group
+# ---------------------------------------------------------------------------
+
+evolve_app = typer.Typer(
+    name="evolve",
+    help="Persona evolution engine commands",
+    add_completion=False,
+)
+app.add_typer(evolve_app, name="evolve")
+
+
+@evolve_app.command("enable")
+def evolve_enable(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    mode: Annotated[
+        str, typer.Option("--mode", help="Evolution mode: soft, hard, or both")
+    ] = "soft",
+    learning_rate: Annotated[
+        str, typer.Option("--learning-rate", help="low, medium, or high")
+    ] = "medium",
+    consensus_threshold: Annotated[
+        int, typer.Option("--consensus-threshold", help="Signals required for hard evolution")
+    ] = 3,
+    review_mode: Annotated[str, typer.Option("--review-mode", help="prompt or auto")] = "prompt",
+) -> None:
+    """Enable evolution settings on a persona YAML file."""
+    from personanexus.evolution import configure_evolution, resolve_persona_path
+    from personanexus.types import EvolutionMode, LearningRate, ReviewMode
+
+    try:
+        persona_path = resolve_persona_path(persona)
+        configure_evolution(
+            persona_path,
+            mode=EvolutionMode(mode),
+            learning_rate=LearningRate(learning_rate),
+            consensus_threshold=consensus_threshold,
+            review_mode=ReviewMode(review_mode),
+        )
+    except Exception as exc:
+        console.print(f"[red]Enable failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Evolution enabled for {persona_path}[/green]")
+
+
+@evolve_app.command("feedback")
+def evolve_feedback(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    feedback: Annotated[str, typer.Argument(help="Feedback to record")],
+    type: Annotated[str | None, typer.Option("--type", help="soft or hard")] = None,
+    trait: Annotated[
+        str | None, typer.Option("--trait", help="Trait to evolve for hard changes")
+    ] = None,
+    change: Annotated[
+        float | None, typer.Option("--change", help="Hard-delta value before caps are applied")
+    ] = None,
+    source: Annotated[
+        str, typer.Option("--source", help="Source label for audit log")
+    ] = "manual_feedback",
+    thumbs_down: Annotated[
+        bool, typer.Option("--thumbs-down", help="Treat this as negative feedback")
+    ] = False,
+    response_id: Annotated[
+        str | None, typer.Option("--response-id", help="Optional response identifier")
+    ] = None,
+) -> None:
+    """Queue a feedback signal as a pending evolution candidate."""
+    from personanexus.evolution import evolve_persona
+
+    kind: Literal["soft", "hard"] | None = None  # noqa: UP040
+    if type in ("soft", "hard"):
+        kind = type  # type: ignore[assignment]
+    try:
+        candidate = evolve_persona(
+            persona,
+            feedback=feedback,
+            source=source,
+            candidate_type=kind,
+            trait=trait,
+            change=change,
+            thumbs_down=thumbs_down,
+            response_id=response_id,
+        )
+    except Exception as exc:
+        console.print(f"[red]Feedback failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Queued {candidate.type} candidate {candidate.id}[/green]")
+    if candidate.trait:
+        console.print(f"[dim]Trait: {candidate.trait}[/dim]")
+    if candidate.change is not None:
+        console.print(f"[dim]Change: {candidate.change:+.2f}[/dim]")
+    if candidate.guidance:
+        console.print(f"[dim]Guidance: {candidate.guidance}[/dim]")
+
+
+@evolve_app.command("pending")
+def evolve_pending(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+) -> None:
+    """List pending evolution candidates."""
+    from personanexus.evolution import get_candidates
+
+    candidates = get_candidates(persona)
+    if not candidates:
+        console.print("[yellow]No pending evolution candidates.[/yellow]")
+        return
+
+    table = Table(title="Pending Evolution Candidates", show_header=True, header_style="bold")
+    table.add_column("ID", style="cyan")
+    table.add_column("Type")
+    table.add_column("Target")
+    table.add_column("Change")
+    table.add_column("Signals")
+    table.add_column("Reason")
+
+    for candidate in candidates:
+        table.add_row(
+            candidate.id,
+            candidate.type,
+            candidate.trait or "tone_guidance",
+            f"{candidate.change:+.2f}" if candidate.change is not None else "—",
+            str(candidate.signals_supporting),
+            candidate.reason,
+        )
+
+    console.print(table)
+
+
+@evolve_app.command("promote")
+def evolve_promote(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    candidate_id: Annotated[
+        str | None, typer.Argument(help="Candidate ID", show_default=False)
+    ] = None,
+    accept: Annotated[
+        bool, typer.Option("--accept", help="Accept the specified candidate")
+    ] = False,
+    reject: Annotated[
+        bool, typer.Option("--reject", help="Reject the specified candidate")
+    ] = False,
+    accept_all: Annotated[
+        bool, typer.Option("--accept-all", help="Promote all pending candidates")
+    ] = False,
+) -> None:
+    """Promote pending candidates into active deltas."""
+    from personanexus.evolution import promote_all, promote_candidate
+
+    try:
+        if accept_all:
+            accepted, errors = promote_all(persona)
+            console.print(f"[green]✓ Accepted {len(accepted)} candidate(s)[/green]")
+            for err in errors:
+                console.print(f"[yellow]Skipped: {err}[/yellow]")
+            return
+
+        if not candidate_id:
+            console.print("[red]Error: candidate_id is required unless --accept-all is used[/red]")
+            raise typer.Exit(code=1)
+        if accept == reject:
+            console.print("[red]Error: choose exactly one of --accept or --reject[/red]")
+            raise typer.Exit(code=1)
+
+        promote_candidate(persona, candidate_id, accept=accept)
+    except typer.Exit:
+        raise
+    except Exception as exc:
+        console.print(f"[red]Promote failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    action = "accepted" if accept else "rejected"
+    console.print(f"[green]✓ Candidate {candidate_id} {action}[/green]")
+
+
+@evolve_app.command("reset")
+def evolve_reset(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+) -> None:
+    """Clear active evolution deltas and pending candidates."""
+    from personanexus.evolution import reset_evolution
+
+    try:
+        state = reset_evolution(persona)
+    except Exception as exc:
+        console.print(f"[red]Reset failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Evolution reset. Current version: {state.version}[/green]")
+
+
+@evolve_app.command("rollback")
+def evolve_rollback(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    version: Annotated[
+        int, typer.Option("--version", help="Historical version snapshot to restore")
+    ],
+) -> None:
+    """Restore a previous evolution snapshot."""
+    from personanexus.evolution import rollback_evolution
+
+    try:
+        state = rollback_evolution(persona, version)
+    except Exception as exc:
+        console.print(f"[red]Rollback failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(
+        f"[green]✓ Rolled back using snapshot {version}. Current version: {state.version}[/green]"
+    )
+
+
+@evolve_app.command("export")
+def evolve_export(
+    persona: Annotated[str, typer.Argument(help="Persona YAML path or persona name")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Where to write the evolved YAML")],
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option("--search-path", "-s", help="Additional search paths for archetypes/mixins"),
+    ] = None,
+) -> None:
+    """Export a new YAML file with active evolution deltas applied."""
+    from personanexus.evolution import export_evolved_persona
+
+    try:
+        out = export_evolved_persona(persona, output, search_paths=search_path or [])
+    except Exception as exc:
+        console.print(f"[red]Export failed: {exc}[/red]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[green]✓ Exported evolved persona to {out}[/green]")
 
 
 # ---------------------------------------------------------------------------

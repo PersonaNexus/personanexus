@@ -403,6 +403,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and code 
 | Project | Description |
 |---------|-------------|
 | [**AgentForge**](https://github.com/PersonaNexus/AgentSkillFactory) | Transform job descriptions into deployable PersonaNexus agent blueprints — extracts skills, maps traits, and outputs ready-to-use identities. |
+| [**Voice Packs**](https://github.com/PersonaNexus/voice-packs) | Weight-level personality adapters (LoRA) that encode authorial voice into model weights. 13 pre-trained packs, proven to reduce personality drift by up to 49% vs prompt-only. [Adapters on HuggingFace](https://huggingface.co/jcrowan3/voice-pack-adapters). |
 
 ## Trademark Notice
 

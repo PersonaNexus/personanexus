@@ -1,0 +1,20 @@
+{
+  "name": "strategic-advisory-council",
+  "author": "official",
+  "version": "1.0.0",
+  "license": "MIT",
+  "description": "A five-seat strategic advisory board for founders.",
+  "tags": [
+    "official",
+    "board"
+  ],
+  "category": "boards",
+  "requires_personanexus": ">=1.5.0",
+  "homepage": "https://github.com/PersonaNexus/personanexus",
+  "example_usage": "README.md#example",
+  "created": "2026-04-09",
+  "stats": {
+    "install_count": 0,
+    "stars": 0
+  }
+}

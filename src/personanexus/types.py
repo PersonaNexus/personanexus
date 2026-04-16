@@ -161,6 +161,23 @@ class AvatarType(enum.StrEnum):
     NONE = "none"
 
 
+class EvolutionMode(enum.StrEnum):
+    SOFT = "soft"
+    HARD = "hard"
+    BOTH = "both"
+
+
+class LearningRate(enum.StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class ReviewMode(enum.StrEnum):
+    PROMPT = "prompt"
+    AUTO = "auto"
+
+
 # ---------------------------------------------------------------------------
 # Interaction Protocols
 # ---------------------------------------------------------------------------
@@ -251,6 +268,23 @@ class Metadata(BaseModel):
     author: str | None = None
     tags: list[str] = Field(default_factory=list, max_length=50)
     status: Status = Status.DRAFT
+
+
+# ---------------------------------------------------------------------------
+# Prompt compilation
+# ---------------------------------------------------------------------------
+
+
+class PromptLayer(BaseModel):
+    """A typed prompt layer emitted by the system prompt compiler."""
+
+    name: str
+    content: str = Field(..., min_length=1)
+    order: int = Field(..., ge=0)
+    required: bool = False
+    included: bool = True
+    format: str = "markdown"
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
@@ -481,9 +515,6 @@ class Personality(BaseModel):
                 raise ValueError(
                     "At least one framework profile (ocean/disc/jungian) is required in hybrid mode"
                 )
-            has_overrides = len(self.traits.defined_traits()) > 0
-            if not has_overrides:
-                raise ValueError("At least one explicit trait override is required in hybrid mode")
 
         return self
 
@@ -961,6 +992,13 @@ class Versioning(BaseModel):
 
 
 class Evolution(BaseModel):
+    enabled: bool = False
+    mode: EvolutionMode = EvolutionMode.SOFT
+    learning_rate: LearningRate = LearningRate.MEDIUM
+    consensus_threshold: int = Field(3, ge=1, le=20)
+    protected_traits: list[str] = Field(default_factory=list)
+    judge_model: str | None = None
+    review_mode: ReviewMode = ReviewMode.PROMPT
     immutable_fields: list[str] = Field(default_factory=list)
     admin_mutable_fields: list[str] = Field(default_factory=list)
     runtime_mutable_fields: list[RuntimeMutableField] = Field(default_factory=list)

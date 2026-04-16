@@ -77,7 +77,7 @@ def _render_landing() -> None:
         unsafe_allow_html=True,
     )
 
-    col_play, col_wiz, col_analyze = st.columns(3)
+    col_play, col_wiz, col_analyze, col_evolution = st.columns(4)
 
     with col_play:
         st.markdown(
@@ -136,6 +136,25 @@ def _render_landing() -> None:
             st.session_state["app_mode"] = "Analyze"
             st.rerun()
 
+    with col_evolution:
+        st.markdown(
+            '<div class="landing-card">'
+            '<div class="icon">🧬</div>'
+            "<h3>Evolution Lab</h3>"
+            "<p>Review persona trait drift, queue feedback, inspect pending "
+            "candidates, and browse evolution history.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "Open Evolution Lab",
+            key="landing_evolution",
+            type="secondary",
+            use_container_width=True,
+        ):
+            st.session_state["app_mode"] = "Evolution"
+            st.rerun()
+
 
 # ---------------------------------------------------------------------------
 # Mode routing
@@ -176,6 +195,15 @@ if app_mode == "Analyze":
     except Exception as e:
         st.error("An error occurred while loading the analyzer. Check logs for details.")
         logger.exception("Analyze error: %s", e)
+    st.stop()
+
+if app_mode == "Evolution":
+    try:
+        from evolution_gui import render_evolution
+        render_evolution()
+    except Exception as e:
+        st.error("An error occurred while loading the evolution lab. Check logs for details.")
+        logger.exception("Evolution lab error: %s", e)
     st.stop()
 
 
