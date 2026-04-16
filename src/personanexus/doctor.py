@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import os
+import re
 from pathlib import Path
 from typing import Any, Literal
 
@@ -15,6 +17,27 @@ from personanexus.parser import IdentityParser, ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
 from personanexus.team_types import TeamConfiguration
 from personanexus.validator import IdentityValidator, ValidationWarning
+
+# Exit codes used by the `doctor` CLI.
+EXIT_OK = 0
+EXIT_ISSUES = 1
+EXIT_NO_FILES = 2
+
+# Compile targets understood by `_expected_compile_outputs`. The CLI imports
+# this so the allowed --target values stay in sync with what the doctor can
+# actually verify on disk.
+SUPPORTED_COMPILE_TARGETS: tuple[str, ...] = (
+    "text",
+    "anthropic",
+    "openai",
+    "openclaw",
+    "soul",
+    "json",
+    "langchain",
+    "crewai",
+    "autogen",
+    "markdown",
+)
 
 _FILE_KINDS = ("identity", "team")
 _IGNORED_DIRS = {
@@ -28,6 +51,9 @@ _IGNORED_DIRS = {
     "build",
     "__pycache__",
 }
+
+_MARKERS = ("schema_version:", "metadata:", "personality:", "team:")
+_TEAM_MARKER_RE = re.compile(r"(?m)^team:\s*$")
 
 
 @dataclasses.dataclass
@@ -115,6 +141,15 @@ class DoctorReport:
         return json.dumps(self.to_dict(), indent=2)
 
 
+@dataclasses.dataclass
+class _Discovered:
+    path: Path
+    kind: Literal["identity", "team"]
+    # Parsed YAML payload, or None if the file failed to parse (identity path
+    # will surface the ParseError through the validator).
+    data: dict[str, Any] | None
+
+
 class PersonaDoctor:
     """Run pragmatic repo-wide health checks for PersonaNexus files."""
 
@@ -138,8 +173,8 @@ class PersonaDoctor:
         self.resolver = IdentityResolver(search_paths=self.search_paths)
 
     def run(self) -> DoctorReport:
-        files = self.discover_files()
-        reports = [self._check_file(path) for path in files]
+        discovered = self._discover()
+        reports = [self._check_file(item) for item in discovered]
 
         error_count = sum(
             1 for report in reports for issue in report.issues if issue.severity == "error"
@@ -167,42 +202,62 @@ class PersonaDoctor:
         return DoctorReport(ok=blocking_files == 0, summary=summary, files=reports)
 
     def discover_files(self) -> list[Path]:
-        files: list[Path] = []
-        for path in self.root.rglob("*"):
-            if path.is_dir() and path.name in _IGNORED_DIRS:
-                continue
-            if not path.is_file() or path.suffix.lower() not in {".yaml", ".yml"}:
-                continue
-            if any(part in _IGNORED_DIRS for part in path.parts):
-                continue
-            kind = self._detect_kind(path)
-            if kind in _FILE_KINDS:
-                files.append(path)
-        return sorted(files)
+        """Public helper kept for backwards compatibility."""
+        return [item.path for item in self._discover()]
 
-    def _detect_kind(self, path: Path) -> str | None:
-        if not _looks_like_personanexus_file(path):
+    def _discover(self) -> list[_Discovered]:
+        """Walk the tree once, skipping ignored dirs, and classify each file."""
+        found: list[_Discovered] = []
+        for dirpath, dirnames, filenames in os.walk(self.root):
+            # Prune ignored directories in-place so os.walk doesn't recurse
+            # into them (saves a lot of I/O on large repos).
+            dirnames[:] = [d for d in dirnames if d not in _IGNORED_DIRS]
+            for filename in filenames:
+                if not filename.lower().endswith((".yaml", ".yml")):
+                    continue
+                path = Path(dirpath) / filename
+                classified = self._classify(path)
+                if classified is not None:
+                    found.append(classified)
+        found.sort(key=lambda item: item.path)
+        return found
+
+    def _classify(self, path: Path) -> _Discovered | None:
+        """Read a file once and decide whether it's an identity or team."""
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            return None
+        if not any(marker in text for marker in _MARKERS):
             return None
 
         try:
             data = self.parser.parse_file(path)
         except ParseError:
-            return "identity"
+            # Fall back to textual heuristics so a malformed team file isn't
+            # silently reported as an identity with a misleading error.
+            kind: Literal["identity", "team"] = (
+                "team" if _TEAM_MARKER_RE.search(text) else "identity"
+            )
+            return _Discovered(path=path, kind=kind, data=None)
+
+        if not isinstance(data, dict):
+            return None
 
         schema_version = str(data.get("schema_version", "")).strip()
         if "team" in data or schema_version.startswith("2"):
-            return "team"
+            return _Discovered(path=path, kind="team", data=data)
         if "metadata" in data and "role" in data and "personality" in data:
-            return "identity"
+            return _Discovered(path=path, kind="identity", data=data)
         return None
 
-    def _check_file(self, path: Path) -> DoctorFileReport:
-        kind = self._detect_kind(path)
-        if kind == "team":
-            return self._check_team(path)
-        return self._check_identity(path)
+    def _check_file(self, item: _Discovered) -> DoctorFileReport:
+        if item.kind == "team":
+            return self._check_team(item)
+        return self._check_identity(item)
 
-    def _check_identity(self, path: Path) -> DoctorFileReport:
+    def _check_identity(self, item: _Discovered) -> DoctorFileReport:
+        path = item.path
         report = DoctorFileReport(path=self._relative_path(path), kind="identity")
 
         validation = self.validator.validate_file(path)
@@ -261,28 +316,29 @@ class PersonaDoctor:
 
         return report
 
-    def _check_team(self, path: Path) -> DoctorFileReport:
+    def _check_team(self, item: _Discovered) -> DoctorFileReport:
+        path = item.path
         report = DoctorFileReport(path=self._relative_path(path), kind="team")
         try:
-            data = self.parser.parse_file(path)
+            data = item.data if item.data is not None else self.parser.parse_file(path)
             TeamConfiguration.model_validate(data)
-        except (ParseError, ValidationError) as exc:
-            if isinstance(exc, ValidationError):
-                for error in exc.errors():
-                    loc = " -> ".join(str(part) for part in error["loc"])
-                    report.add_issue(
-                        kind="team_validation_error",
-                        severity="error",
-                        message=f"{loc}: {error['msg']}",
-                        check="validate-team",
-                    )
-                return report
+        except ParseError as exc:
             report.add_issue(
-                kind="team_validation_error",
+                kind="team_parse_error",
                 severity="error",
                 message=str(exc),
                 check="validate-team",
             )
+            return report
+        except ValidationError as exc:
+            for error in exc.errors():
+                loc = " -> ".join(str(part) for part in error["loc"])
+                report.add_issue(
+                    kind="team_validation_error",
+                    severity="error",
+                    message=f"{loc}: {error['msg']}",
+                    check="validate-team",
+                )
             return report
 
         return report
@@ -302,8 +358,21 @@ class PersonaDoctor:
                 continue
 
             actual_outputs = _normalize_compile_outputs(compiled)
+            if len(expected_outputs) != len(actual_outputs):
+                report.add_issue(
+                    kind="compile_output_shape",
+                    severity="error",
+                    message=(
+                        f"Compile target '{target}' produced {len(actual_outputs)} "
+                        f"output(s); doctor expected {len(expected_outputs)}. "
+                        "The doctor's artifact layout is out of date — please update."
+                    ),
+                    check="compile",
+                )
+                continue
+
             for expected_path, expected_content in zip(
-                expected_outputs, actual_outputs, strict=True
+                expected_outputs, actual_outputs, strict=False
             ):
                 if not expected_path.exists():
                     report.add_issue(
@@ -317,7 +386,9 @@ class PersonaDoctor:
                     )
                     continue
                 current_content = expected_path.read_text(encoding="utf-8")
-                if current_content != expected_content:
+                if _normalize_for_compare(current_content) != _normalize_for_compare(
+                    expected_content
+                ):
                     report.add_issue(
                         kind="compile_drift",
                         severity="error",
@@ -335,22 +406,17 @@ class PersonaDoctor:
             return str(path)
 
 
-def _looks_like_personanexus_file(path: Path) -> bool:
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError:
-        return False
-
-    markers = ("schema_version:", "metadata:", "personality:", "team:")
-    return any(marker in text for marker in markers)
-
-
 def _normalize_compile_outputs(compiled: str | dict[str, Any]) -> list[str]:
     if isinstance(compiled, dict):
         if {"soul_md", "style_md"} <= set(compiled):
             return [str(compiled["soul_md"]), str(compiled["style_md"])]
         return [json.dumps(compiled, indent=2, ensure_ascii=False)]
     return [compiled]
+
+
+def _normalize_for_compare(text: str) -> str:
+    """Normalize trailing whitespace so trivial formatting drift doesn't fail."""
+    return text.rstrip() + "\n"
 
 
 def _expected_compile_outputs(path: Path, target: str) -> list[Path]:
@@ -379,7 +445,9 @@ def _expected_compile_outputs(path: Path, target: str) -> list[Path]:
 
 
 def _validation_warning_severity(warning: ValidationWarning) -> Literal["warning", "info"]:
-    if warning.severity == "high":
+    # `ValidationWarning.severity` is low | medium | high. Treat medium as a
+    # warning so it isn't lost in the noise of info findings.
+    if warning.severity in ("high", "medium"):
         return "warning"
     return "info"
 

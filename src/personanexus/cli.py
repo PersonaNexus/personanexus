@@ -21,7 +21,13 @@ from rich.table import Table
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
 from personanexus.compiler import CompilerError, compile_identity
 from personanexus.diff import compatibility_score, diff_identities, format_diff
-from personanexus.doctor import PersonaDoctor, render_doctor_report
+from personanexus.doctor import (
+    EXIT_ISSUES,
+    EXIT_NO_FILES,
+    SUPPORTED_COMPILE_TARGETS,
+    PersonaDoctor,
+    render_doctor_report,
+)
 from personanexus.drift import detect_drift_from_files, format_drift_report
 from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
@@ -1732,25 +1738,13 @@ def doctor(
         console.print(f"[red]Error: Expected a directory: {path}[/red]")
         raise typer.Exit(code=1)
 
-    valid_targets = {
-        "text",
-        "anthropic",
-        "openai",
-        "openclaw",
-        "soul",
-        "json",
-        "langchain",
-        "crewai",
-        "autogen",
-        "markdown",
-    }
     compile_targets = target or ["text"]
-    invalid_targets = [item for item in compile_targets if item not in valid_targets]
+    invalid_targets = [item for item in compile_targets if item not in SUPPORTED_COMPILE_TARGETS]
     if invalid_targets:
         console.print(
             "[red]Error: Invalid compile target(s): "
             f"{', '.join(invalid_targets)}. "
-            f"Must be one of: {', '.join(sorted(valid_targets))}[/red]"
+            f"Must be one of: {', '.join(sorted(SUPPORTED_COMPILE_TARGETS))}[/red]"
         )
         raise typer.Exit(code=1)
 
@@ -1774,8 +1768,10 @@ def doctor(
     else:
         console.print(render_doctor_report(report))
 
-    if report.summary.files_scanned == 0 or not report.ok:
-        raise typer.Exit(code=1)
+    if report.summary.files_scanned == 0:
+        raise typer.Exit(code=EXIT_NO_FILES)
+    if not report.ok:
+        raise typer.Exit(code=EXIT_ISSUES)
 
 
 # ---------------------------------------------------------------------------

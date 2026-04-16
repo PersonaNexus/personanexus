@@ -8,7 +8,7 @@ from pathlib import Path
 from typer.testing import CliRunner
 
 from personanexus.cli import app
-from personanexus.doctor import PersonaDoctor
+from personanexus.doctor import EXIT_ISSUES, EXIT_NO_FILES, PersonaDoctor
 
 runner = CliRunner()
 
@@ -66,28 +66,28 @@ class TestPersonaDoctor:
         _write_identity(identities_dir / "agent.yaml")
         (teams_dir / "team.yaml").write_text(
             'schema_version: "2.0"\n\n'
-            'team:\n'
-            '  metadata:\n'
+            "team:\n"
+            "  metadata:\n"
             '    id: "team_test_001"\n'
             '    name: "Test Team"\n'
             '    description: "A minimal valid team"\n'
             '    version: "1.0.0"\n'
             '    created_at: "2026-01-01T00:00:00Z"\n'
             '    author: "tests"\n'
-            '  composition:\n'
-            '    agents:\n'
-            '      lead:\n'
+            "  composition:\n"
+            "    agents:\n"
+            "      lead:\n"
             '        agent_id: "agt_test_001"\n'
             '        role: "assistant"\n'
-            '        authority_level: 1\n'
+            "        authority_level: 1\n"
             '        expertise_domains: ["general assistance"]\n'
             '        capabilities: ["answer questions"]\n'
-            '        delegation_rights: []\n'
-            '        personality_summary:\n'
-            '          warmth: 0.6\n'
-            '  governance:\n'
+            "        delegation_rights: []\n"
+            "        personality_summary:\n"
+            "          warmth: 0.6\n"
+            "  governance:\n"
             '    model: "single_owner"\n'
-            '    decision_rules: []\n',
+            "    decision_rules: []\n",
             encoding="utf-8",
         )
 
@@ -141,7 +141,7 @@ class TestDoctorCommand:
 
         result = runner.invoke(app, ["doctor", str(tmp_path)])
 
-        assert result.exit_code == 1
+        assert result.exit_code == EXIT_ISSUES
         assert "Cannot resolve reference" in result.output
 
     def test_doctor_requires_personanexus_files(self, tmp_path):
@@ -149,5 +149,62 @@ class TestDoctorCommand:
 
         result = runner.invoke(app, ["doctor", str(tmp_path)])
 
-        assert result.exit_code == 1
+        assert result.exit_code == EXIT_NO_FILES
         assert "No PersonaNexus files found." in result.output
+
+    def test_doctor_ignores_vendored_directories(self, tmp_path):
+        # Files under ignored dirs should not be scanned even if they parse.
+        _write_identity(tmp_path / "agent.yaml")
+        vendored = tmp_path / "node_modules" / "inner"
+        vendored.mkdir(parents=True)
+        _write_identity(vendored / "agent.yaml")
+
+        doctor = PersonaDoctor(root=tmp_path)
+        report = doctor.run()
+
+        assert report.summary.files_scanned == 1
+
+    def test_malformed_team_is_classified_as_team(self, tmp_path):
+        # Malformed YAML with a top-level `team:` marker must not masquerade
+        # as an identity with confusing validation errors.
+        broken = tmp_path / "team.yaml"
+        broken.write_text(
+            'schema_version: "2.0"\nteam:\n  metadata:\n    id: "team_broken"\n    bad_indent\n',
+            encoding="utf-8",
+        )
+
+        doctor = PersonaDoctor(root=tmp_path)
+        report = doctor.run()
+
+        assert report.summary.teams_scanned == 1
+        assert report.summary.identities_scanned == 0
+        assert report.files[0].kind == "team"
+        assert report.files[0].blocking is True
+
+    def test_team_validation_error_is_reported(self, tmp_path):
+        # A team file with structurally valid YAML but an invalid schema
+        # should surface team_validation_error issues, not identity errors.
+        (tmp_path / "team.yaml").write_text(
+            'schema_version: "2.0"\nteam:\n  metadata:\n    id: "team_incomplete"\n',
+            encoding="utf-8",
+        )
+
+        doctor = PersonaDoctor(root=tmp_path)
+        report = doctor.run()
+
+        assert report.summary.teams_scanned == 1
+        assert report.ok is False
+        assert any(
+            issue.kind == "team_validation_error" for file in report.files for issue in file.issues
+        )
+
+    def test_compile_drift_is_reported(self, tmp_path):
+        identity_path = tmp_path / "agent.yaml"
+        _write_identity(identity_path)
+        (tmp_path / "agent.compiled.md").write_text("stale contents", encoding="utf-8")
+
+        doctor = PersonaDoctor(root=tmp_path, check_compile=True)
+        report = doctor.run()
+
+        assert report.ok is False
+        assert any(issue.kind == "compile_drift" for file in report.files for issue in file.issues)
