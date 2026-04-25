@@ -562,7 +562,7 @@ class BehavioralContract(BaseModel):
     drift_hooks: list[DriftHook] = Field(default_factory=list, max_length=20)
 
     @model_validator(mode="after")
-    def validate_contract_consistency(self) -> "BehavioralContract":
+    def validate_contract_consistency(self) -> BehavioralContract:
         if (
             self.boundary_strictness == BoundaryStrictness.STRICT
             and self.refusal_posture == RefusalPosture.NARROWLY_PERMISSIVE

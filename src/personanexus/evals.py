@@ -193,7 +193,9 @@ class IdentityEvaluationHarness:
         except ValidationError as exc:
             raise EvalError(f"Invalid eval suite: {exc}") from exc
 
-    def evaluate(self, identity_path: Path, suite_path: Path, task_mode: str | None = None) -> EvalRunResult:
+    def evaluate(
+        self, identity_path: Path, suite_path: Path, task_mode: str | None = None
+    ) -> EvalRunResult:
         suite = self.load_suite(suite_path)
         try:
             identity = self.resolver.resolve_file(identity_path)

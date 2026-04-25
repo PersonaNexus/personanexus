@@ -174,12 +174,17 @@ def get_compile_warnings(identity: AgentIdentity, target: str) -> list[str]:
             )
         elif any(item.status in {"caution", "avoid"} for item in matching):
             statuses = ", ".join(
-                f"{item.provider}:{item.status}" for item in matching if item.status in {"caution", "avoid"}
+                f"{item.provider}:{item.status}"
+                for item in matching
+                if item.status in {"caution", "avoid"}
             )
-            warnings.append(f"Target '{target}' has governance compatibility cautions: {statuses}.")
+            warnings.append(
+                f"Target '{target}' has governance compatibility cautions: {statuses}."
+            )
     if contract.drift_hooks and not compatibility:
         warnings.append(
-            "Drift hooks are configured without provider_compatibility targets; drift checks will lack a target matrix."
+            "Drift hooks are configured without provider_compatibility targets; "
+            "drift checks will lack a target matrix."
         )
     return warnings
 
@@ -284,7 +289,7 @@ class SystemPromptCompiler:
 
         optional_renderers: list[tuple[str, Any]] = [
             ("personality", lambda: self._render_personality(identity.personality)),
-            ("behavioral_contract", lambda: self._render_behavioral_contract(identity.behavioral_contract)),
+            ("behavioral_contract", lambda: self._render_behavioral_contract(identity.behavioral_contract)),  # noqa: E501
             ("communication", lambda: self._render_communication(identity.communication)),
             ("principles", lambda: self._render_principles(identity.principles)),
             ("expertise", lambda: self._render_expertise(identity.expertise)),
@@ -1687,7 +1692,9 @@ def compile_identity(
         if compile_warnings:
             result["compile_warnings"] = compile_warnings
         if identity.behavioral_contract and identity.behavioral_contract.drift_hooks:
-            result["drift_hooks"] = [hook.model_dump() for hook in identity.behavioral_contract.drift_hooks]
+            result["drift_hooks"] = [  # noqa: E501
+                hook.model_dump() for hook in identity.behavioral_contract.drift_hooks
+            ]
         # Include section tracking in JSON output
         if prompt_compiler._sections_included:
             result["sections_included"] = prompt_compiler._sections_included
