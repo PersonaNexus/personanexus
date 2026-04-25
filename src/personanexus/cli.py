@@ -19,7 +19,12 @@ from rich.panel import Panel
 from rich.table import Table
 
 from personanexus.analyzer import AnalysisResult, AnalyzerError, SoulAnalyzer
-from personanexus.compiler import CompilerError, compile_identity
+from personanexus.compiler import (
+    CompilerError,
+    apply_task_mode_overlay,
+    compile_identity,
+    get_compile_warnings,
+)
 from personanexus.diff import compatibility_score, diff_identities, format_diff
 from personanexus.doctor import (
     EXIT_ISSUES,
@@ -756,6 +761,10 @@ def compile(
         bool,
         typer.Option("--apply-evolution", help="Apply .evolution deltas before compiling"),
     ] = False,
+    task_mode: Annotated[
+        str | None,
+        typer.Option("--task-mode", help="Apply a named behavioral contract task-mode overlay"),
+    ] = None,
 ) -> None:
     """Compile a resolved identity into a system prompt or platform format."""
     if not file.exists():
@@ -813,7 +822,8 @@ def compile(
 
     # Compile to target format
     try:
-        result = compile_identity(identity, target=target, token_budget=token_budget)
+        compile_warnings = get_compile_warnings(apply_task_mode_overlay(identity, task_mode), target)
+        result = compile_identity(identity, target=target, token_budget=token_budget, task_mode=task_mode)
     except CompilerError as exc:
         console.print(f"[red]Compilation error: {exc}[/red]")
         raise typer.Exit(code=1)
@@ -839,6 +849,10 @@ def compile(
         console.print(f"[green]✓ Compiled {identity.metadata.name} → {style_path}[/green]")
         console.print("[dim]Target: soul (SOUL.md + STYLE.md)[/dim]")
         return
+
+    if compile_warnings:
+        for warning in compile_warnings:
+            console.print(f"[yellow]Warning:[/yellow] {warning}")
 
     # Format output
     if isinstance(result, dict):
@@ -1109,6 +1123,10 @@ def eval_cmd(
         str,
         typer.Option("--format", "-f", help="Output format: table or json"),
     ] = "table",
+    task_mode: Annotated[
+        str | None,
+        typer.Option("--task-mode", help="Evaluate a named behavioral contract task-mode overlay"),
+    ] = None,
 ) -> None:
     """Run a structured identity evaluation suite against one or two identities."""
     if output_format not in ("table", "json"):
@@ -1119,11 +1137,11 @@ def eval_cmd(
 
     harness = IdentityEvaluationHarness(search_paths=search_path or [])
     try:
-        run_a = harness.evaluate(identity, suite)
+        run_a = harness.evaluate(identity, suite, task_mode=task_mode)
         comparison_output: EvalComparison | None = None
         run_b: EvalRunResult | None = None
         if compare:
-            run_b = harness.evaluate(compare, suite)
+            run_b = harness.evaluate(compare, suite, task_mode=task_mode)
             comparison_output = harness.compare(run_a, run_b)
     except EvalError as exc:
         console.print(f"[red]Evaluation error: {exc}[/red]")
@@ -1148,15 +1166,17 @@ def _print_eval_run(run: EvalRunResult) -> None:
         f"[bold]{run.identity_name}[/bold] [dim]v{run.identity_version}[/dim]  "
         f"score: [cyan]{run.overall_score:.0%}[/cyan]  {status}"
     )
-    console.print(f"[dim]Suite: {run.suite_name}[/dim]\n")
+    task_mode = f" | task-mode: {run.task_mode}" if run.task_mode else ""
+    console.print(f"[dim]Suite: {run.suite_name}{task_mode}[/dim]\n")
 
     table = Table(title="Scenario Results", show_header=True, header_style="bold")
-    table.add_column("Scenario", style="cyan")
+    table.add_column("Scenario", style="cyan", no_wrap=True)
     table.add_column("Score", justify="right")
     table.add_column("Persona", justify="right")
     table.add_column("Instruction", justify="right")
     table.add_column("Guardrails", justify="right")
     table.add_column("Tone", justify="right")
+    table.add_column("Gov", justify="right")
     table.add_column("Status", justify="center")
 
     for scenario in run.scenarios:
@@ -1164,6 +1184,7 @@ def _print_eval_run(run: EvalRunResult) -> None:
         instruction = scenario.dimensions["instruction_adherence"].score
         guardrails = scenario.dimensions["guardrails"].score
         tone = scenario.dimensions["tone"].score
+        governance = scenario.dimensions["governance"].score
         row_status = "PASS" if scenario.passed else "FAIL"
         status_color = "green" if scenario.passed else "red"
         table.add_row(
@@ -1173,6 +1194,7 @@ def _print_eval_run(run: EvalRunResult) -> None:
             f"{instruction:.0%}",
             f"{guardrails:.0%}",
             f"{tone:.0%}",
+            f"{governance:.0%}",
             f"[{status_color}]{row_status}[/{status_color}]",
         )
 
@@ -1192,7 +1214,7 @@ def _print_eval_comparison(comparison: EvalComparison) -> None:
     )
 
     table = Table(title="Scenario Deltas", show_header=True, header_style="bold")
-    table.add_column("Scenario", style="cyan")
+    table.add_column("Scenario", style="cyan", no_wrap=True)
     table.add_column(comparison.identity_a, justify="right")
     table.add_column(comparison.identity_b, justify="right")
     table.add_column("Delta", justify="right")

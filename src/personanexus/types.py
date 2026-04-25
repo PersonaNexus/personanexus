@@ -5,7 +5,7 @@ from __future__ import annotations
 import enum
 import warnings
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -470,6 +470,118 @@ class BehavioralModeConfig(BaseModel):
 
     default: str = "standard"
     modes: list[BehavioralMode] = Field(default_factory=list)
+
+
+class HonestyMode(enum.StrEnum):
+    CALIBRATED = "calibrated"
+    MAXIMALLY_CANDID = "maximally_candid"
+    DIPLOMATIC = "diplomatic"
+
+
+class UncertaintyDisclosure(enum.StrEnum):
+    EXPLICIT = "explicit"
+    CALIBRATED = "calibrated"
+    MINIMAL = "minimal"
+
+
+class RefusalPosture(enum.StrEnum):
+    FIRM = "firm"
+    EXPLAIN_AND_REDIRECT = "explain_and_redirect"
+    NARROWLY_PERMISSIVE = "narrowly_permissive"
+
+
+class BoundaryStrictness(enum.StrEnum):
+    STRICT = "strict"
+    MODERATE = "moderate"
+    FLEXIBLE = "flexible"
+
+
+class UserCorrigibility(enum.StrEnum):
+    EVIDENCE_BOUND = "evidence_bound"
+    OPEN = "open"
+    LIMITED = "limited"
+
+
+class ConfidentialityMode(enum.StrEnum):
+    STRICT = "strict"
+    STANDARD = "standard"
+    CONTEXTUAL = "contextual"
+
+
+class GovernanceSensitivity(enum.StrEnum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+class TaskModeContractOverride(BaseModel):
+    honesty: HonestyMode | None = None
+    uncertainty_disclosure: UncertaintyDisclosure | None = None
+    refusal_posture: RefusalPosture | None = None
+    boundary_strictness: BoundaryStrictness | None = None
+    user_corrigibility: UserCorrigibility | None = None
+    confidentiality: ConfidentialityMode | None = None
+    notes: list[str] = Field(default_factory=list, max_length=20)
+
+
+class TaskModeOverlay(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    description: str | None = Field(None, max_length=500)
+    behavioral_contract: TaskModeContractOverride = Field(
+        default_factory=TaskModeContractOverride
+    )
+
+
+class ProviderCompatibilityTarget(BaseModel):
+    provider: str = Field(..., min_length=1, max_length=100)
+    model_family: str | None = Field(None, max_length=100)
+    status: Literal["preferred", "supported", "caution", "avoid"] = "supported"
+    notes: list[str] = Field(default_factory=list, max_length=20)
+
+
+class DriftHook(BaseModel):
+    provider: str = Field(..., min_length=1, max_length=100)
+    model_family: str | None = Field(None, max_length=100)
+    trigger: str = Field("model_upgrade", max_length=100)
+    recommended_action: str = Field(..., min_length=1, max_length=300)
+
+
+class BehavioralContract(BaseModel):
+    honesty: HonestyMode = HonestyMode.CALIBRATED
+    uncertainty_disclosure: UncertaintyDisclosure = UncertaintyDisclosure.EXPLICIT
+    refusal_posture: RefusalPosture = RefusalPosture.EXPLAIN_AND_REDIRECT
+    boundary_strictness: BoundaryStrictness = BoundaryStrictness.MODERATE
+    user_corrigibility: UserCorrigibility = UserCorrigibility.EVIDENCE_BOUND
+    confidentiality: ConfidentialityMode = ConfidentialityMode.STANDARD
+    governance_sensitivity: GovernanceSensitivity = GovernanceSensitivity.MEDIUM
+    notes: list[str] = Field(default_factory=list, max_length=20)
+    task_modes: list[TaskModeOverlay] = Field(default_factory=list, max_length=20)
+    provider_compatibility: list[ProviderCompatibilityTarget] = Field(
+        default_factory=list, max_length=20
+    )
+    drift_hooks: list[DriftHook] = Field(default_factory=list, max_length=20)
+
+    @model_validator(mode="after")
+    def validate_contract_consistency(self) -> "BehavioralContract":
+        if (
+            self.boundary_strictness == BoundaryStrictness.STRICT
+            and self.refusal_posture == RefusalPosture.NARROWLY_PERMISSIVE
+        ):
+            raise ValueError(
+                "boundary_strictness 'strict' conflicts with refusal_posture "
+                "'narrowly_permissive'"
+            )
+        if (
+            self.confidentiality == ConfidentialityMode.STRICT
+            and self.user_corrigibility == UserCorrigibility.OPEN
+        ):
+            raise ValueError(
+                "confidentiality 'strict' conflicts with user_corrigibility 'open'"
+            )
+        mode_names = [mode.name for mode in self.task_modes]
+        if len(mode_names) != len(set(mode_names)):
+            raise ValueError("Task mode names must be unique")
+        return self
 
 
 class Personality(BaseModel):
@@ -1318,6 +1430,7 @@ class AgentIdentity(BaseModel):
     evolution: Evolution = Field(default_factory=Evolution)
     evaluation: Evaluation = Field(default_factory=Evaluation)
     composition: CompositionConfig = Field(default_factory=CompositionConfig)
+    behavioral_contract: BehavioralContract | None = None  # NEW v1.5
     behavioral_modes: BehavioralModeConfig | None = None  # NEW v1.4
     interaction: InteractionConfig | None = None  # NEW v1.4
     dynamics: DynamicsConfig | None = None  # NEW v1.1 — dynamic & stateful personality
@@ -1329,3 +1442,5 @@ class AgentIdentity(BaseModel):
         if len(priorities) != len(set(priorities)):
             raise ValueError("Principle priorities must be unique")
         return v
+
+AgentIdentity.model_rebuild()

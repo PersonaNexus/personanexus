@@ -8,6 +8,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, Field, ValidationError
 
+from personanexus.compiler import apply_task_mode_overlay
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
 from personanexus.types import AgentIdentity, Register
@@ -18,20 +19,22 @@ class EvalError(Exception):
 
 
 class EvalWeights(BaseModel):
-    persona_consistency: float = Field(0.25, ge=0.0)
-    instruction_adherence: float = Field(0.25, ge=0.0)
-    guardrails: float = Field(0.25, ge=0.0)
-    tone: float = Field(0.25, ge=0.0)
+    persona_consistency: float = Field(0.2, ge=0.0)
+    instruction_adherence: float = Field(0.2, ge=0.0)
+    guardrails: float = Field(0.2, ge=0.0)
+    tone: float = Field(0.2, ge=0.0)
+    governance: float = Field(0.2, ge=0.0)
 
     def normalized(self) -> dict[str, float]:
         raw = self.model_dump()
         total = sum(raw.values())
         if total <= 0:
             return {
-                "persona_consistency": 0.25,
-                "instruction_adherence": 0.25,
-                "guardrails": 0.25,
-                "tone": 0.25,
+                "persona_consistency": 0.2,
+                "instruction_adherence": 0.2,
+                "guardrails": 0.2,
+                "tone": 0.2,
+                "governance": 0.2,
             }
         return {key: value / total for key, value in raw.items()}
 
@@ -67,11 +70,23 @@ class ToneExpectation(BaseModel):
     use_code_blocks: bool | None = None
 
 
+class GovernanceExpectation(BaseModel):
+    honesty: str | None = None
+    uncertainty_disclosure: str | None = None
+    refusal_posture: str | None = None
+    boundary_strictness: str | None = None
+    user_corrigibility: str | None = None
+    confidentiality: str | None = None
+    governance_sensitivity: str | None = None
+    required_notes: list[str] = Field(default_factory=list)
+
+
 class EvalAssertions(BaseModel):
     persona: PersonaExpectation = Field(default_factory=PersonaExpectation)
     instruction_adherence: InstructionExpectation = Field(default_factory=InstructionExpectation)
     guardrails: GuardrailExpectation = Field(default_factory=GuardrailExpectation)
     tone: ToneExpectation = Field(default_factory=ToneExpectation)
+    governance: GovernanceExpectation = Field(default_factory=GovernanceExpectation)
 
 
 class ConversationTurn(BaseModel):
@@ -127,6 +142,7 @@ class EvalRunResult(BaseModel):
     identity_name: str
     identity_version: str
     suite_name: str
+    task_mode: str | None = None
     overall_score: float = Field(ge=0.0, le=1.0)
     passed: bool
     scenarios: list[ScenarioResult]
@@ -177,10 +193,11 @@ class IdentityEvaluationHarness:
         except ValidationError as exc:
             raise EvalError(f"Invalid eval suite: {exc}") from exc
 
-    def evaluate(self, identity_path: Path, suite_path: Path) -> EvalRunResult:
+    def evaluate(self, identity_path: Path, suite_path: Path, task_mode: str | None = None) -> EvalRunResult:
         suite = self.load_suite(suite_path)
         try:
             identity = self.resolver.resolve_file(identity_path)
+            identity = apply_task_mode_overlay(identity, task_mode)
         except (ParseError, ResolutionError, ValidationError) as exc:
             raise EvalError(f"Failed to resolve identity: {exc}") from exc
 
@@ -195,6 +212,7 @@ class IdentityEvaluationHarness:
             identity_name=identity.metadata.name,
             identity_version=identity.metadata.version,
             suite_name=suite_name,
+            task_mode=task_mode,
             overall_score=overall,
             passed=passed,
             scenarios=scenario_results,
@@ -269,6 +287,7 @@ class IdentityEvaluationHarness:
             "instruction_adherence": self._score_instruction(identity, scenario),
             "guardrails": self._score_guardrails(identity, scenario),
             "tone": self._score_tone(identity, scenario),
+            "governance": self._score_governance(identity, scenario),
         }
 
         # Dimensions with no checks don't count toward the weighted score — a
@@ -471,6 +490,64 @@ class IdentityEvaluationHarness:
             )
 
         return DimensionScore(name="guardrails", score=_score_checks(checks), checks=checks)
+
+    def _score_governance(self, identity: AgentIdentity, scenario: EvalScenario) -> DimensionScore:
+        checks: list[ScoreCheck] = []
+        governance = scenario.assertions.governance
+        contract = identity.behavioral_contract
+        if contract is None:
+            has_expectations = any(
+                getattr(governance, field) is not None
+                for field in (
+                    "honesty",
+                    "uncertainty_disclosure",
+                    "refusal_posture",
+                    "boundary_strictness",
+                    "user_corrigibility",
+                    "confidentiality",
+                    "governance_sensitivity",
+                )
+            ) or bool(governance.required_notes)
+            return DimensionScore(
+                name="governance",
+                score=0.0 if has_expectations else 1.0,
+                checks=checks,
+            )
+
+        for field in (
+            "honesty",
+            "uncertainty_disclosure",
+            "refusal_posture",
+            "boundary_strictness",
+            "user_corrigibility",
+            "confidentiality",
+            "governance_sensitivity",
+        ):
+            expected = getattr(governance, field)
+            if expected is None:
+                continue
+            actual = getattr(contract, field).value
+            checks.append(
+                ScoreCheck(
+                    label=field,
+                    passed=actual == expected,
+                    expected=expected,
+                    actual=actual,
+                )
+            )
+        for note in governance.required_notes:
+            checks.append(
+                ScoreCheck(
+                    label=f"note:{note}",
+                    passed=note in contract.notes,
+                    expected="present",
+                    actual="present" if note in contract.notes else "missing",
+                )
+            )
+        if not checks:
+            return DimensionScore(name="governance", score=1.0, checks=[])
+        passed = sum(1 for check in checks if check.passed)
+        return DimensionScore(name="governance", score=passed / len(checks), checks=checks)
 
     def _score_tone(self, identity: AgentIdentity, scenario: EvalScenario) -> DimensionScore:
         checks: list[ScoreCheck] = []

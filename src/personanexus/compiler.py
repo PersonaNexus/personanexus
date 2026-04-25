@@ -12,6 +12,7 @@ from personanexus.personality import compute_personality_traits
 from personanexus.types import (
     AgentIdentity,
     Behavior,
+    BehavioralContract,
     BehavioralModeConfig,
     Communication,
     Expertise,
@@ -114,6 +115,75 @@ TRAIT_TEMPLATES: dict[str, list[str]] = {
 }
 
 
+def _target_provider_family(target: str) -> str | None:
+    mapping = {
+        "anthropic": "anthropic",
+        "openai": "openai",
+        "openclaw": "openclaw",
+        "langchain": "langchain",
+        "crewai": "crewai",
+        "autogen": "autogen",
+    }
+    return mapping.get(target)
+
+
+def apply_task_mode_overlay(identity: AgentIdentity, task_mode: str | None) -> AgentIdentity:
+    if not task_mode or identity.behavioral_contract is None:
+        return identity
+    for mode in identity.behavioral_contract.task_modes:
+        if mode.name == task_mode:
+            contract = identity.behavioral_contract.model_copy(deep=True)
+            override = mode.behavioral_contract
+            for field in (
+                "honesty",
+                "uncertainty_disclosure",
+                "refusal_posture",
+                "boundary_strictness",
+                "user_corrigibility",
+                "confidentiality",
+            ):
+                value = getattr(override, field)
+                if value is not None:
+                    setattr(contract, field, value)
+            if override.notes:
+                contract.notes = [*contract.notes, *override.notes]
+            return identity.model_copy(update={"behavioral_contract": contract}, deep=True)
+    available = ", ".join(mode.name for mode in identity.behavioral_contract.task_modes) or "none"
+    raise CompilerError(f"Unknown task mode '{task_mode}'. Available task modes: {available}")
+
+
+def get_compile_warnings(identity: AgentIdentity, target: str) -> list[str]:
+    contract = identity.behavioral_contract
+    if contract is None:
+        return []
+    warnings: list[str] = []
+    provider_family = _target_provider_family(target)
+    if contract.governance_sensitivity.value == "high" and target == "text":
+        warnings.append(
+            "This identity is marked governance-sensitive; prefer a provider-aware target "
+            "like anthropic or openai over generic text when possible."
+        )
+    compatibility = contract.provider_compatibility
+    if provider_family and compatibility:
+        matching = [item for item in compatibility if item.provider == provider_family]
+        if not matching:
+            supported = ", ".join(sorted({item.provider for item in compatibility}))
+            warnings.append(
+                f"Target '{target}' is outside the declared provider compatibility set "
+                f"({supported})."
+            )
+        elif any(item.status in {"caution", "avoid"} for item in matching):
+            statuses = ", ".join(
+                f"{item.provider}:{item.status}" for item in matching if item.status in {"caution", "avoid"}
+            )
+            warnings.append(f"Target '{target}' has governance compatibility cautions: {statuses}.")
+    if contract.drift_hooks and not compatibility:
+        warnings.append(
+            "Drift hooks are configured without provider_compatibility targets; drift checks will lack a target matrix."
+        )
+    return warnings
+
+
 def _trait_to_language(trait_name: str, value: float) -> str:
     """Convert a numeric trait (0-1) to a natural language sentence."""
     templates = TRAIT_TEMPLATES.get(trait_name)
@@ -214,6 +284,7 @@ class SystemPromptCompiler:
 
         optional_renderers: list[tuple[str, Any]] = [
             ("personality", lambda: self._render_personality(identity.personality)),
+            ("behavioral_contract", lambda: self._render_behavioral_contract(identity.behavioral_contract)),
             ("communication", lambda: self._render_communication(identity.communication)),
             ("principles", lambda: self._render_principles(identity.principles)),
             ("expertise", lambda: self._render_expertise(identity.expertise)),
@@ -265,6 +336,7 @@ class SystemPromptCompiler:
             "header",
             "role",
             "personality",
+            "behavioral_contract",
             "communication",
             "expertise",
             "principles",
@@ -507,6 +579,41 @@ class SystemPromptCompiler:
 
         return "\n".join(lines)
 
+    def _render_behavioral_contract(self, contract: BehavioralContract | None) -> str:
+        if contract is None:
+            return ""
+        lines = ["## Behavioral Contract"]
+        lines.append(f"\nHonesty: {contract.honesty.value}")
+        lines.append(f"Uncertainty disclosure: {contract.uncertainty_disclosure.value}")
+        lines.append(f"Refusal posture: {contract.refusal_posture.value}")
+        lines.append(f"Boundary strictness: {contract.boundary_strictness.value}")
+        lines.append(f"User corrigibility: {contract.user_corrigibility.value}")
+        lines.append(f"Confidentiality: {contract.confidentiality.value}")
+        lines.append(f"Governance sensitivity: {contract.governance_sensitivity.value}")
+        if contract.notes:
+            lines.append("\nContract notes:")
+            for note in contract.notes:
+                lines.append(f"- {note}")
+        if contract.task_modes:
+            lines.append("\nTask mode overlays:")
+            for mode in contract.task_modes:
+                desc = f": {mode.description}" if mode.description else ""
+                lines.append(f"- {mode.name}{desc}")
+        if contract.provider_compatibility:
+            lines.append("\nProvider compatibility:")
+            for item in contract.provider_compatibility:
+                model = f"/{item.model_family}" if item.model_family else ""
+                note = f" ({'; '.join(item.notes)})" if item.notes else ""
+                lines.append(f"- {item.provider}{model}: {item.status}{note}")
+        if contract.drift_hooks:
+            lines.append("\nDrift hooks:")
+            for hook in contract.drift_hooks:
+                model = f"/{hook.model_family}" if hook.model_family else ""
+                lines.append(
+                    f"- {hook.provider}{model} on {hook.trigger}: {hook.recommended_action}"
+                )
+        return "\n".join(lines)
+
     def _render_communication(self, comm: Communication) -> str:
         lines = ["## Communication Style", f"\nDefault tone: {comm.tone.default}"]
 
@@ -731,6 +838,7 @@ class SystemPromptCompiler:
             "header": "identity",
             "role": "role",
             "personality": "personality",
+            "behavioral_contract": "behavioral_contract",
             "communication": "communication",
             "expertise": "expertise",
             "principles": "principles",
@@ -1525,6 +1633,7 @@ def compile_identity(
     identity: AgentIdentity,
     target: str = "text",
     token_budget: int = 3000,
+    task_mode: str | None = None,
 ) -> str | dict[str, Any]:
     """
     Compile a resolved AgentIdentity into the specified target format.
@@ -1538,7 +1647,9 @@ def compile_identity(
     Returns:
         String for text/crewai formats, dict for openclaw/soul/json/langchain/autogen.
     """
+    identity = apply_task_mode_overlay(identity, task_mode)
     prompt_compiler = SystemPromptCompiler(token_budget=token_budget)
+    compile_warnings = get_compile_warnings(identity, target)
 
     if target in ("text", "anthropic", "openai"):
         prompt = prompt_compiler.compile(identity, format=target)
@@ -1550,10 +1661,20 @@ def compile_identity(
         return prompt
     elif target == "openclaw":
         openclaw_compiler = OpenClawCompiler(prompt_compiler)
-        return openclaw_compiler.compile(identity)
+        result = openclaw_compiler.compile(identity)
+        if compile_warnings:
+            result.setdefault("metadata", {})["compile_warnings"] = compile_warnings
+        if task_mode:
+            result.setdefault("metadata", {})["active_task_mode"] = task_mode
+        return result
     elif target == "soul":
         soul_compiler = SoulCompiler()
-        return soul_compiler.compile(identity)
+        result = soul_compiler.compile(identity)
+        if compile_warnings and isinstance(result, dict):
+            result["compile_warnings"] = compile_warnings
+        if task_mode and isinstance(result, dict):
+            result["active_task_mode"] = task_mode
+        return result
     elif target == "json":
         prompt = prompt_compiler.compile(identity, format="text")
         result: dict[str, Any] = {
@@ -1561,6 +1682,12 @@ def compile_identity(
             "tokens_estimated": prompt_compiler.estimate_tokens(prompt),
             "prompt_layers": [layer.model_dump() for layer in prompt_compiler.prompt_layers],
         }
+        if task_mode:
+            result["active_task_mode"] = task_mode
+        if compile_warnings:
+            result["compile_warnings"] = compile_warnings
+        if identity.behavioral_contract and identity.behavioral_contract.drift_hooks:
+            result["drift_hooks"] = [hook.model_dump() for hook in identity.behavioral_contract.drift_hooks]
         # Include section tracking in JSON output
         if prompt_compiler._sections_included:
             result["sections_included"] = prompt_compiler._sections_included
@@ -1569,13 +1696,23 @@ def compile_identity(
         return result
     elif target == "langchain":
         langchain_compiler = LangChainCompiler(prompt_compiler)
-        return langchain_compiler.compile(identity)
+        result = langchain_compiler.compile(identity)
+        if compile_warnings:
+            result.setdefault("metadata", {})["compile_warnings"] = compile_warnings
+        if task_mode:
+            result.setdefault("metadata", {})["active_task_mode"] = task_mode
+        return result
     elif target == "crewai":
         crewai_compiler = CrewAICompiler(prompt_compiler)
         return crewai_compiler.compile(identity)
     elif target == "autogen":
         autogen_compiler = AutoGenCompiler(prompt_compiler)
-        return autogen_compiler.compile(identity)
+        result = autogen_compiler.compile(identity)
+        if compile_warnings:
+            result.setdefault("metadata", {})["compile_warnings"] = compile_warnings
+        if task_mode:
+            result.setdefault("metadata", {})["active_task_mode"] = task_mode
+        return result
     elif target == "markdown":
         markdown_compiler = MarkdownCompiler()
         return markdown_compiler.compile(identity)
