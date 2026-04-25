@@ -178,9 +178,7 @@ def get_compile_warnings(identity: AgentIdentity, target: str) -> list[str]:
                 for item in matching
                 if item.status in {"caution", "avoid"}
             )
-            warnings.append(
-                f"Target '{target}' has governance compatibility cautions: {statuses}."
-            )
+            warnings.append(f"Target '{target}' has governance compatibility cautions: {statuses}.")
     if contract.drift_hooks and not compatibility:
         warnings.append(
             "Drift hooks are configured without provider_compatibility targets; "
@@ -289,7 +287,10 @@ class SystemPromptCompiler:
 
         optional_renderers: list[tuple[str, Any]] = [
             ("personality", lambda: self._render_personality(identity.personality)),
-            ("behavioral_contract", lambda: self._render_behavioral_contract(identity.behavioral_contract)),  # noqa: E501
+            (
+                "behavioral_contract",
+                lambda: self._render_behavioral_contract(identity.behavioral_contract),
+            ),  # noqa: E501
             ("communication", lambda: self._render_communication(identity.communication)),
             ("principles", lambda: self._render_principles(identity.principles)),
             ("expertise", lambda: self._render_expertise(identity.expertise)),
@@ -1674,33 +1675,33 @@ def compile_identity(
         return result
     elif target == "soul":
         soul_compiler = SoulCompiler()
-        result = soul_compiler.compile(identity)
-        if compile_warnings and isinstance(result, dict):
-            result["compile_warnings"] = compile_warnings
-        if task_mode and isinstance(result, dict):
-            result["active_task_mode"] = task_mode
-        return result
+        soul_result: dict[str, Any] | Any = soul_compiler.compile(identity)
+        if compile_warnings and isinstance(soul_result, dict):
+            soul_result["compile_warnings"] = compile_warnings
+        if task_mode and isinstance(soul_result, dict):
+            soul_result["active_task_mode"] = task_mode
+        return soul_result
     elif target == "json":
         prompt = prompt_compiler.compile(identity, format="text")
-        result: dict[str, Any] = {
+        json_result: dict[str, Any] = {
             "system_prompt": prompt,
             "tokens_estimated": prompt_compiler.estimate_tokens(prompt),
             "prompt_layers": [layer.model_dump() for layer in prompt_compiler.prompt_layers],
         }
         if task_mode:
-            result["active_task_mode"] = task_mode
+            json_result["active_task_mode"] = task_mode
         if compile_warnings:
-            result["compile_warnings"] = compile_warnings
+            json_result["compile_warnings"] = compile_warnings
         if identity.behavioral_contract and identity.behavioral_contract.drift_hooks:
-            result["drift_hooks"] = [  # noqa: E501
+            json_result["drift_hooks"] = [  # noqa: E501
                 hook.model_dump() for hook in identity.behavioral_contract.drift_hooks
             ]
         # Include section tracking in JSON output
         if prompt_compiler._sections_included:
-            result["sections_included"] = prompt_compiler._sections_included
+            json_result["sections_included"] = prompt_compiler._sections_included
         if prompt_compiler._sections_omitted:
-            result["sections_omitted"] = prompt_compiler._sections_omitted
-        return result
+            json_result["sections_omitted"] = prompt_compiler._sections_omitted
+        return json_result
     elif target == "langchain":
         langchain_compiler = LangChainCompiler(prompt_compiler)
         result = langchain_compiler.compile(identity)
