@@ -178,9 +178,7 @@ def get_compile_warnings(identity: AgentIdentity, target: str) -> list[str]:
                 for item in matching
                 if item.status in {"caution", "avoid"}
             )
-            warnings.append(
-                f"Target '{target}' has governance compatibility cautions: {statuses}."
-            )
+            warnings.append(f"Target '{target}' has governance compatibility cautions: {statuses}.")
     if contract.drift_hooks and not compatibility:
         warnings.append(
             "Drift hooks are configured without provider_compatibility targets; "
@@ -289,7 +287,10 @@ class SystemPromptCompiler:
 
         optional_renderers: list[tuple[str, Any]] = [
             ("personality", lambda: self._render_personality(identity.personality)),
-            ("behavioral_contract", lambda: self._render_behavioral_contract(identity.behavioral_contract)),  # noqa: E501
+            (
+                "behavioral_contract",
+                lambda: self._render_behavioral_contract(identity.behavioral_contract),
+            ),  # noqa: E501
             ("communication", lambda: self._render_communication(identity.communication)),
             ("principles", lambda: self._render_principles(identity.principles)),
             ("expertise", lambda: self._render_expertise(identity.expertise)),

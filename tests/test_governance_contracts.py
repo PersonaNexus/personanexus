@@ -86,11 +86,11 @@ def test_eval_cli_json_includes_task_mode(examples_dir, tmp_path):
     suite_path.write_text(
         (
             'version: "1"\n'
-            'scenarios:\n'
-            '  - id: contract\n'
-            '    assertions:\n'
-            '      governance:\n'
-            '        confidentiality: contextual\n'
+            "scenarios:\n"
+            "  - id: contract\n"
+            "    assertions:\n"
+            "      governance:\n"
+            "        confidentiality: contextual\n"
         ),
         encoding="utf-8",
     )

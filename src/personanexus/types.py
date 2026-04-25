@@ -527,9 +527,7 @@ class TaskModeContractOverride(BaseModel):
 class TaskModeOverlay(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     description: str | None = Field(None, max_length=500)
-    behavioral_contract: TaskModeContractOverride = Field(
-        default_factory=TaskModeContractOverride
-    )
+    behavioral_contract: TaskModeContractOverride = Field(default_factory=TaskModeContractOverride)
 
 
 class ProviderCompatibilityTarget(BaseModel):
@@ -568,16 +566,13 @@ class BehavioralContract(BaseModel):
             and self.refusal_posture == RefusalPosture.NARROWLY_PERMISSIVE
         ):
             raise ValueError(
-                "boundary_strictness 'strict' conflicts with refusal_posture "
-                "'narrowly_permissive'"
+                "boundary_strictness 'strict' conflicts with refusal_posture 'narrowly_permissive'"
             )
         if (
             self.confidentiality == ConfidentialityMode.STRICT
             and self.user_corrigibility == UserCorrigibility.OPEN
         ):
-            raise ValueError(
-                "confidentiality 'strict' conflicts with user_corrigibility 'open'"
-            )
+            raise ValueError("confidentiality 'strict' conflicts with user_corrigibility 'open'")
         mode_names = [mode.name for mode in self.task_modes]
         if len(mode_names) != len(set(mode_names)):
             raise ValueError("Task mode names must be unique")
@@ -1442,5 +1437,6 @@ class AgentIdentity(BaseModel):
         if len(priorities) != len(set(priorities)):
             raise ValueError("Principle priorities must be unique")
         return v
+
 
 AgentIdentity.model_rebuild()
