@@ -822,8 +822,16 @@ def compile(
 
     # Compile to target format
     try:
-        compile_warnings = get_compile_warnings(apply_task_mode_overlay(identity, task_mode), target)
-        result = compile_identity(identity, target=target, token_budget=token_budget, task_mode=task_mode)
+        compile_warnings = get_compile_warnings(
+            apply_task_mode_overlay(identity, task_mode),
+            target,
+        )
+        result = compile_identity(
+            identity,
+            target=target,
+            token_budget=token_budget,
+            task_mode=task_mode,
+        )
     except CompilerError as exc:
         console.print(f"[red]Compilation error: {exc}[/red]")
         raise typer.Exit(code=1)

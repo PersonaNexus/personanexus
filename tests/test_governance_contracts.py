@@ -84,7 +84,14 @@ def test_governance_eval_harness_respects_task_mode(examples_dir, tmp_path):
 def test_eval_cli_json_includes_task_mode(examples_dir, tmp_path):
     suite_path = tmp_path / "governance-suite.yaml"
     suite_path.write_text(
-        'version: "1"\nscenarios:\n  - id: contract\n    assertions:\n      governance:\n        confidentiality: contextual\n',
+        (
+            'version: "1"\n'
+            'scenarios:\n'
+            '  - id: contract\n'
+            '    assertions:\n'
+            '      governance:\n'
+            '        confidentiality: contextual\n'
+        ),
         encoding="utf-8",
     )
 
