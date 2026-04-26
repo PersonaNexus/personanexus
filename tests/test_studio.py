@@ -11,7 +11,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "web"))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from studio import _compile_safe, _load_identity_safe, _studio_agent_from_yaml  # noqa: E402
+from studio_helpers import _compile_safe, _load_identity_safe, _studio_agent_from_yaml  # noqa: E402
 from studio_model import StudioAgent, agent_signature, load_studio_agents  # noqa: E402
 
 
