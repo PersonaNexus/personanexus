@@ -1,6 +1,6 @@
 # 🌐 PersonaNexus Web UI - Deployment Guide
 
-The Identity Lab is a Streamlit-based web application with three modes: **Playground**, **Setup Wizard**, and **Analyze**. This guide covers deployment options from local development to production hosting.
+The Identity Lab is a Streamlit-based web application with five modes: **Studio**, **Playground**, **Setup Wizard**, **Analyze**, and **Evolution Lab**. Studio is the premium visual workspace for the agent gallery, persona canvas, motifs, and personality signatures. This guide covers deployment options from local development to production hosting.
 
 ## 📋 Quick Start (Local Development)
 

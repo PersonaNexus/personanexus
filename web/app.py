@@ -77,7 +77,26 @@ def _render_landing() -> None:
         unsafe_allow_html=True,
     )
 
-    col_play, col_wiz, col_analyze, col_evolution = st.columns(4)
+    col_studio, col_play, col_wiz, col_analyze, col_evolution = st.columns(5)
+
+    with col_studio:
+        st.markdown(
+            '<div class="landing-card">'
+            '<div class="icon">✨</div>'
+            "<h3>Studio</h3>"
+            "<p>Explore the premium visual workspace: agent gallery, "
+            "live persona canvas, motifs, and personality signatures.</p>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        if st.button(
+            "Open Studio",
+            key="landing_studio",
+            type="primary",
+            use_container_width=True,
+        ):
+            st.session_state["app_mode"] = "Studio"
+            st.rerun()
 
     with col_play:
         st.markdown(
@@ -92,7 +111,7 @@ def _render_landing() -> None:
         if st.button(
             "Open Playground",
             key="landing_playground",
-            type="primary",
+            type="secondary",
             use_container_width=True,
         ):
             st.session_state["app_mode"] = "Playground"
@@ -178,6 +197,15 @@ if st.button("← Home", key="nav_home"):
     if "wizard_step" in st.session_state:
         del st.session_state["wizard_step"]
     st.rerun()
+
+if app_mode == "Studio":
+    try:
+        from studio import render_studio
+        render_studio()
+    except Exception as e:
+        st.error("An error occurred while loading the Studio. Check logs for details.")
+        logger.exception("Studio error: %s", e)
+    st.stop()
 
 if app_mode == "Setup Wizard":
     try:
