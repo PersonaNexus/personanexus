@@ -1,10 +1,74 @@
 from __future__ import annotations
 
 import html
+import json
+import os
+import sys
+from pathlib import Path
 
 import streamlit as st
-from components import TRAIT_COLORS, TRAIT_LABELS, TRAIT_ORDER, render_trait_bars
-from studio_model import StudioAgent, agent_signature, load_studio_agents
+import yaml
+
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+
+from components import TRAIT_COLORS, TRAIT_LABELS, TRAIT_ORDER, render_trait_bars  # noqa: E402
+from studio_model import (  # noqa: E402
+    AGENTS_DIR,
+    StudioAgent,
+    agent_signature,
+    load_studio_agents,
+    top_motifs,
+    traits_from_profile,
+)
+
+_COMPILE_FORMATS = ["text", "anthropic", "openclaw", "soul", "json", "markdown"]
+
+
+def _load_identity_safe(path: Path):
+    """Return (AgentIdentity, None) or (None, error_str)."""
+    try:
+        from personanexus.parser import parse_identity_file
+
+        return parse_identity_file(path), None
+    except Exception as exc:  # noqa: BLE001
+        return None, str(exc)
+
+
+def _compile_safe(identity, fmt: str):
+    """Return (result_str, None) or (None, error_str)."""
+    try:
+        from personanexus.compiler import compile_identity
+
+        result = compile_identity(identity, target=fmt)
+        if isinstance(result, dict):
+            return json.dumps(result, indent=2, ensure_ascii=False), None
+        return str(result), None
+    except Exception as exc:  # noqa: BLE001
+        return None, str(exc)
+
+
+def _studio_agent_from_yaml(data: dict, slug: str = "custom") -> StudioAgent:
+    metadata = data.get("metadata", {})
+    role = data.get("role", {})
+    communication = data.get("communication", {})
+    tone = communication.get("tone", {})
+    traits = traits_from_profile(data.get("personality", {}))
+    principles = tuple(
+        str(item.get("statement", item))
+        for item in data.get("principles", [])[:3]
+    )
+    return StudioAgent(
+        slug=slug,
+        name=str(metadata.get("name") or slug.title()),
+        title=str(role.get("title") or "AI Agent"),
+        description=str(metadata.get("description") or role.get("purpose") or ""),
+        tags=tuple(str(tag) for tag in metadata.get("tags", [])[:5]),
+        status=str(metadata.get("status") or "draft"),
+        traits=traits,
+        tone=str(tone.get("default") if isinstance(tone, dict) else tone or "adaptive"),
+        principles=principles,
+        motifs=top_motifs(traits),
+    )
 
 
 def _render_agent_card(agent: StudioAgent, selected: bool) -> None:
@@ -73,6 +137,146 @@ def _render_canvas(agent: StudioAgent) -> None:
     )
 
 
+def _render_compile_preview(agent: StudioAgent, agents_dir: Path) -> None:
+    """Show compiled system-prompt output for the selected agent."""
+    with st.expander("Compile preview", expanded=False):
+        fmt = st.selectbox(
+            "Target format",
+            _COMPILE_FORMATS,
+            key=f"compile_fmt_{agent.slug}",
+        )
+        agent_path = agents_dir / f"{agent.slug}.yaml"
+        if agent.slug == "__custom__":
+            raw_yaml = st.session_state.get("studio_custom_yaml", "")
+            if not raw_yaml:
+                st.info("Upload a YAML file above to compile it.")
+                return
+            try:
+                data = yaml.safe_load(raw_yaml)
+                from personanexus.types import AgentIdentity
+                identity = AgentIdentity.model_validate(data)
+                err = None
+            except Exception as exc:  # noqa: BLE001
+                identity, err = None, str(exc)
+        elif agent_path.exists():
+            identity, err = _load_identity_safe(agent_path)
+        else:
+            st.warning(f"Identity file not found: {agent_path.name}")
+            return
+
+        if err:
+            st.error(f"Parse error: {err}")
+            return
+
+        compiled, cerr = _compile_safe(identity, fmt)
+        if cerr:
+            st.error(f"Compile error: {cerr}")
+            return
+
+        lang = "json" if fmt in ("openclaw", "json", "soul") else "markdown"
+        st.code(compiled, language=lang)
+        st.download_button(
+            label=f"Download compiled ({fmt})",
+            data=compiled,
+            file_name=f"{agent.slug}_{fmt}.{'json' if lang == 'json' else 'txt'}",
+            mime="application/json" if lang == "json" else "text/plain",
+            key=f"dl_compiled_{agent.slug}_{fmt}",
+            use_container_width=True,
+        )
+
+
+def _render_export_panel(agent: StudioAgent, agents_dir: Path) -> None:
+    """Export buttons for raw YAML and all compiled formats."""
+    st.markdown("#### Export persona")
+
+    agent_path = agents_dir / f"{agent.slug}.yaml"
+    is_custom = agent.slug == "__custom__"
+
+    raw_yaml = (
+        st.session_state.get("studio_custom_yaml", "")
+        if is_custom
+        else (agent_path.read_text(encoding="utf-8") if agent_path.exists() else "")
+    )
+
+    if not raw_yaml:
+        st.caption("No source YAML available for export.")
+        return
+
+    cols = st.columns(4)
+    with cols[0]:
+        st.download_button(
+            label="Identity (.yaml)",
+            data=raw_yaml,
+            file_name=f"{agent.slug}_identity.yaml",
+            mime="text/yaml",
+            key=f"dl_yaml_{agent.slug}",
+            use_container_width=True,
+        )
+
+    if agent_path.exists() or is_custom:
+        if is_custom:
+            try:
+                from personanexus.types import AgentIdentity
+                identity = AgentIdentity.model_validate(yaml.safe_load(raw_yaml))
+                load_err = None
+            except Exception as exc:  # noqa: BLE001
+                identity, load_err = None, str(exc)
+        else:
+            identity, load_err = _load_identity_safe(agent_path)
+
+        if load_err or identity is None:
+            st.caption(f"Could not load identity for compiled exports: {load_err}")
+            return
+
+        export_targets = [
+            ("Prompt (.txt)", "text", "text/plain", "txt"),
+            ("Anthropic (.txt)", "anthropic", "text/plain", "txt"),
+            ("OpenClaw (.json)", "openclaw", "application/json", "json"),
+        ]
+        for i, (label, fmt, mime, ext) in enumerate(export_targets):
+            compiled, cerr = _compile_safe(identity, fmt)
+            if cerr or compiled is None:
+                continue
+            with cols[i + 1]:
+                st.download_button(
+                    label=label,
+                    data=compiled,
+                    file_name=f"{agent.slug}_{fmt}.{ext}",
+                    mime=mime,
+                    key=f"dl_{fmt}_{agent.slug}",
+                    use_container_width=True,
+                )
+
+
+def _render_load_panel(agents: list[StudioAgent]) -> StudioAgent | None:
+    """File uploader for loading a custom agent YAML draft. Returns a draft agent or None."""
+    with st.expander("Load custom agent YAML", expanded=False):
+        uploaded = st.file_uploader(
+            "Upload a PersonaNexus identity YAML",
+            type=["yaml", "yml"],
+            key="studio_yaml_uploader",
+        )
+        if uploaded is not None:
+            raw = uploaded.read().decode("utf-8")
+            try:
+                data = yaml.safe_load(raw)
+            except yaml.YAMLError as exc:
+                st.error(f"YAML parse error: {exc}")
+                return None
+            slug = Path(uploaded.name).stem or "custom"
+            if slug in {a.slug for a in agents}:
+                slug = f"{slug}_draft"
+            try:
+                draft = _studio_agent_from_yaml(data, slug="__custom__")
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"Could not build agent from YAML: {exc}")
+                return None
+            st.session_state["studio_custom_yaml"] = raw
+            st.success(f"Loaded draft: **{draft.name}** — click Open below to inspect.")
+            return draft
+        return None
+
+
 def render_studio() -> None:
     """Render the Studio mode."""
     agents = load_studio_agents()
@@ -82,9 +286,6 @@ def render_studio() -> None:
 
     if "studio_selected_agent" not in st.session_state:
         st.session_state["studio_selected_agent"] = agents[0].slug
-
-    selected_slug = st.session_state["studio_selected_agent"]
-    selected_agent = next((agent for agent in agents if agent.slug == selected_slug), agents[0])
 
     st.markdown(
         """
@@ -100,6 +301,12 @@ def render_studio() -> None:
         unsafe_allow_html=True,
     )
 
+    draft_agent = _render_load_panel(agents)
+    all_agents = agents if draft_agent is None else [draft_agent, *agents]
+
+    selected_slug = st.session_state["studio_selected_agent"]
+    selected_agent = next((a for a in all_agents if a.slug == selected_slug), all_agents[0])
+
     metric_cols = st.columns(4)
     motif_count = len({motif for agent in agents for motif in agent.motifs})
     metric_cols[0].metric("Agents", len(agents))
@@ -109,7 +316,7 @@ def render_studio() -> None:
 
     st.markdown("### Agent gallery")
     gallery_cols = st.columns(3)
-    for index, agent in enumerate(agents):
+    for index, agent in enumerate(all_agents):
         with gallery_cols[index % 3]:
             _render_agent_card(agent, selected=agent.slug == selected_agent.slug)
             if st.button(
@@ -143,3 +350,7 @@ def render_studio() -> None:
                 "traits": selected_agent.traits,
             }
         )
+        _render_compile_preview(selected_agent, AGENTS_DIR)
+
+    st.divider()
+    _render_export_panel(selected_agent, AGENTS_DIR)
