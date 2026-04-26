@@ -279,6 +279,7 @@ APP_CSS = """
     padding: 2rem;
     text-align: center;
     min-height: 220px;
+    box-shadow: 0 18px 45px rgba(15, 23, 42, 0.06);
 }
 .landing-card h3 {
     margin: 0 0 0.5rem 0;
@@ -293,6 +294,214 @@ APP_CSS = """
     font-size: 2.5rem;
     margin-bottom: 0.5rem;
 }
+
+/* PersonaNexus Studio */
+.studio-hero {
+    position: relative;
+    overflow: hidden;
+    border-radius: 28px;
+    padding: 3rem;
+    margin-bottom: 1.5rem;
+    color: white;
+    background:
+        radial-gradient(circle at 16% 20%, rgba(255,255,255,0.42), transparent 22%),
+        radial-gradient(circle at 82% 12%, rgba(236,72,153,0.42), transparent 24%),
+        linear-gradient(135deg, #12172d 0%, #352070 52%, #0f766e 100%);
+    box-shadow: 0 28px 80px rgba(18, 23, 45, 0.30);
+}
+.studio-hero h1 {
+    max-width: 780px;
+    margin: 0;
+    font-size: clamp(2.4rem, 6vw, 5.1rem);
+    line-height: 0.94;
+    letter-spacing: -0.07em;
+}
+.studio-hero p:not(.eyebrow) {
+    max-width: 680px;
+    margin: 1rem 0 0 0;
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 1.08rem;
+}
+.eyebrow {
+    margin: 0 0 0.75rem 0;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #67e8f9;
+}
+.studio-agent-card {
+    min-height: 350px;
+    border: 1px solid rgba(148, 163, 184, 0.38);
+    border-radius: 24px;
+    padding: 1.2rem;
+    margin-bottom: 0.85rem;
+    background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.92)),
+        radial-gradient(circle at top right, rgba(139,92,246,0.25), transparent 35%);
+    box-shadow: 0 18px 52px rgba(15, 23, 42, 0.09);
+}
+.studio-agent-card.selected {
+    border-color: #8b5cf6;
+    box-shadow: 0 22px 64px rgba(124, 58, 237, 0.22);
+}
+.agent-card-topline {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.5rem;
+    color: #64748b;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+.agent-orb {
+    width: 72px;
+    height: 72px;
+    margin: 1rem 0;
+    display: grid;
+    place-items: center;
+    border-radius: 24px;
+    color: white;
+    font-size: 2rem;
+    font-weight: 800;
+    background:
+        radial-gradient(circle at 30% 20%, #ffffff 0, rgba(255,255,255,0.6) 12%, transparent 28%),
+        linear-gradient(135deg, #7c3aed, #06b6d4 54%, #10b981);
+}
+.studio-agent-card h3 {
+    margin: 0;
+    color: #0f172a;
+    font-size: 1.45rem;
+}
+.agent-title {
+    margin: 0.15rem 0 0.7rem 0;
+    color: #4f46e5;
+    font-weight: 700;
+}
+.agent-description {
+    color: #475569;
+    font-size: 0.88rem;
+    line-height: 1.45;
+}
+.agent-tags span,
+.canvas-motifs span {
+    display: inline-block;
+    margin: 0.16rem;
+    padding: 0.24rem 0.58rem;
+    border-radius: 999px;
+    color: #334155;
+    background: #e2e8f0;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+.agent-signature {
+    margin-top: 0.8rem;
+    color: #0f172a;
+    font-size: 0.8rem;
+    font-weight: 800;
+}
+.studio-canvas-shell {
+    border-radius: 30px;
+    padding: 1.3rem;
+    min-height: 640px;
+    color: white;
+    background:
+        radial-gradient(circle at 50% 35%, rgba(103,232,249,0.22), transparent 28%),
+        radial-gradient(circle at 78% 72%, rgba(236,72,153,0.24), transparent 24%),
+        linear-gradient(150deg, #020617, #111827 48%, #312e81);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.12), 0 32px 80px rgba(15,23,42,0.25);
+}
+.canvas-hero {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+.canvas-hero h2 {
+    margin: 0;
+    font-size: 2.5rem;
+    letter-spacing: -0.05em;
+}
+.canvas-hero p:not(.eyebrow) {
+    margin: 0.25rem 0 0 0;
+    color: rgba(255,255,255,0.72);
+}
+.canvas-orb-wrap {
+    width: 150px;
+    height: 150px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: conic-gradient(from 70deg, #22d3ee, #a78bfa, #f472b6, #34d399, #22d3ee);
+    animation: studio-spin 12s linear infinite;
+}
+.canvas-orb-core {
+    width: 104px;
+    height: 104px;
+    display: grid;
+    place-items: center;
+    border-radius: 34px;
+    color: white;
+    background: #0f172a;
+    font-size: 3.4rem;
+    font-weight: 900;
+    animation: studio-counter-spin 12s linear infinite;
+}
+.canvas-field {
+    position: relative;
+    min-height: 270px;
+    margin: 1.4rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 28px;
+    background-image:
+        linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+}
+.canvas-node {
+    width: var(--node-size);
+    height: var(--node-size);
+    display: grid;
+    place-items: center;
+    text-align: center;
+    border-radius: 999px;
+    padding: 0.4rem;
+    background: color-mix(in srgb, var(--node-color) 78%, white 8%);
+    box-shadow: 0 0 34px color-mix(in srgb, var(--node-color) 55%, transparent);
+}
+.canvas-node strong {
+    display: block;
+    color: white;
+    font-size: 0.76rem;
+    line-height: 1.05;
+}
+.canvas-node span {
+    display: block;
+    color: rgba(255,255,255,0.8);
+    font-family: monospace;
+    font-size: 0.7rem;
+}
+.canvas-principles {
+    margin-top: 1rem;
+    padding: 1rem;
+    border-radius: 22px;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(255,255,255,0.10);
+}
+.canvas-principles h4 {
+    margin: 0 0 0.5rem 0;
+}
+.canvas-principles li {
+    color: rgba(255,255,255,0.78);
+    margin-bottom: 0.35rem;
+}
+@keyframes studio-spin { to { transform: rotate(360deg); } }
+@keyframes studio-counter-spin { to { transform: rotate(-360deg); } }
 </style>
 """
 
