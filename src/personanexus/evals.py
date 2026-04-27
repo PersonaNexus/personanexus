@@ -510,6 +510,15 @@ class IdentityEvaluationHarness:
                     "governance_sensitivity",
                 )
             ) or bool(governance.required_notes)
+            if has_expectations:
+                checks.append(
+                    ScoreCheck(
+                        label="behavioral_contract_present",
+                        passed=False,
+                        expected="present when governance assertions are configured",
+                        actual="missing",
+                    )
+                )
             return DimensionScore(
                 name="governance",
                 score=0.0 if has_expectations else 1.0,

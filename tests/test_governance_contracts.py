@@ -134,3 +134,27 @@ def test_compile_cli_prints_governance_warning(examples_dir, tmp_path):
     assert result.exit_code == 0
     assert "Warning:" in result.output
     assert output.exists()
+
+
+def test_governance_eval_fails_missing_behavioral_contract_with_check(examples_dir, tmp_path):
+    suite_path = tmp_path / "governance-suite.yaml"
+    suite_path.write_text(
+        (
+            'version: "1"\n'
+            "scenarios:\n"
+            "  - id: contract_required\n"
+            "    assertions:\n"
+            "      governance:\n"
+            "        confidentiality: strict\n"
+        ),
+        encoding="utf-8",
+    )
+
+    harness = IdentityEvaluationHarness(search_paths=[examples_dir])
+    result = harness.evaluate(examples_dir / "identities" / "minimal.yaml", suite_path)
+
+    governance = result.scenarios[0].dimensions["governance"]
+    assert governance.score == 0.0
+    assert governance.checks[0].label == "behavioral_contract_present"
+    assert governance.checks[0].passed is False
+
