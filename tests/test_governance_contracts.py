@@ -157,4 +157,3 @@ def test_governance_eval_fails_missing_behavioral_contract_with_check(examples_d
     assert governance.score == 0.0
     assert governance.checks[0].label == "behavioral_contract_present"
     assert governance.checks[0].passed is False
-
