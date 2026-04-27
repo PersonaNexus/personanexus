@@ -6,7 +6,17 @@ import os
 import sys
 from pathlib import Path
 
-import streamlit as st
+try:
+    import streamlit as st
+except ModuleNotFoundError:  # pragma: no cover - exercised in CI import collection
+
+    class _MissingStreamlit:
+        def __getattr__(self, name: str):
+            raise RuntimeError(
+                "PersonaNexus Studio requires the optional web extra: personanexus[web]"
+            )
+
+    st = _MissingStreamlit()
 import yaml
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -53,10 +63,7 @@ def _studio_agent_from_yaml(data: dict, slug: str = "custom") -> StudioAgent:
     communication = data.get("communication", {})
     tone = communication.get("tone", {})
     traits = traits_from_profile(data.get("personality", {}))
-    principles = tuple(
-        str(item.get("statement", item))
-        for item in data.get("principles", [])[:3]
-    )
+    principles = tuple(str(item.get("statement", item)) for item in data.get("principles", [])[:3])
     return StudioAgent(
         slug=slug,
         name=str(metadata.get("name") or slug.title()),
@@ -108,12 +115,11 @@ def _render_canvas(agent: StudioAgent) -> None:
             f"<strong>{html.escape(label)}</strong><span>{score:.2f}</span></div>"
         )
 
-    principles = "".join(
-        f"<li>{html.escape(principle)}</li>" for principle in agent.principles[:3]
-    ) or "<li>Principles appear here as this persona is authored.</li>"
-    motif_chips = "".join(
-        f"<span>{html.escape(motif)}</span>" for motif in agent.motifs
+    principles = (
+        "".join(f"<li>{html.escape(principle)}</li>" for principle in agent.principles[:3])
+        or "<li>Principles appear here as this persona is authored.</li>"
     )
+    motif_chips = "".join(f"<span>{html.escape(motif)}</span>" for motif in agent.motifs)
 
     st.markdown(
         f"""
@@ -128,7 +134,7 @@ def _render_canvas(agent: StudioAgent) -> None:
               <div class="canvas-orb-core">{html.escape(agent.name[:1].upper())}</div>
             </div>
           </div>
-          <div class="canvas-field">{''.join(nodes)}</div>
+          <div class="canvas-field">{"".join(nodes)}</div>
           <div class="canvas-motifs">{motif_chips}</div>
           <div class="canvas-principles"><h4>Behavioral contract</h4><ul>{principles}</ul></div>
         </section>
@@ -154,6 +160,7 @@ def _render_compile_preview(agent: StudioAgent, agents_dir: Path) -> None:
             try:
                 data = yaml.safe_load(raw_yaml)
                 from personanexus.types import AgentIdentity
+
                 identity = AgentIdentity.model_validate(data)
                 err = None
             except Exception as exc:  # noqa: BLE001
@@ -217,6 +224,7 @@ def _render_export_panel(agent: StudioAgent, agents_dir: Path) -> None:
         if is_custom:
             try:
                 from personanexus.types import AgentIdentity
+
                 identity = AgentIdentity.model_validate(yaml.safe_load(raw_yaml))
                 load_err = None
             except Exception as exc:  # noqa: BLE001

@@ -12,7 +12,17 @@ import sys
 from datetime import UTC, datetime
 from typing import Any
 
-import streamlit as st
+try:
+    import streamlit as st
+except ModuleNotFoundError:  # pragma: no cover - supports helper imports without web extra
+
+    class _MissingStreamlit:
+        def __getattr__(self, name: str):
+            raise RuntimeError(
+                "PersonaNexus Studio requires the optional web extra: personanexus[web]"
+            )
+
+    st = _MissingStreamlit()
 
 # Add src to path so we can import the library
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
@@ -26,8 +36,16 @@ from personanexus.types import (
 # ---------------------------------------------------------------------------
 
 TRAIT_ORDER = [
-    "warmth", "verbosity", "assertiveness", "humor", "empathy",
-    "directness", "rigor", "creativity", "epistemic_humility", "patience",
+    "warmth",
+    "verbosity",
+    "assertiveness",
+    "humor",
+    "empathy",
+    "directness",
+    "rigor",
+    "creativity",
+    "epistemic_humility",
+    "patience",
 ]
 
 TRAIT_LABELS = {
@@ -61,19 +79,40 @@ DISC_LABELS = {
 ARCHETYPE_DEFAULTS = {
     "Blank Slate": dict.fromkeys(TRAIT_ORDER, 0.5),
     "Analyst": {
-        "warmth": 0.4, "verbosity": 0.6, "assertiveness": 0.5, "humor": 0.2,
-        "empathy": 0.4, "directness": 0.7, "rigor": 0.9, "creativity": 0.4,
-        "epistemic_humility": 0.8, "patience": 0.7,
+        "warmth": 0.4,
+        "verbosity": 0.6,
+        "assertiveness": 0.5,
+        "humor": 0.2,
+        "empathy": 0.4,
+        "directness": 0.7,
+        "rigor": 0.9,
+        "creativity": 0.4,
+        "epistemic_humility": 0.8,
+        "patience": 0.7,
     },
     "Tutor": {
-        "warmth": 0.8, "verbosity": 0.7, "assertiveness": 0.4, "humor": 0.4,
-        "empathy": 0.8, "directness": 0.5, "rigor": 0.6, "creativity": 0.6,
-        "epistemic_humility": 0.7, "patience": 0.9,
+        "warmth": 0.8,
+        "verbosity": 0.7,
+        "assertiveness": 0.4,
+        "humor": 0.4,
+        "empathy": 0.8,
+        "directness": 0.5,
+        "rigor": 0.6,
+        "creativity": 0.6,
+        "epistemic_humility": 0.7,
+        "patience": 0.9,
     },
     "Support": {
-        "warmth": 0.8, "verbosity": 0.5, "assertiveness": 0.3, "humor": 0.3,
-        "empathy": 0.9, "directness": 0.4, "rigor": 0.5, "creativity": 0.3,
-        "epistemic_humility": 0.6, "patience": 0.8,
+        "warmth": 0.8,
+        "verbosity": 0.5,
+        "assertiveness": 0.3,
+        "humor": 0.3,
+        "empathy": 0.9,
+        "directness": 0.4,
+        "rigor": 0.5,
+        "creativity": 0.3,
+        "epistemic_humility": 0.6,
+        "patience": 0.8,
     },
 }
 
@@ -635,9 +674,9 @@ def render_comparison_bars(
     html_parts = [
         '<div style="font-size: 0.8rem; margin-bottom: 8px;">',
         f'<span style="color: #3b82f6; font-weight: 600;">{html.escape(label_a)}</span>',
-        ' vs ',
+        " vs ",
         f'<span style="color: #f97316; font-weight: 600;">{html.escape(label_b)}</span>',
-        '</div>',
+        "</div>",
     ]
     for trait in TRAIT_ORDER:
         va = traits_a.get(trait, 0.5)
@@ -654,17 +693,10 @@ def render_comparison_bars(
             delta_color = "#ef4444"
         sign = "+" if delta > 0 else ""
         lbl_style = "width:140px;font-weight:500;color:#1a1a2e;"
-        delta_style = (
-            f"color:{delta_color};font-family:monospace;"
-            "font-size:0.75rem;"
-        )
-        row_style = (
-            "display:flex;align-items:center;"
-            "font-size:0.8rem;margin-bottom:2px;"
-        )
+        delta_style = f"color:{delta_color};font-family:monospace;font-size:0.75rem;"
+        row_style = "display:flex;align-items:center;font-size:0.8rem;margin-bottom:2px;"
         bar_bg = (
-            "position:relative;height:18px;background:#d1d5db;"
-            "border-radius:9px;overflow:hidden;"
+            "position:relative;height:18px;background:#d1d5db;border-radius:9px;overflow:hidden;"
         )
         bar_a = (
             "position:absolute;height:9px;top:0;"
@@ -705,7 +737,7 @@ def render_confidence_badge(confidence: float) -> str:
     return (
         f'<span style="display: inline-block; padding: 2px 8px; border-radius: 12px; '
         f'font-size: 0.75rem; font-weight: 600; color: white; background: {color};">'
-        f'{label} ({confidence:.0%})</span>'
+        f"{label} ({confidence:.0%})</span>"
     )
 
 
@@ -804,17 +836,21 @@ def build_identity_from_data(data: dict[str, Any]) -> AgentIdentity:
     for i, stmt in enumerate(principles_list):
         if stmt.strip():
             pid = stmt.strip().lower().replace(" ", "_")[:40]
-            principles.append({
-                "id": pid,
-                "priority": i + 1,
-                "statement": stmt.strip(),
-            })
+            principles.append(
+                {
+                    "id": pid,
+                    "priority": i + 1,
+                    "statement": stmt.strip(),
+                }
+            )
     if not principles:
-        principles = [{
-            "id": "be_helpful",
-            "priority": 1,
-            "statement": "Always prioritize being helpful and accurate",
-        }]
+        principles = [
+            {
+                "id": "be_helpful",
+                "priority": 1,
+                "statement": "Always prioritize being helpful and accurate",
+            }
+        ]
 
     # Guardrails
     default_guardrail = "Never generate harmful, illegal, or unethical content"
@@ -824,19 +860,23 @@ def build_identity_from_data(data: dict[str, Any]) -> AgentIdentity:
     for i, rule in enumerate(guardrail_rules):
         if rule.strip():
             gid = rule.strip().lower().replace(" ", "_")[:40]
-            hard_guardrails.append({
-                "id": gid,
-                "rule": rule.strip(),
-                "enforcement": "output_filter",
-                "severity": guardrail_severities.get(i, "critical"),
-            })
+            hard_guardrails.append(
+                {
+                    "id": gid,
+                    "rule": rule.strip(),
+                    "enforcement": "output_filter",
+                    "severity": guardrail_severities.get(i, "critical"),
+                }
+            )
     if not hard_guardrails:
-        hard_guardrails = [{
-            "id": "no_harmful_content",
-            "rule": "Never generate harmful, illegal, or unethical content",
-            "enforcement": "output_filter",
-            "severity": "critical",
-        }]
+        hard_guardrails = [
+            {
+                "id": "no_harmful_content",
+                "rule": "Never generate harmful, illegal, or unethical content",
+                "enforcement": "output_filter",
+                "severity": "critical",
+            }
+        ]
 
     guardrails: dict[str, Any] = {"hard": hard_guardrails}
     forbidden = data.get("forbidden_topics")
