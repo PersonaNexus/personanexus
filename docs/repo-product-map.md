@@ -7,16 +7,16 @@ This document keeps the public project names, GitHub repositories, Python packag
 | Product | Public repository | Python package / CLI | Responsibility |
 |---|---|---|---|
 | **PersonaNexus** | `PersonaNexus/personanexus` | `personanexus` / `personanexus` | Declarative agent identity: YAML schema, persona compilation, validation, evaluation, Studio, and team definitions. |
-| **AgentForge** | `PersonaNexus/AgentSkillFactory` | `agentforge` / `agentforge` | Skill and agent factory: converts job descriptions, role descriptions, and operating context into PersonaNexus identities, OpenClaw/Claude skills, teams, QA reports, and handoff artifacts. |
+| **AgentForge** | `PersonaNexus/agentforge` | `agentforge` / `agentforge` | Skill and agent factory: converts job descriptions, role descriptions, and operating context into PersonaNexus identities, OpenClaw/Claude skills, teams, QA reports, and handoff artifacts. |
 | **Voice Packs** | `PersonaNexus/voice-packs` | adapter artifacts | Weight-level voice/personality adapters that complement PersonaNexus identities and AgentForge-generated agents. |
 
 ## Naming policy
 
 PersonaNexus is the core identity product, package, and CLI name for this repository.
 
-AgentForge is a separate product that currently lives in the historical `PersonaNexus/AgentSkillFactory` repository. Public docs should use this wording consistently:
+AgentForge is a separate product that lives in the `PersonaNexus/agentforge` repository, formerly named `AgentSkillFactory`. Public docs should use this wording consistently:
 
-> AgentForge (`agentforge`) is published from the `PersonaNexus/AgentSkillFactory` repository.
+> AgentForge (`agentforge`) is published from the `PersonaNexus/agentforge` repository, formerly `PersonaNexus/AgentSkillFactory`.
 
 Avoid using “Agent Skill Factory” as a separate product name unless referring to the historical repository name.
 
@@ -65,11 +65,11 @@ Optional voice-pack adapters for model-level style
 Every public README should keep these links visible near the top:
 
 - PersonaNexus: <https://github.com/PersonaNexus/personanexus>
-- AgentForge / AgentSkillFactory: <https://github.com/PersonaNexus/AgentSkillFactory>
+- AgentForge: <https://github.com/PersonaNexus/agentforge>
 - Voice Packs: <https://github.com/PersonaNexus/voice-packs>
 
 PersonaNexus docs should position AgentForge as the factory that can generate PersonaNexus identities and operational skills from real-world role/context inputs. AgentForge docs should position PersonaNexus as the identity substrate.
 
 ## Repository rename option
 
-Long-term, the cleanest public naming would be to rename `PersonaNexus/AgentSkillFactory` to `PersonaNexus/agentforge`. That is an external repository action and should only happen deliberately after maintainers approve it. Until then, docs must make the current mapping explicit.
+Repository naming has been cleaned up: AgentForge now lives at `PersonaNexus/agentforge`. GitHub should redirect old `PersonaNexus/AgentSkillFactory` links, but new docs and tooling should use the canonical lowercase repo URL.
