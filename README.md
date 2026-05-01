@@ -11,6 +11,18 @@
 
 [Quick Start](#quick-start) · [Features](#features) · [CLI Reference](#cli-reference) · [Python API](#python-api) · [Examples](#examples) · [Contributing](#contributing)
 
+## PersonaNexus ecosystem
+
+PersonaNexus is the identity substrate for a small ecosystem of agent-building tools:
+
+| Project | Role | Repository |
+|---|---|---|
+| **PersonaNexus** | Declarative identity schema, compiler, validation, evaluation, Studio, and team definitions | [`PersonaNexus/personanexus`](https://github.com/PersonaNexus/personanexus) |
+| **AgentForge** | Skill and agent factory that generates PersonaNexus identities and operational skills from job/role/context inputs | [`PersonaNexus/AgentSkillFactory`](https://github.com/PersonaNexus/AgentSkillFactory) |
+| **Voice Packs** | Optional adapter-level voice/personality assets | [`PersonaNexus/voice-packs`](https://github.com/PersonaNexus/voice-packs) |
+
+See [docs/repo-product-map.md](docs/repo-product-map.md) for the canonical repo/product/package map and naming policy.
+
 ---
 
 ## Why This Exists
