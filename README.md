@@ -11,6 +11,18 @@
 
 [Quick Start](#quick-start) · [Features](#features) · [CLI Reference](#cli-reference) · [Python API](#python-api) · [Examples](#examples) · [Contributing](#contributing)
 
+## PersonaNexus ecosystem
+
+PersonaNexus is the identity substrate for a small ecosystem of agent-building tools:
+
+| Project | Role | Repository |
+|---|---|---|
+| **PersonaNexus** | Declarative identity schema, compiler, validation, evaluation, Studio, and team definitions | [`PersonaNexus/personanexus`](https://github.com/PersonaNexus/personanexus) |
+| **AgentForge** | Skill and agent factory that generates PersonaNexus identities and operational skills from job/role/context inputs | [`PersonaNexus/agentforge`](https://github.com/PersonaNexus/agentforge) |
+| **Voice Packs** | Optional adapter-level voice/personality assets | [`PersonaNexus/voice-packs`](https://github.com/PersonaNexus/voice-packs) |
+
+See [docs/repo-product-map.md](docs/repo-product-map.md) for the canonical repo/product/package map and naming policy.
+
 ---
 
 ## Why This Exists
@@ -402,7 +414,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, testing, and code 
 
 | Project | Description |
 |---------|-------------|
-| [**AgentForge**](https://github.com/PersonaNexus/AgentSkillFactory) | Transform job descriptions into deployable PersonaNexus agent blueprints — extracts skills, maps traits, and outputs ready-to-use identities. |
+| [**AgentForge**](https://github.com/PersonaNexus/agentforge) | Transform job descriptions into deployable PersonaNexus agent blueprints — extracts skills, maps traits, and outputs ready-to-use identities. |
 | [**Voice Packs**](https://github.com/PersonaNexus/voice-packs) | Weight-level personality adapters (LoRA) that encode authorial voice into model weights. 13 pre-trained packs, proven to reduce personality drift by up to 49% vs prompt-only. [Adapters on HuggingFace](https://huggingface.co/jcrowan3/voice-pack-adapters). |
 
 ## Trademark Notice
