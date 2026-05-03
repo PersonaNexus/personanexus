@@ -7,7 +7,7 @@ This document keeps the public project names, GitHub repositories, Python packag
 | Product | Public repository | Python package / CLI | Responsibility |
 |---|---|---|---|
 | **PersonaNexus** | `PersonaNexus/personanexus` | `personanexus` / `personanexus` | Declarative agent identity: YAML schema, persona compilation, validation, evaluation, Studio, and team definitions. |
-| **AgentForge** | `PersonaNexus/agentforge` | `agentforge` / `agentforge` | Skill and agent factory: converts job descriptions, role descriptions, and operating context into PersonaNexus identities, OpenClaw/Claude skills, teams, QA reports, and handoff artifacts. |
+| **AgentForge** | `PersonaNexus/agentforge` | `agentforge` / `agentforge` | Skill and agent factory + day-2+ lifecycle tooling: converts job descriptions, role descriptions, and operating context into PersonaNexus identities, OpenClaw/Claude skills, teams, QA reports, and handoff artifacts; keeps live agents healthy via Tend (persona), Drill (skills), Department (team synthesis from a JD corpus), and Market (corpus observability). |
 | **Voice Packs** | `PersonaNexus/voice-packs` | adapter artifacts | Weight-level voice/personality adapters that complement PersonaNexus identities and AgentForge-generated agents. |
 
 ## Naming policy
@@ -32,12 +32,21 @@ Avoid using “Agent Skill Factory” as a separate product name unless referrin
 
 ### AgentForge owns
 
+**Bootstrap factory:**
+
 - Ingesting job descriptions, role descriptions, runbooks, meeting notes, and other operating context.
 - Extracting skills, responsibilities, triggers, and operating heuristics.
 - Generating PersonaNexus-compatible identities.
 - Generating OpenClaw/Claude skill folders and `SKILL.md` files.
 - Team/conductor generation and orchestration exports.
 - Skill quality tooling: lint, audit, prompt-size, prompt-diff, cost, and scenario testing.
+
+**Day-2+ lifecycle tooling** (full design in [`PersonaNexus/agentforge/docs/day2-products.md`](https://github.com/PersonaNexus/agentforge/blob/main/docs/day2-products.md)):
+
+- **Tend** — persona maintenance: snapshot SOUL.md, watch for drift, A/B test variants, version log.
+- **Drill** — skill-folder maintenance: snapshot inventory, deterministic diagnostics (bloat, overlap, missing files, tool sprawl), watch for evolution, version log.
+- **Department** — multi-agent team synthesis from a JD corpus: per-role identities, shared skill library, conductor agent, orchestration graph, README.
+- **Market** — JD-corpus observability: top-skill trends, recency split, agent ↔ market gap analysis with coverage scoring.
 - Future Skill Builder workflows: idea intake, spec packets, validation, and implementation handoff.
 
 ### Voice Packs owns
