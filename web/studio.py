@@ -192,6 +192,58 @@ def _render_compile_preview(agent: StudioAgent, agents_dir: Path) -> None:
         )
 
 
+def _render_deployment_safety_banner(identity) -> None:
+    """Render a public-boundary safety check banner in the Studio export panel.
+
+    Shows a green success message when the identity passes all public-deployment
+    safety rules, or an expandable warning/error section when issues are found.
+    Always informational — does not block export.
+    """
+    try:
+        import sys
+        import os
+
+        # Allow import when running from the web/ directory
+        src_path = os.path.join(os.path.dirname(__file__), "..", "src")
+        if src_path not in sys.path:
+            sys.path.insert(0, src_path)
+
+        from personanexus.deployment_safety import check_for_studio
+
+        safety = check_for_studio(identity)
+    except Exception:  # noqa: BLE001
+        return  # Safety check failure should never break the export UI
+
+    st.markdown("---")
+    st.markdown("**🛡️ Public-boundary safety check**")
+
+    if safety["safe"]:
+        extra = ""
+        if safety["warnings"] or safety["infos"]:
+            extra = (
+                f" ({len(safety['warnings'])} warning(s), {len(safety['infos'])} info(s))"
+            )
+        st.success(f"\u2713 Safe to deploy{extra}")
+        if safety["warnings"] or safety["infos"]:
+            with st.expander("View warnings / info", expanded=False):
+                for msg in safety["warnings"]:
+                    st.warning(msg)
+                for msg in safety["infos"]:
+                    st.info(msg)
+    else:
+        st.error(
+            f"⚠️ This identity has {len(safety['errors'])} public-deployment error(s). "
+            "Review and fix before deploying to a public audience."
+        )
+        with st.expander("View safety findings", expanded=True):
+            for msg in safety["errors"]:
+                st.error(msg)
+            for msg in safety["warnings"]:
+                st.warning(msg)
+            for msg in safety["infos"]:
+                st.info(msg)
+
+
 def _render_export_panel(agent: StudioAgent, agents_dir: Path) -> None:
     """Export buttons for raw YAML and all compiled formats."""
     st.markdown("#### Export persona")
@@ -254,6 +306,10 @@ def _render_export_panel(agent: StudioAgent, agents_dir: Path) -> None:
                     key=f"dl_{fmt}_{agent.slug}",
                     use_container_width=True,
                 )
+
+        # Public-boundary safety banner — surfaced on every export panel.
+        # Runs after the download buttons so it doesn\'t block the export UI.
+        _render_deployment_safety_banner(identity)
 
 
 def _render_load_panel(agents: list[StudioAgent]) -> StudioAgent | None:

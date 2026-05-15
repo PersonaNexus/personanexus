@@ -41,6 +41,12 @@ from personanexus.evolution import (
     load_evolution_state,
     load_identity_with_evolution,
 )
+from personanexus.deployment_safety import (
+    DeploymentFinding,
+    DeploymentSafetyResult,
+    PublicDeploymentChecker,
+    check_for_studio,
+)
 from personanexus.linter import IdentityLinter, LintWarning
 from personanexus.memory import (
     MemoryBackendJSON,
@@ -141,6 +147,10 @@ __all__ = [
     "TRAIT_ORDER",
     "TeamSpec",
     "ValidationResult",
+    "DeploymentFinding",
+    "DeploymentSafetyResult",
+    "PublicDeploymentChecker",
+    "check_for_studio",
     "compile_identity",
     "compute_personality_traits",
     "disc_to_traits",
