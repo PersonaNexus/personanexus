@@ -110,3 +110,15 @@ def test_studio_agent_from_yaml_uses_slug_as_fallback_name() -> None:
     agent = _studio_agent_from_yaml(data, slug="fallback-slug")
 
     assert agent.name == "Fallback-Slug"
+
+
+def test_compile_safe_gateway_format_returns_json_contract() -> None:
+    import json as _json
+
+    identity, _ = _load_identity_safe(AGENTS_DIR / "forge.yaml")
+    result, err = _compile_safe(identity, "gateway")
+
+    assert err is None
+    parsed = _json.loads(result)
+    assert parsed["kind"] == "personanexus.gateway_contract"
+    assert parsed["runtime"]["system_prompt"]

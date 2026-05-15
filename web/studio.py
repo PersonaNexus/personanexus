@@ -31,7 +31,7 @@ from studio_model import (  # noqa: E402
     traits_from_profile,
 )
 
-_COMPILE_FORMATS = ["text", "anthropic", "openclaw", "soul", "json", "markdown"]
+_COMPILE_FORMATS = ["text", "anthropic", "openclaw", "gateway", "soul", "json", "markdown"]
 
 
 def _load_identity_safe(path: Path):
@@ -180,7 +180,7 @@ def _render_compile_preview(agent: StudioAgent, agents_dir: Path) -> None:
             st.error(f"Compile error: {cerr}")
             return
 
-        lang = "json" if fmt in ("openclaw", "json", "soul") else "markdown"
+        lang = "json" if fmt in ("openclaw", "gateway", "json", "soul") else "markdown"
         st.code(compiled, language=lang)
         st.download_button(
             label=f"Download compiled ({fmt})",
@@ -209,7 +209,7 @@ def _render_export_panel(agent: StudioAgent, agents_dir: Path) -> None:
         st.caption("No source YAML available for export.")
         return
 
-    cols = st.columns(4)
+    cols = st.columns(5)
     with cols[0]:
         st.download_button(
             label="Identity (.yaml)",
@@ -240,6 +240,7 @@ def _render_export_panel(agent: StudioAgent, agents_dir: Path) -> None:
             ("Prompt (.txt)", "text", "text/plain", "txt"),
             ("Anthropic (.txt)", "anthropic", "text/plain", "txt"),
             ("OpenClaw (.json)", "openclaw", "application/json", "json"),
+            ("Gateway (.json)", "gateway", "application/json", "json"),
         ]
         for i, (label, fmt, mime, ext) in enumerate(export_targets):
             compiled, cerr = _compile_safe(identity, fmt)

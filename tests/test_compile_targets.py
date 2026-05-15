@@ -10,6 +10,7 @@ import yaml
 from personanexus.compiler import (
     AutoGenCompiler,
     CrewAICompiler,
+    GatewayContractCompiler,
     LangChainCompiler,
     SystemPromptCompiler,
     compile_identity,
@@ -270,6 +271,34 @@ class TestAutoGenCompiler:
 
 
 # ---------------------------------------------------------------------------
+# Gateway contract target
+# ---------------------------------------------------------------------------
+
+
+class TestGatewayContractCompiler:
+    def test_compile_returns_generic_contract(self, mira_identity):
+        compiler = GatewayContractCompiler()
+        result = compiler.compile(mira_identity)
+
+        assert result["kind"] == "personanexus.gateway_contract"
+        assert result["agent"]["id"] == mira_identity.metadata.id
+        assert result["agent"]["name"] == mira_identity.metadata.name
+        assert result["runtime"]["system_prompt"]
+        assert result["runtime"]["prompt_format"] == "markdown"
+        assert "guardrails" in result["governance"]
+
+    def test_contract_is_json_serializable(self, mira_identity):
+        result = GatewayContractCompiler().compile(mira_identity)
+        serialized = json.dumps(result)
+        assert "personanexus.gateway_contract" in serialized
+
+    def test_compile_identity_gateway_target(self, mira_identity):
+        result = compile_identity(mira_identity, target="gateway")
+        assert isinstance(result, dict)
+        assert result["deployment"]["validation_commands"][1].endswith("--target gateway")
+
+
+# ---------------------------------------------------------------------------
 # Cross-target tests
 # ---------------------------------------------------------------------------
 
@@ -303,10 +332,12 @@ class TestCompileTargetConsistency:
         lc_result = compile_identity(mira_identity, target="langchain")
         cr_result = compile_identity(mira_identity, target="crewai")
         ag_result = compile_identity(mira_identity, target="autogen")
+        gw_result = compile_identity(mira_identity, target="gateway")
 
         assert isinstance(lc_result, dict)
         assert isinstance(cr_result, str)
         assert isinstance(ag_result, dict)
+        assert isinstance(gw_result, dict)
 
     def test_unknown_target_raises_error(self, mira_identity):
         from personanexus.compiler import CompilerError
