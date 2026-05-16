@@ -1099,12 +1099,8 @@ class GatewayContractCompiler:
             },
             "persona": {
                 "traits": traits,
-                "profile": identity.personality.profile.model_dump(
-                    mode="json", exclude_none=True
-                ),
-                "communication": identity.communication.model_dump(
-                    mode="json", exclude_none=True
-                ),
+                "profile": identity.personality.profile.model_dump(mode="json", exclude_none=True),
+                "communication": identity.communication.model_dump(mode="json", exclude_none=True),
                 "principles": [
                     principle.model_dump(mode="json", exclude_none=True)
                     for principle in sorted(identity.principles, key=lambda p: p.priority)
