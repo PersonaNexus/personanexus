@@ -13,6 +13,12 @@ from personanexus.compiler import (
     compile_identity,
 )
 from personanexus.conflict import MergeTrace, MergeTraceEntry
+from personanexus.deployment_safety import (
+    DeploymentFinding,
+    DeploymentSafetyResult,
+    PublicDeploymentChecker,
+    check_for_studio,
+)
 from personanexus.drift import (
     DriftReport,
     detect_drift,
@@ -40,12 +46,6 @@ from personanexus.evolution import (
     get_candidates,
     load_evolution_state,
     load_identity_with_evolution,
-)
-from personanexus.deployment_safety import (
-    DeploymentFinding,
-    DeploymentSafetyResult,
-    PublicDeploymentChecker,
-    check_for_studio,
 )
 from personanexus.linter import IdentityLinter, LintWarning
 from personanexus.memory import (

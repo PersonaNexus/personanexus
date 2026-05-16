@@ -75,7 +75,12 @@ from __future__ import annotations
 import dataclasses
 from typing import Literal
 
-from personanexus.types import AgentIdentity, BehavioralContract, BoundaryStrictness, UserCorrigibility
+from personanexus.types import (
+    AgentIdentity,
+    BehavioralContract,
+    BoundaryStrictness,
+    UserCorrigibility,
+)
 
 # ---------------------------------------------------------------------------
 # Data classes
@@ -167,9 +172,7 @@ class PublicDeploymentChecker:
 
         At least one hard guardrail with severity=CRITICAL must be present.
         """
-        has_critical = any(
-            g.severity.value == "critical" for g in identity.guardrails.hard
-        )
+        has_critical = any(g.severity.value == "critical" for g in identity.guardrails.hard)
         if has_critical:
             return []
         return [
@@ -222,7 +225,7 @@ class PublicDeploymentChecker:
             DeploymentFinding(
                 rule="public-flexible-boundary-risk",
                 message=(
-                    f"behavioral_contract.boundary_strictness is 'flexible'.  "
+                    "behavioral_contract.boundary_strictness is 'flexible'.  "
                     "This is appropriate for trusted-operator contexts but is risky "
                     "for public audiences.  Consider 'moderate' or 'strict'."
                 ),
@@ -255,9 +258,7 @@ class PublicDeploymentChecker:
             )
         ]
 
-    def _check_autonomous_needs_contract(
-        self, identity: AgentIdentity
-    ) -> list[DeploymentFinding]:
+    def _check_autonomous_needs_contract(self, identity: AgentIdentity) -> list[DeploymentFinding]:
         """Rule: public-autonomous-needs-contract.
 
         Any autonomous permission requires a behavioral_contract in public
@@ -288,9 +289,7 @@ class PublicDeploymentChecker:
             )
         ]
 
-    def _check_out_of_scope_required(
-        self, identity: AgentIdentity
-    ) -> list[DeploymentFinding]:
+    def _check_out_of_scope_required(self, identity: AgentIdentity) -> list[DeploymentFinding]:
         """Rule: public-out-of-scope-required.
 
         An explicit out_of_scope list anchors what the agent will refuse.
@@ -334,6 +333,7 @@ class PublicDeploymentChecker:
 # ---------------------------------------------------------------------------
 # Studio helper
 # ---------------------------------------------------------------------------
+
 
 def check_for_studio(identity: AgentIdentity) -> dict:
     """Run public-deployment safety checks and return a Studio-friendly summary.

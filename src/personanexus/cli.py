@@ -25,6 +25,7 @@ from personanexus.compiler import (
     compile_identity,
     get_compile_warnings,
 )
+from personanexus.deployment_safety import PublicDeploymentChecker
 from personanexus.diff import compatibility_score, diff_identities, format_diff
 from personanexus.doctor import (
     EXIT_ISSUES,
@@ -35,7 +36,6 @@ from personanexus.doctor import (
 )
 from personanexus.drift import detect_drift_from_files, format_drift_report
 from personanexus.evals import EvalComparison, EvalError, EvalRunResult, IdentityEvaluationHarness
-from personanexus.deployment_safety import PublicDeploymentChecker
 from personanexus.linter import IdentityLinter
 from personanexus.parser import ParseError
 from personanexus.resolver import IdentityResolver, ResolutionError
@@ -176,7 +176,7 @@ def lint(
         bool,
         typer.Option(
             "--public",
-            help="Also run public-boundary safety checks (recommended before any public deployment)",
+            help=("Also run public-boundary safety checks (recommended before public deployment)"),
         ),
     ] = False,
 ) -> None:
@@ -240,27 +240,24 @@ def lint(
 
         try:
             parsed = IdentityParser().parse_file(file)
-            from personanexus.types import AgentIdentity
             from pydantic import ValidationError as _ValidationError
+
+            from personanexus.types import AgentIdentity
 
             try:
                 identity = AgentIdentity.model_validate(parsed)
             except _ValidationError as exc:
-                console.print(
-                    "[red]\nPublic safety check skipped: schema validation failed.[/red]"
-                )
+                console.print("[red]\nPublic safety check skipped: schema validation failed.[/red]")
                 console.print(f"[red]{exc}[/red]")
                 raise typer.Exit(code=1)
         except ParseError as exc:
-            console.print(
-                f"[red]\nPublic safety check skipped: could not parse file: {exc}[/red]"
-            )
+            console.print(f"[red]\nPublic safety check skipped: could not parse file: {exc}[/red]")
             raise typer.Exit(code=1)
 
         checker = PublicDeploymentChecker()
         safety = checker.check(identity)
 
-        console.print(f"\n[bold]Public-boundary safety check:[/bold]")
+        console.print("\n[bold]Public-boundary safety check:[/bold]")
         if safety.safe_to_deploy:
             console.print(f"  [green]✓ {safety.summary()}[/green]")
         else:

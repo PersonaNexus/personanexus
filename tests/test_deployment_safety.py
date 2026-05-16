@@ -108,7 +108,6 @@ def _make_identity(**overrides: Any) -> AgentIdentity:
             "tone": {"default": "friendly"},
             "language": {"primary": "en"},
         },
-
         "principles": [
             {
                 "id": "be_safe",
@@ -155,6 +154,7 @@ def safe_identity() -> AgentIdentity:
 # DeploymentSafetyResult property tests
 # ---------------------------------------------------------------------------
 
+
 class TestDeploymentSafetyResult:
     def test_empty_findings_is_safe(self):
         result = DeploymentSafetyResult()
@@ -164,29 +164,31 @@ class TestDeploymentSafetyResult:
         assert result.infos == []
 
     def test_error_finding_makes_unsafe(self):
-        result = DeploymentSafetyResult(findings=[
-            DeploymentFinding(rule="x", message="msg", severity="error")
-        ])
+        result = DeploymentSafetyResult(
+            findings=[DeploymentFinding(rule="x", message="msg", severity="error")]
+        )
         assert result.safe_to_deploy is False
 
     def test_warning_only_is_still_safe(self):
-        result = DeploymentSafetyResult(findings=[
-            DeploymentFinding(rule="x", message="msg", severity="warning")
-        ])
+        result = DeploymentSafetyResult(
+            findings=[DeploymentFinding(rule="x", message="msg", severity="warning")]
+        )
         assert result.safe_to_deploy is True
 
     def test_info_only_is_still_safe(self):
-        result = DeploymentSafetyResult(findings=[
-            DeploymentFinding(rule="x", message="msg", severity="info")
-        ])
+        result = DeploymentSafetyResult(
+            findings=[DeploymentFinding(rule="x", message="msg", severity="info")]
+        )
         assert result.safe_to_deploy is True
 
     def test_errors_property_filters_correctly(self):
-        result = DeploymentSafetyResult(findings=[
-            DeploymentFinding(rule="a", message="e", severity="error"),
-            DeploymentFinding(rule="b", message="w", severity="warning"),
-            DeploymentFinding(rule="c", message="i", severity="info"),
-        ])
+        result = DeploymentSafetyResult(
+            findings=[
+                DeploymentFinding(rule="a", message="e", severity="error"),
+                DeploymentFinding(rule="b", message="w", severity="warning"),
+                DeploymentFinding(rule="c", message="i", severity="info"),
+            ]
+        )
         assert len(result.errors) == 1
         assert len(result.warnings) == 1
         assert len(result.infos) == 1
@@ -196,18 +198,22 @@ class TestDeploymentSafetyResult:
         assert "safe" in result.summary().lower()
 
     def test_summary_unsafe_shows_counts(self):
-        result = DeploymentSafetyResult(findings=[
-            DeploymentFinding(rule="r", message="m", severity="error"),
-            DeploymentFinding(rule="r2", message="m2", severity="warning"),
-        ])
+        result = DeploymentSafetyResult(
+            findings=[
+                DeploymentFinding(rule="r", message="m", severity="error"),
+                DeploymentFinding(rule="r2", message="m2", severity="warning"),
+            ]
+        )
         summary = result.summary()
         assert "NOT" in summary or "not" in summary.lower()
         assert "1" in summary  # error count
 
     def test_summary_safe_with_warnings_mentions_count(self):
-        result = DeploymentSafetyResult(findings=[
-            DeploymentFinding(rule="r", message="m", severity="warning"),
-        ])
+        result = DeploymentSafetyResult(
+            findings=[
+                DeploymentFinding(rule="r", message="m", severity="warning"),
+            ]
+        )
         summary = result.summary()
         assert "warning" in summary.lower()
 
@@ -216,6 +222,7 @@ class TestDeploymentSafetyResult:
 # Rule: public-critical-guardrail-required
 # ---------------------------------------------------------------------------
 
+
 class TestCriticalGuardrailRequired:
     def test_passes_with_critical_guardrail(self, checker, safe_identity):
         result = checker.check(safe_identity)
@@ -223,46 +230,59 @@ class TestCriticalGuardrailRequired:
         assert "public-critical-guardrail-required" not in rules
 
     def test_fails_without_any_critical_guardrail(self, checker):
-        identity = _make_identity(guardrails={
-            "hard": [
-                {
-                    "id": "no_harm",
-                    "rule": "Be safe",
-                    "enforcement": "output_filter",
-                    "severity": "high",  # high but NOT critical
-                }
-            ],
-        })
+        identity = _make_identity(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "no_harm",
+                        "rule": "Be safe",
+                        "enforcement": "output_filter",
+                        "severity": "high",  # high but NOT critical
+                    }
+                ],
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.errors]
         assert "public-critical-guardrail-required" in rules
 
     def test_error_severity(self, checker):
-        identity = _make_identity(guardrails={
-            "hard": [
-                {
-                    "id": "soft_rule",
-                    "rule": "Be nice",
-                    "enforcement": "prompt_instruction",
-                    "severity": "medium",
-                }
-            ],
-        })
-        result = checker.check(identity)
-        finding = next(
-            f for f in result.findings
-            if f.rule == "public-critical-guardrail-required"
+        identity = _make_identity(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "soft_rule",
+                        "rule": "Be nice",
+                        "enforcement": "prompt_instruction",
+                        "severity": "medium",
+                    }
+                ],
+            }
         )
+        result = checker.check(identity)
+        finding = next(f for f in result.findings if f.rule == "public-critical-guardrail-required")
         assert finding.severity == "error"
         assert finding.path == "guardrails.hard"
 
     def test_multiple_hard_guardrails_one_critical_passes(self, checker):
-        identity = _make_identity(guardrails={
-            "hard": [
-                {"id": "r1", "rule": "Rule 1", "enforcement": "output_filter", "severity": "high"},
-                {"id": "r2", "rule": "Rule 2", "enforcement": "output_filter", "severity": "critical"},
-            ],
-        })
+        identity = _make_identity(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "r1",
+                        "rule": "Rule 1",
+                        "enforcement": "output_filter",
+                        "severity": "high",
+                    },
+                    {
+                        "id": "r2",
+                        "rule": "Rule 2",
+                        "enforcement": "output_filter",
+                        "severity": "critical",
+                    },
+                ],
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.errors]
         assert "public-critical-guardrail-required" not in rules
@@ -271,6 +291,7 @@ class TestCriticalGuardrailRequired:
 # ---------------------------------------------------------------------------
 # Rule: public-behavioral-contract-required
 # ---------------------------------------------------------------------------
+
 
 class TestBehavioralContractRequired:
     def test_passes_with_contract(self, checker, safe_identity):
@@ -282,12 +303,17 @@ class TestBehavioralContractRequired:
         # No behavioral_contract
         data = _raw_base(
             metadata={
-                "id": "agt_no_contract", "name": "NoContract", "version": "1.0.0",
-                "description": "Test", "created_at": "2026-01-01T00:00:00Z",
-                "updated_at": "2026-01-01T00:00:00Z", "status": "active",
+                "id": "agt_no_contract",
+                "name": "NoContract",
+                "version": "1.0.0",
+                "description": "Test",
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z",
+                "status": "active",
             },
             role={
-                "title": "Assistant", "purpose": "Help users",
+                "title": "Assistant",
+                "purpose": "Help users",
                 "scope": {"primary": ["support"], "out_of_scope": ["harmful content"]},
                 "audience": {"primary": "Public"},
             },
@@ -298,9 +324,17 @@ class TestBehavioralContractRequired:
         assert "public-behavioral-contract-required" in rules
 
     def test_error_severity_and_path(self, checker):
-        data = _raw_base(metadata={"id": "agt_nc2", "name": "NC2", "version": "1.0.0",
-                                   "description": "x", "created_at": "2026-01-01T00:00:00Z",
-                                   "updated_at": "2026-01-01T00:00:00Z", "status": "active"})
+        data = _raw_base(
+            metadata={
+                "id": "agt_nc2",
+                "name": "NC2",
+                "version": "1.0.0",
+                "description": "x",
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z",
+                "status": "active",
+            }
+        )
         identity = AgentIdentity.model_validate(data)
         result = checker.check(identity)
         finding = next(
@@ -316,6 +350,7 @@ class TestBehavioralContractRequired:
 # Rule: public-flexible-boundary-risk
 # ---------------------------------------------------------------------------
 
+
 class TestFlexibleBoundaryRisk:
     def test_passes_with_moderate_boundary(self, checker, safe_identity):
         result = checker.check(safe_identity)
@@ -323,28 +358,34 @@ class TestFlexibleBoundaryRisk:
         assert "public-flexible-boundary-risk" not in rules
 
     def test_passes_with_strict_boundary(self, checker):
-        identity = _make_identity(behavioral_contract={
-            "boundary_strictness": "strict",
-            "user_corrigibility": "evidence_bound",
-        })
+        identity = _make_identity(
+            behavioral_contract={
+                "boundary_strictness": "strict",
+                "user_corrigibility": "evidence_bound",
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.findings]
         assert "public-flexible-boundary-risk" not in rules
 
     def test_warns_with_flexible_boundary(self, checker):
-        identity = _make_identity(behavioral_contract={
-            "boundary_strictness": "flexible",
-            "user_corrigibility": "evidence_bound",
-        })
+        identity = _make_identity(
+            behavioral_contract={
+                "boundary_strictness": "flexible",
+                "user_corrigibility": "evidence_bound",
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.warnings]
         assert "public-flexible-boundary-risk" in rules
 
     def test_finding_is_warning_not_error(self, checker):
-        identity = _make_identity(behavioral_contract={
-            "boundary_strictness": "flexible",
-            "user_corrigibility": "limited",
-        })
+        identity = _make_identity(
+            behavioral_contract={
+                "boundary_strictness": "flexible",
+                "user_corrigibility": "limited",
+            }
+        )
         result = checker.check(identity)
         finding = next(
             (f for f in result.findings if f.rule == "public-flexible-boundary-risk"),
@@ -366,6 +407,7 @@ class TestFlexibleBoundaryRisk:
 # Rule: public-open-corrigibility-risk
 # ---------------------------------------------------------------------------
 
+
 class TestOpenCorrigibilityRisk:
     def test_passes_with_evidence_bound(self, checker, safe_identity):
         result = checker.check(safe_identity)
@@ -373,28 +415,34 @@ class TestOpenCorrigibilityRisk:
         assert "public-open-corrigibility-risk" not in rules
 
     def test_passes_with_limited_corrigibility(self, checker):
-        identity = _make_identity(behavioral_contract={
-            "boundary_strictness": "moderate",
-            "user_corrigibility": "limited",
-        })
+        identity = _make_identity(
+            behavioral_contract={
+                "boundary_strictness": "moderate",
+                "user_corrigibility": "limited",
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.findings]
         assert "public-open-corrigibility-risk" not in rules
 
     def test_warns_with_open_corrigibility(self, checker):
-        identity = _make_identity(behavioral_contract={
-            "boundary_strictness": "strict",  # strict boundary to avoid that warning
-            "user_corrigibility": "open",
-        })
+        identity = _make_identity(
+            behavioral_contract={
+                "boundary_strictness": "strict",  # strict boundary to avoid that warning
+                "user_corrigibility": "open",
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.warnings]
         assert "public-open-corrigibility-risk" in rules
 
     def test_warning_severity_and_path(self, checker):
-        identity = _make_identity(behavioral_contract={
-            "boundary_strictness": "moderate",
-            "user_corrigibility": "open",
-        })
+        identity = _make_identity(
+            behavioral_contract={
+                "boundary_strictness": "moderate",
+                "user_corrigibility": "open",
+            }
+        )
         result = checker.check(identity)
         finding = next(
             (f for f in result.findings if f.rule == "public-open-corrigibility-risk"),
@@ -409,6 +457,7 @@ class TestOpenCorrigibilityRisk:
 # Rule: public-autonomous-needs-contract
 # ---------------------------------------------------------------------------
 
+
 class TestAutonomousNeedsContract:
     def test_passes_no_autonomous_no_contract(self, checker):
         """No autonomous + no contract = no error from this rule."""
@@ -419,29 +468,56 @@ class TestAutonomousNeedsContract:
         assert "public-autonomous-needs-contract" not in rules
 
     def test_passes_autonomous_with_contract(self, checker):
-        identity = _make_identity(guardrails={
-            "hard": [{"id": "g", "rule": "R", "enforcement": "output_filter", "severity": "critical"}],
-            "permissions": {"autonomous": ["read_order_status"]},
-        })
+        identity = _make_identity(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "g",
+                        "rule": "R",
+                        "enforcement": "output_filter",
+                        "severity": "critical",
+                    }
+                ],
+                "permissions": {"autonomous": ["read_order_status"]},
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.errors]
         assert "public-autonomous-needs-contract" not in rules
 
     def test_fails_autonomous_without_contract(self, checker):
-        data = _raw_base(guardrails={
-            "hard": [{"id": "g", "rule": "R", "enforcement": "output_filter", "severity": "critical"}],
-            "permissions": {"autonomous": ["send_email", "post_update"]},
-        })
+        data = _raw_base(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "g",
+                        "rule": "R",
+                        "enforcement": "output_filter",
+                        "severity": "critical",
+                    }
+                ],
+                "permissions": {"autonomous": ["send_email", "post_update"]},
+            }
+        )
         identity = AgentIdentity.model_validate(data)
         result = checker.check(identity)
         rules = [f.rule for f in result.errors]
         assert "public-autonomous-needs-contract" in rules
 
     def test_error_message_names_autonomous_items(self, checker):
-        data = _raw_base(guardrails={
-            "hard": [{"id": "g", "rule": "R", "enforcement": "output_filter", "severity": "critical"}],
-            "permissions": {"autonomous": ["action_one"]},
-        })
+        data = _raw_base(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "g",
+                        "rule": "R",
+                        "enforcement": "output_filter",
+                        "severity": "critical",
+                    }
+                ],
+                "permissions": {"autonomous": ["action_one"]},
+            }
+        )
         identity = AgentIdentity.model_validate(data)
         result = checker.check(identity)
         finding = next(
@@ -456,6 +532,7 @@ class TestAutonomousNeedsContract:
 # Rule: public-out-of-scope-required
 # ---------------------------------------------------------------------------
 
+
 class TestOutOfScopeRequired:
     def test_passes_with_out_of_scope(self, checker, safe_identity):
         result = checker.check(safe_identity)
@@ -463,25 +540,29 @@ class TestOutOfScopeRequired:
         assert "public-out-of-scope-required" not in rules
 
     def test_warns_without_out_of_scope(self, checker):
-        identity = _make_identity(role={
-            "title": "Bot",
-            "purpose": "Help users",
-            "scope": {
-                "primary": ["general support"],
-                # No out_of_scope
-            },
-            "audience": {"primary": "Public"},
-        })
+        identity = _make_identity(
+            role={
+                "title": "Bot",
+                "purpose": "Help users",
+                "scope": {
+                    "primary": ["general support"],
+                    # No out_of_scope
+                },
+                "audience": {"primary": "Public"},
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.warnings]
         assert "public-out-of-scope-required" in rules
 
     def test_warning_severity_and_path(self, checker):
-        identity = _make_identity(role={
-            "title": "Bot",
-            "purpose": "Help",
-            "scope": {"primary": ["support"]},
-        })
+        identity = _make_identity(
+            role={
+                "title": "Bot",
+                "purpose": "Help",
+                "scope": {"primary": ["support"]},
+            }
+        )
         result = checker.check(identity)
         finding = next(
             (f for f in result.findings if f.rule == "public-out-of-scope-required"),
@@ -496,6 +577,7 @@ class TestOutOfScopeRequired:
 # Rule: public-audience-undefined
 # ---------------------------------------------------------------------------
 
+
 class TestAudienceUndefined:
     def test_passes_with_audience(self, checker, safe_identity):
         result = checker.check(safe_identity)
@@ -503,25 +585,29 @@ class TestAudienceUndefined:
         assert "public-audience-undefined" not in rules
 
     def test_info_without_audience(self, checker):
-        identity = _make_identity(role={
-            "title": "Bot",
-            "purpose": "Help users",
-            "scope": {
-                "primary": ["general support"],
-                "out_of_scope": ["harmful content"],
-            },
-            # No audience
-        })
+        identity = _make_identity(
+            role={
+                "title": "Bot",
+                "purpose": "Help users",
+                "scope": {
+                    "primary": ["general support"],
+                    "out_of_scope": ["harmful content"],
+                },
+                # No audience
+            }
+        )
         result = checker.check(identity)
         rules = [f.rule for f in result.infos]
         assert "public-audience-undefined" in rules
 
     def test_info_not_error(self, checker):
-        identity = _make_identity(role={
-            "title": "Bot",
-            "purpose": "Help",
-            "scope": {"primary": ["s"], "out_of_scope": ["x"]},
-        })
+        identity = _make_identity(
+            role={
+                "title": "Bot",
+                "purpose": "Help",
+                "scope": {"primary": ["s"], "out_of_scope": ["x"]},
+            }
+        )
         result = checker.check(identity)
         # audience-undefined is info, not error or warning
         finding = next(
@@ -535,6 +621,7 @@ class TestAudienceUndefined:
 # ---------------------------------------------------------------------------
 # Integration: all rules clean on a well-configured identity
 # ---------------------------------------------------------------------------
+
 
 class TestCleanIdentity:
     def test_safe_identity_has_no_errors(self, checker, safe_identity):
@@ -555,11 +642,24 @@ class TestCleanIdentity:
         permissions should trigger 3 error-level rules."""
         # Only HIGH severity (no critical) + autonomous + no behavioral_contract
         data = _raw_base(
-            metadata={"id": "agt_worst", "name": "Worst", "version": "1.0.0",
-                      "description": "deliberately unsafe", "created_at": "2026-01-01T00:00:00Z",
-                      "updated_at": "2026-01-01T00:00:00Z", "status": "draft"},
+            metadata={
+                "id": "agt_worst",
+                "name": "Worst",
+                "version": "1.0.0",
+                "description": "deliberately unsafe",
+                "created_at": "2026-01-01T00:00:00Z",
+                "updated_at": "2026-01-01T00:00:00Z",
+                "status": "draft",
+            },
             guardrails={
-                "hard": [{"id": "g", "rule": "R", "enforcement": "output_filter", "severity": "high"}],
+                "hard": [
+                    {
+                        "id": "g",
+                        "rule": "R",
+                        "enforcement": "output_filter",
+                        "severity": "high",
+                    }
+                ],
                 "permissions": {"autonomous": ["post_message"]},
             },
         )
@@ -578,6 +678,7 @@ class TestCleanIdentity:
 # check_for_studio helper
 # ---------------------------------------------------------------------------
 
+
 class TestCheckForStudio:
     def test_returns_dict_with_expected_keys(self, safe_identity):
         result = check_for_studio(safe_identity)
@@ -593,9 +694,18 @@ class TestCheckForStudio:
         assert result["safe"] is True
 
     def test_unsafe_identity_returns_safe_false(self):
-        data = _raw_base(guardrails={
-            "hard": [{"id": "g", "rule": "R", "enforcement": "output_filter", "severity": "high"}],
-        })
+        data = _raw_base(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "g",
+                        "rule": "R",
+                        "enforcement": "output_filter",
+                        "severity": "high",
+                    }
+                ],
+            }
+        )
         data.pop("behavioral_contract", None)
         identity = AgentIdentity.model_validate(data)
         result = check_for_studio(identity)
@@ -603,9 +713,18 @@ class TestCheckForStudio:
         assert len(result["errors"]) > 0
 
     def test_errors_are_strings(self):
-        data = _raw_base(guardrails={
-            "hard": [{"id": "g", "rule": "R", "enforcement": "output_filter", "severity": "high"}],
-        })
+        data = _raw_base(
+            guardrails={
+                "hard": [
+                    {
+                        "id": "g",
+                        "rule": "R",
+                        "enforcement": "output_filter",
+                        "severity": "high",
+                    }
+                ],
+            }
+        )
         data.pop("behavioral_contract", None)
         identity = AgentIdentity.model_validate(data)
         result = check_for_studio(identity)
@@ -622,6 +741,7 @@ class TestCheckForStudio:
 # Public example file: public-consumer-chatbot.yaml
 # ---------------------------------------------------------------------------
 
+
 class TestPublicConsumerChatbotExample:
     """The bundled example must be deployment-safe and fully parse-able."""
 
@@ -633,17 +753,20 @@ class TestPublicConsumerChatbotExample:
 
     def test_example_file_parses_cleanly(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         assert identity.metadata.name == "Echo"
 
     def test_example_passes_schema_validation(self, chatbot_path):
         from personanexus.validator import IdentityValidator
+
         result = IdentityValidator().validate_file(chatbot_path)
         assert result.valid, f"Schema errors: {result.errors}"
 
     def test_example_is_deployment_safe(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         checker = PublicDeploymentChecker()
@@ -654,6 +777,7 @@ class TestPublicConsumerChatbotExample:
 
     def test_example_has_no_warnings(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         result = PublicDeploymentChecker().check(identity)
@@ -661,6 +785,7 @@ class TestPublicConsumerChatbotExample:
 
     def test_example_has_no_infos(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         result = PublicDeploymentChecker().check(identity)
@@ -668,6 +793,7 @@ class TestPublicConsumerChatbotExample:
 
     def test_example_has_two_critical_guardrails(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         critical = [g for g in identity.guardrails.hard if g.severity.value == "critical"]
@@ -675,12 +801,14 @@ class TestPublicConsumerChatbotExample:
 
     def test_example_has_out_of_scope(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         assert len(identity.role.scope.out_of_scope) >= 3
 
     def test_example_behavioral_contract_is_moderate(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         assert identity.behavioral_contract is not None
@@ -688,6 +816,7 @@ class TestPublicConsumerChatbotExample:
 
     def test_example_has_no_autonomous_permissions(self, chatbot_path):
         from personanexus.parser import IdentityParser
+
         parsed = IdentityParser().parse_file(chatbot_path)
         identity = AgentIdentity.model_validate(parsed)
         assert identity.guardrails.permissions.autonomous == []
@@ -697,9 +826,11 @@ class TestPublicConsumerChatbotExample:
 # CLI integration: pn lint --public flag
 # ---------------------------------------------------------------------------
 
+
 class TestCLIPublicFlag:
     def test_safe_identity_exits_0(self, tmp_path):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         safe_yaml = tmp_path / "safe.yaml"
@@ -751,6 +882,7 @@ class TestCLIPublicFlag:
 
     def test_unsafe_identity_exits_1_with_public_flag(self, tmp_path):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         unsafe_yaml = tmp_path / "unsafe.yaml"
@@ -798,6 +930,7 @@ class TestCLIPublicFlag:
 
     def test_public_flag_output_contains_safety_section(self, tmp_path):
         from typer.testing import CliRunner
+
         from personanexus.cli import app
 
         yaml_path = tmp_path / "check.yaml"
