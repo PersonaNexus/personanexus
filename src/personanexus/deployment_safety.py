@@ -335,7 +335,7 @@ class PublicDeploymentChecker:
 # ---------------------------------------------------------------------------
 
 
-def check_for_studio(identity: AgentIdentity) -> dict:
+def check_for_studio(identity: AgentIdentity) -> dict[str, object]:
     """Run public-deployment safety checks and return a Studio-friendly summary.
 
     Returns a dict with keys:
