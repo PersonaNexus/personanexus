@@ -25,6 +25,7 @@ from personanexus.compiler import (
     compile_identity,
     get_compile_warnings,
 )
+from personanexus.deployment_safety import PublicDeploymentChecker
 from personanexus.diff import compatibility_score, diff_identities, format_diff
 from personanexus.doctor import (
     EXIT_ISSUES,
@@ -171,11 +172,21 @@ def lint(
             help="Minimum severity to show: info, warning, or error",
         ),
     ] = "info",
+    public: Annotated[
+        bool,
+        typer.Option(
+            "--public",
+            help=("Also run public-boundary safety checks (recommended before public deployment)"),
+        ),
+    ] = False,
 ) -> None:
     """Run semantic lint checks on a PersonaNexus YAML file.
 
     Goes beyond schema validation to find logical inconsistencies,
     unused fields, conflicting settings, and missing recommended config.
+
+    Use --public to additionally run the public-boundary safety suite,
+    which checks that the identity is safe to deploy to untrusted audiences.
     """
     if not file.exists():
         console.print(f"[red]Error: File not found: {file}[/red]")
@@ -208,21 +219,62 @@ def lint(
 
     if not filtered:
         console.print(f"[green]No lint warnings for {file}[/green]")
-        return
+    else:
+        severity_color = {
+            "info": "blue",
+            "warning": "yellow",
+            "error": "red",
+        }
 
-    severity_color = {
-        "info": "blue",
-        "warning": "yellow",
-        "error": "red",
-    }
+        console.print(f"\n[bold]Lint results for {file} ({len(filtered)} findings):[/bold]\n")
+        for w in filtered:
+            color = severity_color.get(w.severity, "white")
+            location = f" ({w.path})" if w.path else ""
+            console.print(
+                f"  [{color}][{w.severity.upper()}] {w.rule}{location}: {w.message}[/{color}]"
+            )
 
-    console.print(f"\n[bold]Lint results for {file} ({len(filtered)} findings):[/bold]\n")
-    for w in filtered:
-        color = severity_color.get(w.severity, "white")
-        location = f" ({w.path})" if w.path else ""
-        console.print(
-            f"  [{color}][{w.severity.upper()}] {w.rule}{location}: {w.message}[/{color}]"
-        )
+    # Public-boundary safety check (--public flag)
+    if public:
+        from personanexus.parser import IdentityParser, ParseError
+
+        try:
+            parsed = IdentityParser().parse_file(file)
+            from pydantic import ValidationError as _ValidationError
+
+            from personanexus.types import AgentIdentity
+
+            try:
+                identity = AgentIdentity.model_validate(parsed)
+            except _ValidationError as exc:
+                console.print("[red]\nPublic safety check skipped: schema validation failed.[/red]")
+                console.print(f"[red]{exc}[/red]")
+                raise typer.Exit(code=1)
+        except ParseError as exc:
+            console.print(f"[red]\nPublic safety check skipped: could not parse file: {exc}[/red]")
+            raise typer.Exit(code=1)
+
+        checker = PublicDeploymentChecker()
+        safety = checker.check(identity)
+
+        console.print("\n[bold]Public-boundary safety check:[/bold]")
+        if safety.safe_to_deploy:
+            console.print(f"  [green]✓ {safety.summary()}[/green]")
+        else:
+            console.print(f"  [red]✗ {safety.summary()}[/red]")
+
+        sev_color = {"error": "red", "warning": "yellow", "info": "blue"}
+        for finding in safety.findings:
+            if severity_levels.get(finding.severity, 0) >= min_level:
+                color = sev_color.get(finding.severity, "white")
+                loc = f" ({finding.path})" if finding.path else ""
+                console.print(
+                    f"  [{color}][{finding.severity.upper()}] "
+                    f"{finding.rule}{loc}: {finding.message}[/{color}]"
+                )
+
+        if not safety.safe_to_deploy:
+            raise typer.Exit(code=1)
     console.print()
 
     # Exit 1 if any errors found

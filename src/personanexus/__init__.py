@@ -14,6 +14,12 @@ from personanexus.compiler import (
     compile_identity,
 )
 from personanexus.conflict import MergeTrace, MergeTraceEntry
+from personanexus.deployment_safety import (
+    DeploymentFinding,
+    DeploymentSafetyResult,
+    PublicDeploymentChecker,
+    check_for_studio,
+)
 from personanexus.drift import (
     DriftReport,
     detect_drift,
@@ -143,6 +149,10 @@ __all__ = [
     "TRAIT_ORDER",
     "TeamSpec",
     "ValidationResult",
+    "DeploymentFinding",
+    "DeploymentSafetyResult",
+    "PublicDeploymentChecker",
+    "check_for_studio",
     "compile_identity",
     "compute_personality_traits",
     "disc_to_traits",
