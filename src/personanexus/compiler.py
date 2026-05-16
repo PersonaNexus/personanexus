@@ -1052,6 +1052,111 @@ class OpenClawCompiler:
 
 
 # ---------------------------------------------------------------------------
+# Gateway Contract Compiler
+# ---------------------------------------------------------------------------
+
+
+class GatewayContractCompiler:
+    """Compile a resolved identity into a generic gateway deployment contract.
+
+    The contract is intentionally runtime-neutral: gateways can read the
+    compiled prompt, structured persona metadata, governance constraints, and
+    readiness checks without needing PersonaNexus-specific parser code at
+    request time.
+    """
+
+    def __init__(self, prompt_compiler: SystemPromptCompiler | None = None):
+        self.prompt_compiler = prompt_compiler or SystemPromptCompiler()
+
+    def compile(self, identity: AgentIdentity) -> dict[str, Any]:
+        """Compile identity into a public deployment contract dict."""
+        system_prompt = self.prompt_compiler.compile(identity, format="text")
+
+        if identity.personality.profile.mode != PersonalityMode.CUSTOM:
+            traits = compute_personality_traits(identity.personality).defined_traits()
+        else:
+            traits = identity.personality.traits.defined_traits()
+
+        contract: dict[str, Any] = {
+            "schema_version": "1.0",
+            "kind": "personanexus.gateway_contract",
+            "agent": {
+                "id": identity.metadata.id,
+                "name": identity.metadata.name,
+                "version": identity.metadata.version,
+                "description": identity.metadata.description,
+                "status": identity.metadata.status.value,
+                "tags": identity.metadata.tags,
+            },
+            "role": identity.role.model_dump(mode="json", exclude_none=True),
+            "runtime": {
+                "system_prompt": system_prompt,
+                "prompt_format": "markdown",
+                "estimated_tokens": self.prompt_compiler.estimate_tokens(system_prompt),
+                "prompt_layers": [
+                    layer.model_dump(mode="json") for layer in self.prompt_compiler.prompt_layers
+                ],
+            },
+            "persona": {
+                "traits": traits,
+                "profile": identity.personality.profile.model_dump(mode="json", exclude_none=True),
+                "communication": identity.communication.model_dump(mode="json", exclude_none=True),
+                "principles": [
+                    principle.model_dump(mode="json", exclude_none=True)
+                    for principle in sorted(identity.principles, key=lambda p: p.priority)
+                ],
+            },
+            "capabilities": {
+                "expertise": identity.expertise.model_dump(mode="json", exclude_none=True),
+                "behavior": identity.behavior.model_dump(mode="json", exclude_none=True),
+                "memory": identity.memory.model_dump(mode="json", exclude_none=True),
+                "interaction": (
+                    identity.interaction.model_dump(mode="json", exclude_none=True)
+                    if identity.interaction
+                    else None
+                ),
+                "dynamics": (
+                    identity.dynamics.model_dump(mode="json", exclude_none=True)
+                    if identity.dynamics
+                    else None
+                ),
+            },
+            "governance": {
+                "guardrails": identity.guardrails.model_dump(mode="json", exclude_none=True),
+                "behavioral_contract": (
+                    identity.behavioral_contract.model_dump(mode="json", exclude_none=True)
+                    if identity.behavioral_contract
+                    else None
+                ),
+            },
+            "deployment": {
+                "source_format": "personanexus.identity.yaml",
+                "required_files": ["agent_identity.yaml"],
+                "validation_commands": [
+                    "personanexus validate agent_identity.yaml",
+                    "personanexus compile agent_identity.yaml --target gateway",
+                    "personanexus analyze agent_identity.yaml",
+                ],
+                "readiness_checks": [
+                    "Validate the source identity before deployment.",
+                    "Review the compiled system_prompt and governance section.",
+                    "Map gateway-specific tools, secrets, and model routing "
+                    "outside this public contract.",
+                ],
+            },
+        }
+
+        # Drop empty optional sections while preserving a stable top-level shape.
+        contract["capabilities"] = {
+            key: value for key, value in contract["capabilities"].items() if value not in ({}, None)
+        }
+        contract["governance"] = {
+            key: value for key, value in contract["governance"].items() if value not in ({}, None)
+        }
+        return contract
+
+
+# ---------------------------------------------------------------------------
 # Soul Compiler — YAML → SOUL.md + STYLE.md
 # ---------------------------------------------------------------------------
 
@@ -1646,8 +1751,8 @@ def compile_identity(
 
     Args:
         identity: A fully resolved AgentIdentity.
-        target: "text", "anthropic", "openai", "openclaw", "soul", "json",
-                "langchain", "crewai", "autogen", or "markdown".
+        target: "text", "anthropic", "openai", "openclaw", "gateway", "soul",
+                "json", "langchain", "crewai", "autogen", or "markdown".
         token_budget: Estimated token budget for system prompt.
 
     Returns:
@@ -1668,6 +1773,14 @@ def compile_identity(
     elif target == "openclaw":
         openclaw_compiler = OpenClawCompiler(prompt_compiler)
         result = openclaw_compiler.compile(identity)
+        if compile_warnings:
+            result.setdefault("metadata", {})["compile_warnings"] = compile_warnings
+        if task_mode:
+            result.setdefault("metadata", {})["active_task_mode"] = task_mode
+        return result
+    elif target == "gateway":
+        gateway_compiler = GatewayContractCompiler(prompt_compiler)
+        result = gateway_compiler.compile(identity)
         if compile_warnings:
             result.setdefault("metadata", {})["compile_warnings"] = compile_warnings
         if task_mode:

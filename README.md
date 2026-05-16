@@ -205,6 +205,7 @@ One identity, any platform:
 | `openai` | `.compiled.md` | OpenAI-optimized plain text |
 | `soul` | `.SOUL.md` + `.STYLE.md` | SOUL.md ecosystem format |
 | `openclaw` | `.personality.json` | OpenClaw personality config |
+| `gateway` | `.gateway.json` | Runtime-neutral public deployment contract for gateways |
 | `json` | `.json` | Full identity as JSON |
 
 ### Identity Evaluation Harness

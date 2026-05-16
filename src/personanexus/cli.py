@@ -737,7 +737,7 @@ def compile(
         typer.Option(
             "--target",
             "-t",
-            help="Target: text, anthropic, openai, openclaw, soul, "
+            help="Target: text, anthropic, openai, openclaw, gateway, soul, "
             "json, langchain, crewai, autogen, markdown",
         ),
     ] = "text",
@@ -780,6 +780,7 @@ def compile(
         "anthropic",
         "openai",
         "openclaw",
+        "gateway",
         "soul",
         "json",
         "langchain",
@@ -877,6 +878,7 @@ def compile(
             "anthropic": ".compiled.anthropic.md",
             "openai": ".compiled.openai.md",
             "openclaw": ".personality.json",
+            "gateway": ".gateway.json",
             "json": ".compiled.json",
             "langchain": ".langchain.json",
             "crewai": ".crewai.yaml",

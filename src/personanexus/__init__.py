@@ -8,6 +8,7 @@ from personanexus.analyzer import (
     SoulAnalyzer,
 )
 from personanexus.compiler import (
+    GatewayContractCompiler,
     OpenClawCompiler,
     SystemPromptCompiler,
     compile_identity,
@@ -115,6 +116,7 @@ __all__ = [
     "AnalysisResult",
     "ComparisonResult",
     "DriftReport",
+    "GatewayContractCompiler",
     "detect_drift",
     "detect_drift_from_files",
     "format_drift_report",

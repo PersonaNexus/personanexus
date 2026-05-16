@@ -190,3 +190,26 @@ class TestCompatCommand:
     def test_compat_nonexistent(self):
         result = runner.invoke(app, ["compat", "/nonexistent1.yaml", "/nonexistent2.yaml"])
         assert result.exit_code == 1
+
+
+class TestGatewayCompileCommand:
+    def test_compile_gateway_target_writes_default_contract(self, mira_path):
+        output = mira_path.with_suffix(".gateway.json")
+        output.unlink(missing_ok=True)
+        try:
+            result = runner.invoke(
+                app,
+                [
+                    "compile",
+                    str(mira_path),
+                    "--target",
+                    "gateway",
+                    "--search-path",
+                    str(mira_path.parents[1]),
+                ],
+            )
+            assert result.exit_code == 0
+            assert output.exists()
+            assert "Target: gateway" in result.output
+        finally:
+            output.unlink(missing_ok=True)
