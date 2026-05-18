@@ -1,0 +1,50 @@
+# Sample GitHub workflow for repositories that store PersonaNexus identity
+# YAML files. Drop this into `.github/workflows/personanexus.yml` and adjust
+# the `path` and `compile-target` inputs to match your repo layout.
+#
+# Two common layouts are supported out of the box:
+#   1. Identities live under `agents/` (the default).
+#   2. Identities live under `personas/` with shared building blocks in
+#      `personas/_shared/`. Pass that directory via `search-path`.
+
+name: PersonaNexus
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  personanexus-check:
+    name: Validate PersonaNexus identities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Use the composite action shipped from the PersonaNexus repo.
+      # Pin to a tag (e.g. @v1) once you have settled on a release version.
+      - name: PersonaNexus check
+        uses: PersonaNexus/personanexus/.github/actions/personanexus-check@main
+        with:
+          # Directory (or single file) of identity YAML to validate.
+          path: agents
+
+          # Optional: additional resolver search paths for archetypes/mixins.
+          # search-path: |
+          #   shared/archetypes
+          #   shared/mixins
+
+          # Optional: also verify identities compile cleanly.
+          check-compile: 'true'
+          compile-target: 'text,anthropic'
+
+          # Optional: fail the build if any [WARNING] is emitted.
+          # lint-severity: 'warning'
+          # fail-on-lint: 'true'
+
+          # Optional: pin to a specific PersonaNexus release.
+          # personanexus-version: '>=1.0,<2'

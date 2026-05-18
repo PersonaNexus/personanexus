@@ -281,6 +281,8 @@ personanexus simulate agents/mira-dynamics.yaml --user stranger --steps 10
 - **Interaction protocols** — human and agent communication configuration
 - **Narrative identity** — backstory, opinions, influences, tensions for SOUL.md output
 - **Identity Lab UI** — Streamlit web UI with Playground, Setup Wizard, and Analyze modes
+- **Compiled prompt diff** — `personanexus diff a.yaml b.yaml --compiled --target text,anthropic` shows how YAML edits change the rendered prompt, with hints about which identity fields drove the delta
+- **Drop-in CI** — reusable [GitHub Action](.github/actions/personanexus-check/action.yml) and [pre-commit starter](examples/ci/.pre-commit-config.yaml); see [docs/ci-integration.md](docs/ci-integration.md)
 
 ## CLI Reference
 

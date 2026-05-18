@@ -41,8 +41,8 @@ class TestValidateCommand:
 
     def test_validate_all_examples(self, examples_dir):
         for path in examples_dir.rglob("*.yaml"):
-            # Skip team definitions and packs (different schema, not individual agents)
-            if "teams" in path.parts or "packs" in path.parts:
+            # Skip non-identity examples (teams, packs, CI starter configs)
+            if "teams" in path.parts or "packs" in path.parts or "ci" in path.parts:
                 continue
             result = runner.invoke(app, ["validate", str(path)])
             assert result.exit_code == 0, f"{path.name} failed: {result.output}"

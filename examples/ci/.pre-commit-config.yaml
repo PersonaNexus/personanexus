@@ -1,0 +1,36 @@
+# Starter pre-commit config for repositories that store PersonaNexus identity
+# YAML files. Copy this into your repo root as `.pre-commit-config.yaml` and
+# run `pre-commit install` once. The hooks below assume PersonaNexus is
+# installed locally (`pip install personanexus` or via your project's
+# dependency manager).
+#
+# The two hooks mirror what runs in CI:
+#   - personanexus-validate: schema validation on every changed identity.
+#   - personanexus-lint: semantic lint on every changed identity.
+#
+# Both hooks scope themselves to `agents/**/*.yaml` by default; change the
+# `files:` regex if your identities live elsewhere.
+
+repos:
+  - repo: local
+    hooks:
+      - id: personanexus-validate
+        name: PersonaNexus validate
+        description: 'Validate PersonaNexus identity YAML against the schema'
+        entry: personanexus validate
+        language: system
+        files: ^agents/.*\.ya?ml$
+        # `personanexus validate` only takes one file at a time.
+        require_serial: true
+        pass_filenames: true
+
+      - id: personanexus-lint
+        name: PersonaNexus lint
+        description: 'Semantic lint for PersonaNexus identity YAML'
+        entry: personanexus lint
+        language: system
+        files: ^agents/.*\.ya?ml$
+        require_serial: true
+        pass_filenames: true
+        # Tighten severity once you are warning-clean:
+        # args: ['--severity', 'warning']
