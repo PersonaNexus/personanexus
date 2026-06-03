@@ -1248,3 +1248,220 @@ def format_diff(diff: dict[str, Any], fmt: str = "text") -> str:
 def format_diff_markdown(diff: dict[str, Any]) -> str:
     """Format diff as markdown. Convenience wrapper around format_diff."""
     return format_diff(diff, fmt="markdown")
+
+
+# ---------------------------------------------------------------------------
+# Compiled prompt diff
+# ---------------------------------------------------------------------------
+
+
+# Text-style targets render to a single prompt string.
+# Structured targets render to a dict; we JSON-serialize before diffing.
+_TEXT_COMPILE_TARGETS = {"text", "anthropic", "openai", "crewai", "markdown"}
+_STRUCTURED_COMPILE_TARGETS = {
+    "openclaw",
+    "gateway",
+    "soul",
+    "json",
+    "langchain",
+    "autogen",
+}
+_SUPPORTED_COMPILE_TARGETS = _TEXT_COMPILE_TARGETS | _STRUCTURED_COMPILE_TARGETS
+
+
+def _compile_for_diff(
+    path: str | os.PathLike[str],
+    target: str,
+    search_paths: list[Path] | None,
+    token_budget: int,
+    task_mode: str | None,
+) -> str:
+    """Resolve and compile a single identity, returning a string ready for textual diffing."""
+    # Imported lazily to avoid a heavy import in the hot path of identity-only diffs.
+    from personanexus.compiler import compile_identity
+    from personanexus.resolver import IdentityResolver
+
+    resolver = IdentityResolver(search_paths=search_paths or [])
+    identity = resolver.resolve_file(Path(path))
+    result = compile_identity(
+        identity,
+        target=target,
+        token_budget=token_budget,
+        task_mode=task_mode,
+    )
+    if isinstance(result, dict):
+        # Soul target returns {soul_md, style_md}; concatenate for a stable diff view.
+        if target == "soul":
+            soul_md = result.get("soul_md", "")
+            style_md = result.get("style_md", "")
+            return f"# SOUL.md\n\n{soul_md}\n\n# STYLE.md\n\n{style_md}\n"
+        return json.dumps(result, indent=2, ensure_ascii=False, sort_keys=True, default=str)
+    return str(result)
+
+
+def _unified_diff_lines(text1: str, text2: str, label1: str, label2: str) -> list[str]:
+    """Return a unified diff between two text blobs as a list of lines (no trailing newlines)."""
+    import difflib
+
+    diff_iter = difflib.unified_diff(
+        text1.splitlines(),
+        text2.splitlines(),
+        fromfile=label1,
+        tofile=label2,
+        lineterm="",
+    )
+    return list(diff_iter)
+
+
+def _summarize_likely_drivers(identity_diff: dict[str, Any]) -> dict[str, list[str]]:
+    """Group identity-level changes by impact category to hint at *why* compiled prompts diverge.
+
+    Returns a dict like {"behavioral": [...fields...], "safety": [...]}.
+    Empty categories are omitted.
+    """
+    impact = identity_diff.get("impact_analysis", {}) or {}
+    categories = impact.get("categories", {}) or {}
+    drivers: dict[str, list[str]] = {}
+    for cat, fields in categories.items():
+        if fields:
+            drivers[cat] = list(fields)
+    return drivers
+
+
+def diff_compiled_prompts(
+    path1: str,
+    path2: str,
+    targets: list[str] | None = None,
+    search_paths: list[Path] | None = None,
+    token_budget: int = 3000,
+    task_mode: str | None = None,
+) -> dict[str, Any]:
+    """Compile two identities to one or more targets and return per-target diffs.
+
+    Args:
+        path1: Path to the first identity YAML file.
+        path2: Path to the second identity YAML file.
+        targets: Compile targets to diff. Defaults to ``["text"]``.
+        search_paths: Additional resolver search paths (for archetypes/mixins).
+        token_budget: Token budget passed to the compiler.
+        task_mode: Optional behavioral-contract task mode to apply to both sides.
+
+    Returns:
+        Dictionary with:
+            - ``targets``: dict keyed by target name. Each entry has
+              ``identical`` (bool), ``unified_diff`` (str), ``left`` (str),
+              ``right`` (str), and ``error`` (str | None when compilation failed).
+            - ``identity_diff``: structured diff_identities() result.
+            - ``likely_drivers``: dict mapping impact category to identity fields
+              that probably drove the prompt delta.
+    """
+    requested = targets or ["text"]
+    unknown = [t for t in requested if t not in _SUPPORTED_COMPILE_TARGETS]
+    if unknown:
+        raise ValueError(
+            "Unsupported compile target(s) for diff: "
+            f"{', '.join(unknown)}. "
+            f"Supported: {', '.join(sorted(_SUPPORTED_COMPILE_TARGETS))}"
+        )
+
+    label1 = os.fspath(path1)
+    label2 = os.fspath(path2)
+
+    per_target: dict[str, dict[str, Any]] = {}
+    for target in requested:
+        entry: dict[str, Any] = {
+            "identical": False,
+            "unified_diff": "",
+            "left": "",
+            "right": "",
+            "error": None,
+        }
+        try:
+            left = _compile_for_diff(path1, target, search_paths, token_budget, task_mode)
+            right = _compile_for_diff(path2, target, search_paths, token_budget, task_mode)
+        except Exception as exc:  # noqa: BLE001 - surfaced to caller via entry["error"]
+            entry["error"] = f"{type(exc).__name__}: {exc}"
+            per_target[target] = entry
+            continue
+
+        entry["left"] = left
+        entry["right"] = right
+        if left == right:
+            entry["identical"] = True
+        else:
+            diff_lines = _unified_diff_lines(
+                left,
+                right,
+                f"{label1}::{target}",
+                f"{label2}::{target}",
+            )
+            entry["unified_diff"] = "\n".join(diff_lines)
+        per_target[target] = entry
+
+    identity_diff = diff_identities(path1, path2)
+    likely_drivers = _summarize_likely_drivers(identity_diff)
+
+    return {
+        "targets": per_target,
+        "identity_diff": identity_diff,
+        "likely_drivers": likely_drivers,
+    }
+
+
+def format_compiled_diff(result: dict[str, Any], fmt: str = "text") -> str:
+    """Format a diff_compiled_prompts() result for human display.
+
+    Supported formats: ``text``, ``markdown``, ``json``.
+    """
+    if fmt == "json":
+        return json.dumps(result, indent=2, default=str)
+
+    md = fmt == "markdown"
+    lines: list[str] = []
+    if md:
+        lines += ["# Compiled Prompt Diff Report", ""]
+    else:
+        lines += ["=" * 60, "COMPILED PROMPT DIFF REPORT", "=" * 60, ""]
+
+    targets: dict[str, dict[str, Any]] = result.get("targets", {})
+    for target, entry in targets.items():
+        header = f"## Target: `{target}`" if md else f"--- Target: {target} ---"
+        lines += [header, ""]
+        if entry.get("error"):
+            lines += [
+                f"**Error:** {entry['error']}" if md else f"  ERROR: {entry['error']}",
+                "",
+            ]
+            continue
+        if entry.get("identical"):
+            lines += [
+                "_Compiled outputs are identical._" if md else "  (compiled outputs identical)",
+                "",
+            ]
+            continue
+        if md:
+            lines += ["```diff", entry.get("unified_diff", ""), "```", ""]
+        else:
+            lines += [entry.get("unified_diff", ""), ""]
+
+    drivers: dict[str, list[str]] = result.get("likely_drivers", {})
+    if drivers:
+        lines.append("## Likely Drivers" if md else "LIKELY DRIVERS:")
+        if md:
+            lines.append("")
+        for cat in ("safety", "behavioral", "structural", "cosmetic"):
+            fields = drivers.get(cat)
+            if not fields:
+                continue
+            if md:
+                lines.append(f"- **{cat}** ({len(fields)}): {', '.join(f'`{f}`' for f in fields)}")
+            else:
+                lines.append(f"  {cat} ({len(fields)}): {', '.join(fields)}")
+        lines.append("")
+    else:
+        if md:
+            lines += ["## Likely Drivers", "", "_No identity-level changes detected._", ""]
+        else:
+            lines += ["LIKELY DRIVERS: (no identity-level changes detected)", ""]
+
+    return "\n".join(lines)

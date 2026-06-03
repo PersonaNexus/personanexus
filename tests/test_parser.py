@@ -54,8 +54,8 @@ class TestParseFile:
         assert len(yaml_files) >= 7, "Expected at least 7 example files"
 
         for path in yaml_files:
-            # Skip packs (different schema, not individual agents)
-            if "packs" in path.parts:
+            # Skip non-identity examples (packs, CI starter configs)
+            if "packs" in path.parts or "ci" in path.parts:
                 continue
             data = parser.parse_file(path)
             assert isinstance(data, dict), f"{path} did not parse to a dict"

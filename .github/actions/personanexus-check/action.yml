@@ -1,0 +1,145 @@
+name: 'PersonaNexus Check'
+description: >-
+  Validate, lint, and optionally compile PersonaNexus identity YAML files in a
+  downstream repository. Drop this composite action into any workflow to gate
+  PRs on PersonaNexus quality checks.
+author: 'PersonaNexus'
+branding:
+  icon: 'check-circle'
+  color: 'purple'
+
+inputs:
+  path:
+    description: 'Directory (or single file) containing PersonaNexus YAML files to check.'
+    required: false
+    default: 'agents'
+  python-version:
+    description: 'Python version to install for the check.'
+    required: false
+    default: '3.12'
+  personanexus-version:
+    description: >-
+      PersonaNexus package version specifier (e.g. "1.2.0" or ">=1.0,<2").
+      Leave empty to install the latest release from PyPI.
+    required: false
+    default: ''
+  search-path:
+    description: >-
+      Newline-separated additional resolver search paths for archetypes/mixins.
+      Useful when shared building blocks live outside the main `path`.
+    required: false
+    default: ''
+  lint-severity:
+    description: 'Minimum lint severity to report (info, warning, error).'
+    required: false
+    default: 'warning'
+  fail-on-lint:
+    description: 'If "true", treat lint warnings as failures.'
+    required: false
+    default: 'false'
+  check-compile:
+    description: 'If "true", also verify identities compile to the target(s) below.'
+    required: false
+    default: 'false'
+  compile-target:
+    description: >-
+      Comma-separated compile targets to verify when check-compile is enabled
+      (e.g. "text,anthropic").
+    required: false
+    default: 'text'
+  token-budget:
+    description: 'Token budget passed to the compiler when check-compile is enabled.'
+    required: false
+    default: '3000'
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install PersonaNexus
+      shell: bash
+      run: |
+        if [ -n "${{ inputs.personanexus-version }}" ]; then
+          python -m pip install --upgrade "personanexus==${{ inputs.personanexus-version }}" \
+            || python -m pip install --upgrade "personanexus${{ inputs.personanexus-version }}"
+        else
+          python -m pip install --upgrade personanexus
+        fi
+        personanexus --help >/dev/null
+
+    - name: Run PersonaNexus doctor
+      shell: bash
+      env:
+        PNX_PATH: ${{ inputs.path }}
+        PNX_SEARCH_PATH: ${{ inputs.search-path }}
+        PNX_CHECK_COMPILE: ${{ inputs.check-compile }}
+        PNX_TARGETS: ${{ inputs.compile-target }}
+        PNX_TOKEN_BUDGET: ${{ inputs.token-budget }}
+      run: |
+        set -euo pipefail
+        args=("$PNX_PATH")
+
+        # Optional resolver search paths (newline-separated).
+        if [ -n "${PNX_SEARCH_PATH}" ]; then
+          while IFS= read -r sp; do
+            [ -z "$sp" ] && continue
+            args+=("--search-path" "$sp")
+          done <<< "$PNX_SEARCH_PATH"
+        fi
+
+        if [ "${PNX_CHECK_COMPILE}" = "true" ]; then
+          args+=("--check-compile" "--token-budget" "${PNX_TOKEN_BUDGET}")
+          IFS=',' read -r -a targets <<< "${PNX_TARGETS}"
+          for t in "${targets[@]}"; do
+            t_trim="$(echo "$t" | xargs)"
+            [ -z "$t_trim" ] && continue
+            args+=("--target" "$t_trim")
+          done
+        fi
+
+        echo "::group::personanexus doctor"
+        echo "personanexus doctor ${args[*]}"
+        personanexus doctor "${args[@]}"
+        echo "::endgroup::"
+
+    - name: Run PersonaNexus lint
+      shell: bash
+      env:
+        PNX_PATH: ${{ inputs.path }}
+        PNX_LINT_SEVERITY: ${{ inputs.lint-severity }}
+        PNX_FAIL_ON_LINT: ${{ inputs.fail-on-lint }}
+      run: |
+        set -euo pipefail
+        if [ -d "$PNX_PATH" ]; then
+          mapfile -t files < <(find "$PNX_PATH" -type f \( -name '*.yaml' -o -name '*.yml' \) | sort)
+        else
+          files=("$PNX_PATH")
+        fi
+
+        if [ "${#files[@]}" -eq 0 ]; then
+          echo "No YAML files found under $PNX_PATH; skipping lint."
+          exit 0
+        fi
+
+        # `personanexus lint` exits non-zero only on errors. To support
+        # fail-on-lint=true we capture output per file and look for [WARNING]
+        # markers ourselves.
+        rc=0
+        for f in "${files[@]}"; do
+          echo "::group::personanexus lint $f"
+          out_file="$(mktemp)"
+          if ! personanexus lint "$f" --severity "$PNX_LINT_SEVERITY" | tee "$out_file"; then
+            rc=1
+          fi
+          if [ "${PNX_FAIL_ON_LINT}" = "true" ] && grep -qE '\[(WARNING|ERROR)\]' "$out_file"; then
+            echo "::error file=$f::Lint warnings present and fail-on-lint=true"
+            rc=1
+          fi
+          rm -f "$out_file"
+          echo "::endgroup::"
+        done
+        exit $rc

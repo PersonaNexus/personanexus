@@ -26,7 +26,13 @@ from personanexus.compiler import (
     get_compile_warnings,
 )
 from personanexus.deployment_safety import PublicDeploymentChecker
-from personanexus.diff import compatibility_score, diff_identities, format_diff
+from personanexus.diff import (
+    compatibility_score,
+    diff_compiled_prompts,
+    diff_identities,
+    format_compiled_diff,
+    format_diff,
+)
 from personanexus.doctor import (
     EXIT_ISSUES,
     EXIT_NO_FILES,
@@ -1826,8 +1832,50 @@ def diff(
         str,
         typer.Option("--format", "-f", help="Output format: text, json, markdown"),
     ] = "text",
+    compiled: Annotated[
+        bool,
+        typer.Option(
+            "--compiled",
+            help="Diff the compiled prompt output (across --target) instead of raw YAML.",
+        ),
+    ] = False,
+    target: Annotated[
+        str,
+        typer.Option(
+            "--target",
+            "-t",
+            help="Comma-separated compile targets to diff when --compiled is set "
+            "(e.g. 'text,anthropic'). Ignored without --compiled.",
+        ),
+    ] = "text",
+    search_path: Annotated[
+        list[Path] | None,
+        typer.Option(
+            "--search-path",
+            "-s",
+            help="Additional search paths for archetypes/mixins (repeatable). "
+            "Only used with --compiled.",
+        ),
+    ] = None,
+    token_budget: Annotated[
+        int,
+        typer.Option("--token-budget", help="Token budget for the compiler (with --compiled)."),
+    ] = 3000,
+    task_mode: Annotated[
+        str | None,
+        typer.Option(
+            "--task-mode",
+            help="Behavioral-contract task mode applied to both sides (with --compiled).",
+        ),
+    ] = None,
 ) -> None:
-    """Compare two PersonaNexus files and show differences."""
+    """Compare two PersonaNexus files and show differences.
+
+    By default, compares raw YAML identity structure. Pass ``--compiled`` to
+    additionally show how the compiled prompt differs for one or more
+    ``--target`` formats, with hints about which identity changes likely drove
+    the prompt delta.
+    """
     if not file1.exists():
         console.print(f"[red]Error: File not found: {file1}[/red]")
         raise typer.Exit(code=1)
@@ -1845,6 +1893,24 @@ def diff(
         raise typer.Exit(code=1)
 
     try:
+        if compiled:
+            targets = [t.strip() for t in target.split(",") if t.strip()]
+            compiled_result = diff_compiled_prompts(
+                str(file1),
+                str(file2),
+                targets=targets,
+                search_paths=search_path or [],
+                token_budget=token_budget,
+                task_mode=task_mode,
+            )
+            if format == "json":
+                console.print_json(data=compiled_result)
+            elif format == "markdown":
+                console.print(Markdown(format_compiled_diff(compiled_result, "markdown")))
+            else:
+                console.print(format_compiled_diff(compiled_result, "text"))
+            return
+
         diff_result = diff_identities(str(file1), str(file2))
 
         if format == "json":
