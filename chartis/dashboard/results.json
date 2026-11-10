@@ -1,0 +1,1295 @@
+{
+ "seed": 42,
+ "results": [
+  {
+   "key": "workforce",
+   "problem": "Clinical workforce shortage, burnout & premium labor cost",
+   "question": "How much premium (agency/overtime) labor and turnover cost can a forecast-driven staffing and targeted retention program remove?",
+   "headline_metrics": [
+    {
+     "label": "Census forecast error (MAPE, 4-wk)",
+     "value": 6.4788,
+     "unit": "%",
+     "display": "6.5%"
+    },
+    {
+     "label": "Agency hours avoided / yr",
+     "value": 137748.0,
+     "unit": "hrs",
+     "display": "137,748 hrs"
+    },
+    {
+     "label": "Labor cost savings / yr",
+     "value": 2309580.0,
+     "unit": "usd",
+     "display": "$2.3M"
+    },
+    {
+     "label": "Turnover: top-risk decile vs overall",
+     "value": 2.0846,
+     "unit": "x",
+     "display": "2.1 x"
+    },
+    {
+     "label": "Net retention value / yr",
+     "value": 827685.0519,
+     "unit": "usd",
+     "display": "$828K"
+    }
+   ],
+   "annual_value_usd": 3137265.05,
+   "value_basis": "Annualized 4-week back-test of reactive vs forecast-driven staffing across 10 units, plus net value of retention outreach to the top-risk RN decile.",
+   "assumptions": [
+    "Reference client: ~500 staffed beds, ~1,100 RN headcount (synthetic).",
+    "Staff RN fully loaded cost $80/hr; internal float pool $90/hr; agency/travel/per-diem blended $105/hr (~31% premium). 2025 travel bill rates are ~13% over loaded staff cost (SIA/NATHO), but short-notice agency, incentive and overtime shifts run higher; the blend is an assumption to calibrate with client timekeeping data.",
+    "RN turnover baseline ~16% (NSI 2025: 16.4%); replacement cost per RN ~$61K (NSI 2025: $61,110).",
+    "Targeted retention outreach (stay interviews, schedule fixes) prevents ~25% of predicted departures among the top-risk decile it reaches, costing $1,500 per RN contacted.",
+    "Forecast-driven model: core staffing sized to ~P60 of forecast demand; float pool covers up to 70% of residual gaps.",
+    "Each FTE shift = 12 hours; census-to-RN conversion uses unit nurse:patient ratios (ICU 1:2, step-down 1:3, med-surg 1:5)."
+   ],
+   "table_title": "Unit staffing: reactive vs forecast-driven (annualized)",
+   "table": [
+    {
+     "unit": "SICU",
+     "type": "ICU",
+     "beds": 20,
+     "ratio": "1:2",
+     "reactive_core_rn": 7,
+     "forecast_core_rn": 9,
+     "annual_cost_reactive": 6857760,
+     "annual_cost_forecast": 6466824,
+     "annual_savings": 390936
+    },
+    {
+     "unit": "5 Telemetry",
+     "type": "Step-down",
+     "beds": 36,
+     "ratio": "1:3",
+     "reactive_core_rn": 8,
+     "forecast_core_rn": 10,
+     "annual_cost_reactive": 7785960,
+     "annual_cost_forecast": 7401576,
+     "annual_savings": 384384
+    },
+    {
+     "unit": "6 Med-Surg",
+     "type": "Med-surg",
+     "beds": 40,
+     "ratio": "1:5",
+     "reactive_core_rn": 5,
+     "forecast_core_rn": 7,
+     "annual_cost_reactive": 5427240,
+     "annual_cost_forecast": 5069064,
+     "annual_savings": 358176
+    },
+    {
+     "unit": "7 Med-Surg",
+     "type": "Med-surg",
+     "beds": 40,
+     "ratio": "1:5",
+     "reactive_core_rn": 6,
+     "forecast_core_rn": 7,
+     "annual_cost_reactive": 5798520,
+     "annual_cost_forecast": 5511324,
+     "annual_savings": 287196
+    },
+    {
+     "unit": "9 Oncology",
+     "type": "Med-surg",
+     "beds": 32,
+     "ratio": "1:5",
+     "reactive_core_rn": 4,
+     "forecast_core_rn": 5,
+     "annual_cost_reactive": 4138680,
+     "annual_cost_forecast": 3877692,
+     "annual_savings": 260988
+    },
+    {
+     "unit": "CVICU",
+     "type": "ICU",
+     "beds": 16,
+     "ratio": "1:2",
+     "reactive_core_rn": 6,
+     "forecast_core_rn": 7,
+     "annual_cost_reactive": 5307120,
+     "annual_cost_forecast": 5128032,
+     "annual_savings": 179088
+    },
+    {
+     "unit": "MICU",
+     "type": "ICU",
+     "beds": 24,
+     "ratio": "1:2",
+     "reactive_core_rn": 9,
+     "forecast_core_rn": 11,
+     "annual_cost_reactive": 8091720,
+     "annual_cost_forecast": 7923552,
+     "annual_savings": 168168
+    },
+    {
+     "unit": "10 Observation",
+     "type": "Med-surg",
+     "beds": 28,
+     "ratio": "1:5",
+     "reactive_core_rn": 4,
+     "forecast_core_rn": 5,
+     "annual_cost_reactive": 3712800,
+     "annual_cost_forecast": 3582852,
+     "annual_savings": 129948
+    },
+    {
+     "unit": "8 Ortho",
+     "type": "Med-surg",
+     "beds": 30,
+     "ratio": "1:5",
+     "reactive_core_rn": 5,
+     "forecast_core_rn": 6,
+     "annual_cost_reactive": 4280640,
+     "annual_cost_forecast": 4193280,
+     "annual_savings": 87360
+    },
+    {
+     "unit": "4 Step-Down",
+     "type": "Step-down",
+     "beds": 32,
+     "ratio": "1:3",
+     "reactive_core_rn": 8,
+     "forecast_core_rn": 10,
+     "annual_cost_reactive": 7229040,
+     "annual_cost_forecast": 7165704,
+     "annual_savings": 63336
+    }
+   ],
+   "details": {
+    "overall_turnover_rate": 0.301,
+    "top_decile_turnover_rate": 0.627,
+    "departures_prevented": 16.3,
+    "top_risk_nurses": [
+     {
+      "rn_id": "RN0423",
+      "tenure_yrs": 1.0,
+      "overtime_hrs_2wk": 14.7,
+      "sched_changes_qtr": 7,
+      "unit_vacancy": 0.208,
+      "risk": 0.755
+     },
+     {
+      "rn_id": "RN0634",
+      "tenure_yrs": 0.2,
+      "overtime_hrs_2wk": 10.6,
+      "sched_changes_qtr": 8,
+      "unit_vacancy": 0.212,
+      "risk": 0.745
+     },
+     {
+      "rn_id": "RN0405",
+      "tenure_yrs": 1.2,
+      "overtime_hrs_2wk": 10.0,
+      "sched_changes_qtr": 8,
+      "unit_vacancy": 0.189,
+      "risk": 0.741
+     },
+     {
+      "rn_id": "RN0196",
+      "tenure_yrs": 1.1,
+      "overtime_hrs_2wk": 10.9,
+      "sched_changes_qtr": 8,
+      "unit_vacancy": 0.202,
+      "risk": 0.74
+     },
+     {
+      "rn_id": "RN0947",
+      "tenure_yrs": 0.7,
+      "overtime_hrs_2wk": 16.8,
+      "sched_changes_qtr": 6,
+      "unit_vacancy": 0.202,
+      "risk": 0.72
+     },
+     {
+      "rn_id": "RN0371",
+      "tenure_yrs": 1.0,
+      "overtime_hrs_2wk": 14.9,
+      "sched_changes_qtr": 8,
+      "unit_vacancy": 0.149,
+      "risk": 0.72
+     },
+     {
+      "rn_id": "RN0082",
+      "tenure_yrs": 0.4,
+      "overtime_hrs_2wk": 2.7,
+      "sched_changes_qtr": 8,
+      "unit_vacancy": 0.211,
+      "risk": 0.687
+     },
+     {
+      "rn_id": "RN0464",
+      "tenure_yrs": 1.4,
+      "overtime_hrs_2wk": 12.5,
+      "sched_changes_qtr": 5,
+      "unit_vacancy": 0.186,
+      "risk": 0.673
+     },
+     {
+      "rn_id": "RN0767",
+      "tenure_yrs": 0.7,
+      "overtime_hrs_2wk": 13.8,
+      "sched_changes_qtr": 7,
+      "unit_vacancy": 0.146,
+      "risk": 0.673
+     },
+     {
+      "rn_id": "RN0026",
+      "tenure_yrs": 0.7,
+      "overtime_hrs_2wk": 12.7,
+      "sched_changes_qtr": 8,
+      "unit_vacancy": 0.13,
+      "risk": 0.673
+     }
+    ]
+   },
+   "synthetic_data": true
+  },
+  {
+   "key": "patient_flow",
+   "problem": "Hospital capacity & patient flow (ED boarding, avoidable days, discharge delays)",
+   "question": "Which discharge barriers drive avoidable inpatient days, and what capacity and cost does a targeted barrier playbook release?",
+   "headline_metrics": [
+    {
+     "label": "Avg LOS vs GMLOS",
+     "value": 0.7264,
+     "unit": "days",
+     "display": "0.73 days"
+    },
+    {
+     "label": "Excess days / yr",
+     "value": 26250.9333,
+     "unit": "days",
+     "display": "26,251 days"
+    },
+    {
+     "label": "Days freed by playbook / yr",
+     "value": 7540.3676,
+     "unit": "days",
+     "display": "7,540 days"
+    },
+    {
+     "label": "Staffed beds released",
+     "value": 20.6585,
+     "unit": "beds",
+     "display": "20.7 beds"
+    },
+    {
+     "label": "ED boarding hours avoided / yr",
+     "value": 24790.2495,
+     "unit": "hrs",
+     "display": "24,790 hrs"
+    },
+    {
+     "label": "Admission-time delay model AUC",
+     "value": 0.6179,
+     "unit": "",
+     "display": "0.62"
+    }
+   ],
+   "annual_value_usd": 8206388.29,
+   "value_basis": "Barrier-attributed excess days x intervention effect; valued at variable cost/day plus 50% of freed capacity monetized as incremental admissions.",
+   "assumptions": [
+    "Reference client: ~500 staffed beds, ~6,000 sampled discharges scaled to ~28,000 annual discharges (synthetic).",
+    "Variable cost of an avoidable inpatient day: ~$800 (most hospital cost is fixed; full cost/day ~$3,000).",
+    "Capacity value: each freed bed absorbs extra admissions at ~$2,500 contribution margin per case; only 50% of freed capacity is assumed monetized.",
+    "ED boarding: each staffed bed freed reduces boarding by ~1,200 hours/yr (assumes hospital runs >90% occupancy).",
+    "Intervention effect sizes (share of barrier-attributed excess days removed): post-acute placement 35%, payer auth 40%, diagnostics 50%, transport/caregiver 60%, guardianship/legal 15%.",
+    "Excess day = actual LOS above geometric mean LOS for the DRG-like group (GMLOS)."
+   ],
+   "table_title": "Discharge barrier playbook (annualized)",
+   "table": [
+    {
+     "barrier": "Post-acute (SNF/rehab) placement pending",
+     "patients_affected_yr": 3127,
+     "excess_days_yr": 8828,
+     "intervention": "Day-1 post-acute referral + preferred SNF network",
+     "assumed_effect": "35%",
+     "days_freed_yr": 3090,
+     "value_yr": 3362932
+    },
+    {
+     "barrier": "Awaiting imaging / consult / procedure",
+     "patients_affected_yr": 4219,
+     "excess_days_yr": 5303,
+     "intervention": "Weekend imaging + consult SLAs",
+     "assumed_effect": "50%",
+     "days_freed_yr": 2651,
+     "value_yr": 2885156
+    },
+    {
+     "barrier": "No transport / caregiver at discharge",
+     "patients_affected_yr": 1587,
+     "excess_days_yr": 1301,
+     "intervention": "Discharge lounge + ride program",
+     "assumed_effect": "60%",
+     "days_freed_yr": 781,
+     "value_yr": 849984
+    },
+    {
+     "barrier": "Payer authorization for post-acute care",
+     "patients_affected_yr": 1013,
+     "excess_days_yr": 1906,
+     "intervention": "Payer escalation desk / auto-submission",
+     "assumed_effect": "40%",
+     "days_freed_yr": 762,
+     "value_yr": 829305
+    },
+    {
+     "barrier": "Guardianship / legal / complex social",
+     "patients_affected_yr": 266,
+     "excess_days_yr": 1711,
+     "intervention": "Complex-discharge rounds + legal partner",
+     "assumed_effect": "15%",
+     "days_freed_yr": 257,
+     "value_yr": 279700
+    }
+   ],
+   "details": {
+    "unexplained_excess_days_yr": 7203,
+    "top_quintile_capture_of_long_stays": 0.324,
+    "cost_value": 6032294,
+    "capacity_value": 2174094,
+    "extra_admissions_absorbed": 870
+   },
+   "synthetic_data": true
+  },
+  {
+   "key": "rural",
+   "problem": "Rural hospital financial distress, closures & service-line loss",
+   "question": "Which rural hospitals tip into distress under policy shocks, and which strategic option (OB consolidation, REH conversion, ops) protects access?",
+   "headline_metrics": [
+    {
+     "label": "Hospitals modeled",
+     "value": 120,
+     "unit": "",
+     "display": "120"
+    },
+    {
+     "label": "At risk today (score >= 60)",
+     "value": 30,
+     "unit": "",
+     "display": "30"
+    },
+    {
+     "label": "Newly at risk after shock",
+     "value": 20,
+     "unit": "",
+     "display": "20"
+    },
+    {
+     "label": "Annual shock loss (portfolio)",
+     "value": 126301344.1282,
+     "unit": "usd",
+     "display": "$126.3M"
+    },
+    {
+     "label": "Hospitals with a margin-positive option",
+     "value": 21,
+     "unit": "",
+     "display": "21"
+    },
+    {
+     "label": "Modeled strategy gain",
+     "value": 43926049.3697,
+     "unit": "usd",
+     "display": "$43.9M"
+    }
+   ],
+   "annual_value_usd": 7367578.41,
+   "value_basis": "Average modeled shock loss $1.1M/hospital x 20 hospitals x 35% avoided via recommended strategies (assumption).",
+   "assumptions": [
+    "All 120 hospitals are synthetic; distributions loosely shaped to published rural hospital data (median margin near break-even, many with <60 days cash).",
+    "Transparent Rural Vulnerability Score is an illustrative weighted model (weights published in code); it is not Chartis' proprietary INDEX.",
+    "Medicaid revenue shock = % reduction applied to Medicaid share of net patient revenue (proxy for 2025 federal Medicaid changes).",
+    "340B / site-neutral shock = 2% of net patient revenue for hospitals with outpatient-heavy mix.",
+    "OB closure saves ~$1.2M/yr direct cost for units < 200 births but loses ~25% of OB-linked downstream revenue; flagged as access loss if next hospital > 30 miles.",
+    "Rural Emergency Hospital (REH) conversion: eligible if <= 50 beds and ADC < 5; adds ~$3.3M/yr facility payment (2025 approx.) + 5% OPPS uplift and drops inpatient revenue/cost.",
+    "Reference client = system/association with 20 rural hospitals; recommended strategies capture 35% of modeled scenario losses (assumption, to validate in pilot)."
+   ],
+   "table_title": "Top 15 most vulnerable hospitals after 10% Medicaid cut + site-neutral shock",
+   "table": [
+    {
+     "hospital": "RH-095",
+     "state": "AL",
+     "beds": 35,
+     "cah": "N",
+     "score_base": 88.7,
+     "score_shock": 88.7,
+     "op_margin_shock": "-18.9%",
+     "days_cash_shock": 0,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-063",
+     "state": "IA",
+     "beds": 19,
+     "cah": "Y",
+     "score_base": 79.6,
+     "score_shock": 86.2,
+     "op_margin_shock": "-10.2%",
+     "days_cash_shock": 0,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-085",
+     "state": "TN",
+     "beds": 12,
+     "cah": "Y",
+     "score_base": 80.8,
+     "score_shock": 84.6,
+     "op_margin_shock": "-14.0%",
+     "days_cash_shock": 46,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Convert to REH",
+     "option_value": "$3.3M"
+    },
+    {
+     "hospital": "RH-114",
+     "state": "TX",
+     "beds": 18,
+     "cah": "Y",
+     "score_base": 79.4,
+     "score_shock": 81.6,
+     "op_margin_shock": "-16.0%",
+     "days_cash_shock": 10,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Convert to REH",
+     "option_value": "$3.3M"
+    },
+    {
+     "hospital": "RH-030",
+     "state": "OK",
+     "beds": 72,
+     "cah": "N",
+     "score_base": 75.1,
+     "score_shock": 81.4,
+     "op_margin_shock": "-14.7%",
+     "days_cash_shock": 10,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-034",
+     "state": "GA",
+     "beds": 14,
+     "cah": "Y",
+     "score_base": 66.1,
+     "score_shock": 80.2,
+     "op_margin_shock": "-6.1%",
+     "days_cash_shock": 43,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-005",
+     "state": "NE",
+     "beds": 18,
+     "cah": "Y",
+     "score_base": 77.4,
+     "score_shock": 79.6,
+     "op_margin_shock": "-8.6%",
+     "days_cash_shock": 0,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-113",
+     "state": "MO",
+     "beds": 50,
+     "cah": "N",
+     "score_base": 66.8,
+     "score_shock": 78.6,
+     "op_margin_shock": "-11.6%",
+     "days_cash_shock": 66,
+     "top_drivers": "negative_margin, isolation",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-059",
+     "state": "IA",
+     "beds": 24,
+     "cah": "Y",
+     "score_base": 75.9,
+     "score_shock": 78.1,
+     "op_margin_shock": "-20.0%",
+     "days_cash_shock": 57,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Close OB (low volume)",
+     "option_value": "$834K"
+    },
+    {
+     "hospital": "RH-044",
+     "state": "MN",
+     "beds": 13,
+     "cah": "Y",
+     "score_base": 76.8,
+     "score_shock": 77.8,
+     "op_margin_shock": "-13.1%",
+     "days_cash_shock": 66,
+     "top_drivers": "negative_margin, isolation",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-033",
+     "state": "TX",
+     "beds": 17,
+     "cah": "Y",
+     "score_base": 70.0,
+     "score_shock": 77.4,
+     "op_margin_shock": "-3.9%",
+     "days_cash_shock": 0,
+     "top_drivers": "low_cash, negative_margin",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-104",
+     "state": "IA",
+     "beds": 86,
+     "cah": "N",
+     "score_base": 70.2,
+     "score_shock": 75.9,
+     "op_margin_shock": "-10.4%",
+     "days_cash_shock": 54,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Operational improvement",
+     "option_value": "-"
+    },
+    {
+     "hospital": "RH-057",
+     "state": "IA",
+     "beds": 99,
+     "cah": "N",
+     "score_base": 72.5,
+     "score_shock": 75.0,
+     "op_margin_shock": "-11.4%",
+     "days_cash_shock": 6,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Close OB (low volume)",
+     "option_value": "$200K"
+    },
+    {
+     "hospital": "RH-081",
+     "state": "IA",
+     "beds": 23,
+     "cah": "Y",
+     "score_base": 72.3,
+     "score_shock": 74.7,
+     "op_margin_shock": "-11.3%",
+     "days_cash_shock": 99,
+     "top_drivers": "negative_margin, isolation",
+     "suggested_option": "Convert to REH",
+     "option_value": "$3.3M"
+    },
+    {
+     "hospital": "RH-075",
+     "state": "TX",
+     "beds": 73,
+     "cah": "N",
+     "score_base": 66.0,
+     "score_shock": 74.6,
+     "op_margin_shock": "-11.8%",
+     "days_cash_shock": 31,
+     "top_drivers": "negative_margin, low_cash",
+     "suggested_option": "Close OB (low volume)",
+     "option_value": "$200K"
+    }
+   ],
+   "details": {
+    "weights": {
+     "negative_margin": 0.3,
+     "low_cash": 0.25,
+     "medicaid_uninsured": 0.15,
+     "low_volume": 0.15,
+     "isolation": 0.15
+    },
+    "at_risk_threshold": 60.0,
+    "scenario": {
+     "medicaid_cut": 0.1,
+     "site_neutral": true
+    },
+    "newly_at_risk_ids": [
+     "RH-003",
+     "RH-021",
+     "RH-022",
+     "RH-029",
+     "RH-031",
+     "RH-035",
+     "RH-047",
+     "RH-048",
+     "RH-050",
+     "RH-061",
+     "RH-074",
+     "RH-082",
+     "RH-084",
+     "RH-089",
+     "RH-090",
+     "RH-094",
+     "RH-097",
+     "RH-106",
+     "RH-109",
+     "RH-111"
+    ],
+    "reh_eligible_count": 31,
+    "ob_units": 66
+   },
+   "synthetic_data": true
+  },
+  {
+   "key": "denials",
+   "problem": "Revenue cycle leakage: payer denials & prior-authorization friction",
+   "question": "Which claims should be fixed before billing, and which root causes drive denials by payer?",
+   "headline_metrics": [
+    {
+     "label": "Claims scored",
+     "value": 5000,
+     "unit": "",
+     "display": "5,000"
+    },
+    {
+     "label": "Initial denial rate",
+     "value": 10.82,
+     "unit": "%",
+     "display": "10.8%"
+    },
+    {
+     "label": "Denied $ share of expected payment",
+     "value": 10.9188,
+     "unit": "%",
+     "display": "10.9%"
+    },
+    {
+     "label": "Model AUC",
+     "value": 0.7016,
+     "unit": "",
+     "display": "0.70"
+    },
+    {
+     "label": "Claims on pre-bill worklist",
+     "value": 400,
+     "unit": "",
+     "display": "400"
+    },
+    {
+     "label": "Medicare Advantage denial rate",
+     "value": 14.4,
+     "unit": "%",
+     "display": "14.4%"
+    }
+   ],
+   "annual_value_usd": 11218265.73,
+   "value_basis": "Sample net value $374K (40% write-off avoided on prevented denials + avoided back-end rework - pre-bill rework at $57/claim), scaled x30 to a $1B NPR system.",
+   "assumptions": [
+    "5,000 claims are synthetic; payer mix and service-line charges are illustrative.",
+    "Model coefficients are hand-set log-odds (see COEF), not trained on real data; MA carries a higher denial offset than traditional Medicare, consistent with industry reports.",
+    "Target initial denial rate ~10-12% of claims, in line with published industry surveys.",
+    "Rework cost $57/claim (industry estimates range ~$25-$118).",
+    "Pre-bill team capacity = top 8% of claims by expected value.",
+    "Pre-bill intervention prevents the denial 65% of the time.",
+    "Without intervention ~40% of denied dollars are ultimately written off (never recovered).",
+    "Annual value is scaled from the sample to a reference $1B net-patient-revenue system."
+   ],
+   "table_title": "Top 20 pre-bill worklist claims (ranked by expected value of intervening)",
+   "table": [
+    {
+     "claim": "CL-00856",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$66K",
+     "p_denial": "56%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$24K"
+    },
+    {
+     "claim": "CL-01866",
+     "payer": "Commercial",
+     "service_line": "Surgery",
+     "expected_payment": "$83K",
+     "p_denial": "32%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$17K"
+    },
+    {
+     "claim": "CL-02850",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$22K",
+     "p_denial": "78%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$11K"
+    },
+    {
+     "claim": "CL-04485",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$24K",
+     "p_denial": "65%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$10K"
+    },
+    {
+     "claim": "CL-04360",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$27K",
+     "p_denial": "50%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$9K"
+    },
+    {
+     "claim": "CL-03605",
+     "payer": "Commercial",
+     "service_line": "Cardiology",
+     "expected_payment": "$17K",
+     "p_denial": "74%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$8K"
+    },
+    {
+     "claim": "CL-00195",
+     "payer": "Commercial",
+     "service_line": "Surgery",
+     "expected_payment": "$16K",
+     "p_denial": "73%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$7K"
+    },
+    {
+     "claim": "CL-01141",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$30K",
+     "p_denial": "32%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-02355",
+     "payer": "Medicare Advantage",
+     "service_line": "Inpatient Medicine",
+     "expected_payment": "$12K",
+     "p_denial": "79%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-01310",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$18K",
+     "p_denial": "50%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-00982",
+     "payer": "Commercial",
+     "service_line": "Cardiology",
+     "expected_payment": "$44K",
+     "p_denial": "21%",
+     "root_cause": "Timely filing",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-00182",
+     "payer": "Commercial",
+     "service_line": "Surgery",
+     "expected_payment": "$41K",
+     "p_denial": "22%",
+     "root_cause": "Eligibility / registration",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-02122",
+     "payer": "Commercial",
+     "service_line": "Cardiology",
+     "expected_payment": "$27K",
+     "p_denial": "34%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-01213",
+     "payer": "Medicaid",
+     "service_line": "Surgery",
+     "expected_payment": "$15K",
+     "p_denial": "58%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-03736",
+     "payer": "Commercial",
+     "service_line": "Surgery",
+     "expected_payment": "$23K",
+     "p_denial": "38%",
+     "root_cause": "Eligibility / registration",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-01470",
+     "payer": "Commercial",
+     "service_line": "Surgery",
+     "expected_payment": "$21K",
+     "p_denial": "41%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-01345",
+     "payer": "Commercial",
+     "service_line": "Surgery",
+     "expected_payment": "$22K",
+     "p_denial": "39%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$6K"
+    },
+    {
+     "claim": "CL-02679",
+     "payer": "Commercial",
+     "service_line": "Cardiology",
+     "expected_payment": "$32K",
+     "p_denial": "27%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$5K"
+    },
+    {
+     "claim": "CL-02700",
+     "payer": "Medicaid",
+     "service_line": "Cardiology",
+     "expected_payment": "$31K",
+     "p_denial": "27%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$5K"
+    },
+    {
+     "claim": "CL-03604",
+     "payer": "Medicare Advantage",
+     "service_line": "Surgery",
+     "expected_payment": "$10K",
+     "p_denial": "80%",
+     "root_cause": "Authorization / precert",
+     "expected_value": "$5K"
+    }
+   ],
+   "details": {
+    "intercept": -3.65,
+    "coefficients": {
+     "missing_prior_auth": 2.2,
+     "eligibility_unverified": 1.3,
+     "documentation_gap": 1.6,
+     "high_coding_complexity": 0.7,
+     "late_submission": 0.9
+    },
+    "payer_offsets": {
+     "Medicare Advantage": 0.55,
+     "Traditional Medicare": -0.4,
+     "Commercial": 0.2,
+     "Medicaid": 0.35
+    },
+    "denial_rate_by_payer_pct": {
+     "Medicare Advantage": 14.4,
+     "Traditional Medicare": 6.7,
+     "Commercial": 11.7,
+     "Medicaid": 9.6
+    },
+    "root_causes": {
+     "Coding": 175,
+     "Authorization / precert": 113,
+     "Payer behavior (other)": 83,
+     "Medical necessity / documentation": 76,
+     "Eligibility / registration": 72,
+     "Timely filing": 22
+    },
+    "worklist_size": 400,
+    "worklist_share_of_claims_pct": 8.0,
+    "worklist_capture_of_denials_pct": 20.3
+   },
+   "synthetic_data": true
+  },
+  {
+   "key": "ai_portfolio",
+   "problem": "AI/digital investment without measurable value",
+   "question": "Which AI use cases should we fund, pilot or hold -- and are funded ones delivering?",
+   "headline_metrics": [
+    {
+     "label": "Use cases evaluated",
+     "value": 25,
+     "unit": "",
+     "display": "25"
+    },
+    {
+     "label": "Funded / piloted",
+     "value": 8,
+     "unit": "",
+     "display": "8 / 3"
+    },
+    {
+     "label": "Year-1 spend vs budget",
+     "value": 11950000.0,
+     "unit": "usd",
+     "display": "$11.9M / $12M"
+    },
+    {
+     "label": "Portfolio 3-yr risk-adj NPV",
+     "value": 42320009.6472,
+     "unit": "usd",
+     "display": "$42.3M"
+    },
+    {
+     "label": "Realized vs promised benefit",
+     "value": 69.6108,
+     "unit": "%",
+     "display": "69.6%"
+    },
+    {
+     "label": "Use cases flagged for value leakage",
+     "value": 2,
+     "unit": "",
+     "display": "2"
+    }
+   ],
+   "annual_value_usd": 23788084.23,
+   "value_basis": "Steady-state annual risk-adjusted benefit minus license cost of funded use cases.",
+   "assumptions": [
+    "Reference client: 1,000 staffed beds, ~$3B net patient revenue, ~1,200 employed physicians.",
+    "Loaded hourly rates: physician $160, nurse $75, admin/revenue-cycle $45.",
+    "Discount rate 8%; 3-year horizon; benefits ramp linearly over 6 months after time-to-value.",
+    "Risk adjustment = evidence (0.5+0.1*E) x data readiness (0.6+0.08*R) x (1 - adoption risk).",
+    "Hours saved are only partly convertible to cash; values represent capacity/value, not guaranteed P&L savings.",
+    "Year-1 AI budget $12M (one-time + license); pilots cost 25% of one-time.",
+    "Governance gate is illustrative; real gate should follow the client's AI governance policy (e.g. CHAI/NIST AI RMF aligned).",
+    "Realized-adoption simulation is random (seeded) and stands in for post-go-live telemetry.",
+    "All catalog figures are synthetic order-of-magnitude estimates, not vendor quotes."
+   ],
+   "table_title": "AI use-case portfolio (ranked by risk-adjusted NPV per year-1 $)",
+   "table": [
+    {
+     "use_case": "Denial appeal letter generation",
+     "domain": "Revenue cycle",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 4558294,
+     "payback_months": 9,
+     "year1_spend": 700000,
+     "realized_vs_promised": 0.78
+    },
+    {
+     "use_case": "Inbox message drafting",
+     "domain": "Clinical ops",
+     "risk": "medium",
+     "evidence": 3,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 5363406,
+     "payback_months": 8,
+     "year1_spend": 850000,
+     "realized_vs_promised": 0.9
+    },
+    {
+     "use_case": "Ambient clinical documentation",
+     "domain": "Clinical ops",
+     "risk": "low",
+     "evidence": 4,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 18457570,
+     "payback_months": 10,
+     "year1_spend": 4500000,
+     "realized_vs_promised": 0.57
+    },
+    {
+     "use_case": "Clinical documentation integrity (CDI) AI",
+     "domain": "Revenue cycle",
+     "risk": "low",
+     "evidence": 4,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 4301480,
+     "payback_months": 14,
+     "year1_spend": 1500000,
+     "realized_vs_promised": 0.78
+    },
+    {
+     "use_case": "Revenue integrity / charge capture",
+     "domain": "Revenue cycle",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 3057810,
+     "payback_months": 15,
+     "year1_spend": 1100000,
+     "realized_vs_promised": 0.89
+    },
+    {
+     "use_case": "Coding assist (CAC+LLM)",
+     "domain": "Revenue cycle",
+     "risk": "low",
+     "evidence": 4,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 4594335,
+     "payback_months": 13,
+     "year1_spend": 1700000,
+     "realized_vs_promised": 0.62
+    },
+    {
+     "use_case": "IT service desk copilot",
+     "domain": "Corporate",
+     "risk": "low",
+     "evidence": 4,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1105233,
+     "payback_months": 12,
+     "year1_spend": 450000,
+     "realized_vs_promised": 0.95
+    },
+    {
+     "use_case": "Readmission risk + transitions",
+     "domain": "Clinical quality",
+     "risk": "medium",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1664758,
+     "payback_months": 15,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "OR block utilization optimizer",
+     "domain": "Operations",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1474329,
+     "payback_months": 17,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Nurse scheduling optimization",
+     "domain": "Workforce",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1869358,
+     "payback_months": 17,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Patient access chatbot/scheduling",
+     "domain": "Access",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1812496,
+     "payback_months": 15,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Supply chain demand forecasting",
+     "domain": "Operations",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1252763,
+     "payback_months": 18,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Contract/payer analytics LLM",
+     "domain": "Finance",
+     "risk": "low",
+     "evidence": 2,
+     "decision": "Fund",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 881881,
+     "payback_months": 18,
+     "year1_spend": 600000,
+     "realized_vs_promised": 0.8
+    },
+    {
+     "use_case": "Capacity / discharge prediction",
+     "domain": "Operations",
+     "risk": "medium",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1709898,
+     "payback_months": 18,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Care-gap closure outreach (VBC)",
+     "domain": "Value-based care",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 927250,
+     "payback_months": 22,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Prior-auth automation",
+     "domain": "Revenue cycle",
+     "risk": "low",
+     "evidence": 3,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1575624,
+     "payback_months": 20,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Imaging triage (stroke/PE)",
+     "domain": "Clinical quality",
+     "risk": "high",
+     "evidence": 4,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 1102763,
+     "payback_months": 20,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Deterioration index (med-surg)",
+     "domain": "Clinical quality",
+     "risk": "high",
+     "evidence": 2,
+     "decision": "Hold",
+     "reason": "High clinical risk, weak evidence",
+     "risk_adj_npv_3yr": 360049,
+     "payback_months": 22,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "HR recruiting screening",
+     "domain": "Workforce",
+     "risk": "low",
+     "evidence": 2,
+     "decision": "Defer (budget)",
+     "reason": "Passes gate",
+     "risk_adj_npv_3yr": 199078,
+     "payback_months": 23,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Sepsis early warning",
+     "domain": "Clinical quality",
+     "risk": "high",
+     "evidence": 2,
+     "decision": "Hold",
+     "reason": "High clinical risk, weak evidence",
+     "risk_adj_npv_3yr": 102271,
+     "payback_months": 32,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Radiology report summarization",
+     "domain": "Clinical ops",
+     "risk": "medium",
+     "evidence": 2,
+     "decision": "Pilot",
+     "reason": "Medium risk, weak evidence",
+     "risk_adj_npv_3yr": -118581,
+     "payback_months": null,
+     "year1_spend": 75000,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Medication reconciliation assist",
+     "domain": "Clinical quality",
+     "risk": "medium",
+     "evidence": 2,
+     "decision": "Pilot",
+     "reason": "Medium risk, weak evidence",
+     "risk_adj_npv_3yr": -190281,
+     "payback_months": null,
+     "year1_spend": 100000,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Clinical trial matching",
+     "domain": "Research",
+     "risk": "low",
+     "evidence": 2,
+     "decision": "Hold",
+     "reason": "Negative risk-adjusted NPV",
+     "risk_adj_npv_3yr": -455706,
+     "payback_months": null,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Patient-facing symptom triage LLM",
+     "domain": "Access",
+     "risk": "high",
+     "evidence": 1,
+     "decision": "Hold",
+     "reason": "High clinical risk, weak evidence",
+     "risk_adj_npv_3yr": -908249,
+     "payback_months": null,
+     "year1_spend": 0,
+     "realized_vs_promised": null
+    },
+    {
+     "use_case": "Pathology slide AI",
+     "domain": "Clinical quality",
+     "risk": "high",
+     "evidence": 3,
+     "decision": "Pilot",
+     "reason": "High risk: monitored pilot first",
+     "risk_adj_npv_3yr": -2340858,
+     "payback_months": null,
+     "year1_spend": 375000,
+     "realized_vs_promised": null
+    }
+   ],
+   "details": {
+    "budget": 12000000,
+    "spend": 11950000,
+    "value_leakage": [
+     "Ambient clinical documentation",
+     "Coding assist (CAC+LLM)"
+    ],
+    "promised_annual": 31588084,
+    "realized_annual": 21988722
+   },
+   "synthetic_data": true
+  }
+ ]
+}
