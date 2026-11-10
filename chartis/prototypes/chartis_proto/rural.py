@@ -55,6 +55,14 @@ OPS_IMPROVEMENT = 0.015  # expense reduction from operational improvement
 REALIZATION = 0.15  # share of modeled option value actually realized
 TOP_N_CLIENT = 20  # reference client: 20 most vulnerable hospitals
 
+SENSITIVITY = [
+    ("Realization of modeled option value", "REALIZATION"),
+    ("Operational improvement (expense cut)", "OPS_IMPROVEMENT"),
+    ("Medicaid revenue cut", "MEDICAID_CUT"),
+    ("REH facility payment", "REH_FACILITY_PAYMENT"),
+    ("Avoidable share of inpatient cost", "IP_COST_AVOIDABLE"),
+]
+
 ASSUMPTIONS = [
     "All 120 hospitals are synthetic; distributions loosely shaped to published rural hospital data (median margin near break-even, many with <60 days cash).",
     "Transparent Rural Vulnerability Score is an illustrative weighted model (weights published in code); it is not Chartis' proprietary INDEX.",

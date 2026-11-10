@@ -42,6 +42,14 @@ PARTNER_COST = 750_000.0  # annual partner / technology cost to run the program
 REF_NPR = 1.0e9  # reference health system net patient revenue
 WORKLIST_CAPACITY = 0.10  # share of claims pre-bill staff can touch (assumption)
 
+SENSITIVITY = [
+    ("Write-off share of denied dollars", "WRITE_OFF_SHARE"),
+    ("Pre-bill fix success rates", "FIX_SUCCESS"),
+    ("Pre-bill worklist capacity", "WORKLIST_CAPACITY"),
+    ("Rework cost per claim", "REWORK_COST"),
+    ("Partner / technology cost", "PARTNER_COST"),
+]
+
 PAYERS = {  # name: (share of claims, net-to-charge ratio, log-odds offset)
     "Medicare Advantage": (0.25, 0.30, 0.55),
     "Traditional Medicare": (0.22, 0.28, -0.40),

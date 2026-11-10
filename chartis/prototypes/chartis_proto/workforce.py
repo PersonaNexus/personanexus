@@ -31,7 +31,7 @@ from .common import metric, result, rng, sigmoid
 
 ASSUMPTIONS = [
     "Reference client: 10 inpatient units, ~300 staffed beds of a ~500-bed hospital; ~1,100 RN headcount hospital-wide (synthetic).",
-    "Staff RN fully loaded cost $80/hr; overtime 1.5x ($120/hr); salaried float pool $90/hr paid at ~80% utilization; agency/travel/per-diem blended $105/hr (~31% premium). 2025 travel bill rates are ~13% over loaded staff cost (SIA/NATHO); the blend is an assumption to calibrate with client timekeeping data.",
+    "Staff RN fully loaded cost $80/hr; overtime 1.5x ($120/hr); salaried float pool $90/hr paid at ~80% utilization; agency/travel/per-diem blended $105/hr (~31% premium). The 2025 travel RN bill rate is $90.54/hr (SIA/NATHO); loaded staff cost is disputed ($80/hr per a vendor estimate, $94/hr per NATHO), so the premium is the key assumption to calibrate with client timekeeping data.",
     "Baseline: core fixed at 95% of prior-year mean demand; gaps filled 30% overtime / 70% agency.",
     "Forecast-driven: core flexed per 4-week window to the newsvendor-optimal quantile of forecast demand (critical ratio = 1 - staff rate / blended gap-coverage rate) (self-scheduling, flex/per-diem core); float pool covers up to 70% of residual gaps.",
     "RN turnover calibrated to 16.4%/yr (NSI 2025). Replacement cost $40K per RN, i.e. NSI's $61K net of the vacancy premium-labor cover already counted in labor savings.",
@@ -46,12 +46,29 @@ OT_SHARE = 0.30
 FLOAT_UTILIZATION = 0.80
 FLOAT_COVER = 0.70
 TARGET_TURNOVER = 0.164
-# Newsvendor critical ratio: staff core up to the demand quantile where an
-# extra core RN-hour (always paid) costs the same as expected gap coverage.
-_GAP_RATE = FLOAT_COVER * FLOAT_RATE / FLOAT_UTILIZATION + (1 - FLOAT_COVER) * (
-    OT_SHARE * OT_RATE + (1 - OT_SHARE) * AGENCY_RATE
-)
-CORE_QUANTILE = 1 - STAFF_RATE / _GAP_RATE
+SENSITIVITY = [
+    ("Agency hourly rate", "AGENCY_RATE"),
+    ("Float pool utilization", "FLOAT_UTILIZATION"),
+    ("Share of gaps covered by overtime", "OT_SHARE"),
+    ("RN replacement cost", "REPLACEMENT_COST"),
+    ("Retention outreach effect", "OUTREACH_EFFECT"),
+    ("Baseline RN turnover", "TARGET_TURNOVER"),
+]
+
+
+def gap_rate() -> float:
+    """Blended hourly cost of covering one RN-hour of gap above core."""
+    return FLOAT_COVER * FLOAT_RATE / FLOAT_UTILIZATION + (1 - FLOAT_COVER) * (
+        OT_SHARE * OT_RATE + (1 - OT_SHARE) * AGENCY_RATE
+    )
+
+
+def core_quantile() -> float:
+    """Newsvendor critical ratio: staff core up to the demand quantile where an
+    extra core RN-hour (always paid) costs the same as expected gap coverage."""
+    return min(0.95, max(0.05, 1 - STAFF_RATE / gap_rate()))
+
+
 SHIFT_HOURS = 12
 REPLACEMENT_COST = 40_000
 OUTREACH_COST = 1_500
@@ -167,6 +184,7 @@ def _turnover_model(r, n: int = 1100) -> list[dict]:
 def run(seed: int = 42) -> dict:
     r = rng(seed)
     horizon, year = 28, 364
+    q = core_quantile()
     unit_rows, totals = [], {"base": 0.0, "fcst": 0.0, "agency_b": 0.0, "agency_f": 0.0}
     abs_err, actual_sum = 0.0, 0.0
     for name, kind, beds, ratio in UNITS:
@@ -182,7 +200,7 @@ def run(seed: int = 42) -> dict:
             actual_sum += sum(actual)
             demand = [_rn_needed(c, ratio) for c in actual for _ in range(2)]
             f_demand = sorted(_rn_needed(c, ratio) for c in preds)
-            f_core = f_demand[int(CORE_QUANTILE * (len(f_demand) - 1))]
+            f_core = f_demand[int(q * (len(f_demand) - 1))]
             f_cores.append(f_core)
             b_ = _staffing_cost(demand, base_core, float_cover=0.0)
             f_ = _staffing_cost(demand, f_core, float_cover=FLOAT_COVER)

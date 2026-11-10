@@ -1,19 +1,21 @@
 # Delivery Plan: From Prototypes to Productized Offerings
 
-_Draft v1, 2026-11-10. Read it together with `business_case.md`. Timelines and costs are assumptions to validate with Chartis leadership._
+_v2, 2026-11-10. Read it together with `business_case.md`. Timelines and costs are assumptions to validate with Chartis leadership._
 
 ## Guiding principles
 1. **Build one platform, not five tools.** The AI Value Office (#5) provides the shared pieces: data intake, the result contract (`common.result`), value tracking and governance. Each problem is a module on top of it.
 2. **Calibrate before claiming.** No dollar figure goes into marketing until it has been reproduced on at least 2 design-partner clients.
-3. **Lead with moats, partner on gaps.** Rural (#3) and AI (#5) lead. Denials (#4) is delivered with a revenue-cycle partner.
-4. **Measure hard and soft value separately.**
+3. **Two offers, not five.** A health-system margin bundle (Denials with a partner + Patient Flow + Workforce, one value ledger) and a separate Rural sustainability offer. See business_case §1 and §6.
+4. **Measure hard and soft value separately, and publish ranges, never point estimates.**
+5. **Replace the five most sensitive assumptions first** (business_case §5): agency premium, variable cost per tail day, rural realization rate, pre-bill fix success, AI licence pricing.
 
 ## Phases
 
 ### Phase 0: Confirm & frame (weeks 0–3)
 - Confirm assumptions A1–A6 (business_case §0) with the sponsor.
 - Pick 2–3 **design-partner clients**: one rural network or state hospital association, one 400–800-bed community system, one academic medical center.
-- Agree a single **reference client archetype** so value figures can be normalized and compared.
+- Decide **partner vs build for denials**. Denials are about 65% of modeled bundle value, so this decision gates the bundle.
+- Replace the illustrative client in `bundle.py` with each design partner's real size drivers.
 - **Exit criteria:** signed design-partner letters, data-sharing agreements and BAAs, and a named product owner per module.
 
 ### Phase 1: Calibrate on real data (weeks 3–12)
@@ -39,7 +41,7 @@ _Draft v1, 2026-11-10. Read it together with `business_case.md`. Timelines and c
 - Partner for denials execution.
 - Make Rural a state-association offer that adds Rural Health Transformation grant narratives and policy scenario refreshes.
 - Run a feedback loop: realized value from the sustain tier recalibrates the models.
-- **Exit criteria:** 20+ subscriptions and a published anonymized benchmark report (thought leadership).
+- **Exit criteria:** 8+ bundle clients, 8+ rural network deals and a published anonymized benchmark report (thought leadership).
 
 ## Team (assumed)
 | Role | FTE | Notes |
@@ -62,11 +64,11 @@ _Draft v1, 2026-11-10. Read it together with `business_case.md`. Timelines and c
 | First paid diagnostic | Month 4 | ≥ $150K fee |
 | 5 diagnostics | Month 9 | ≥ 5:1 documented client value |
 | Subscription launch | Month 9 | ≥ 60% diagnostic-to-sustain conversion (assumption) |
-| Scale | Month 18 | ~$10–15M run-rate revenue (assumption; ~$27M by year 3) |
+| Scale | Month 18 | ~$8–12M run-rate revenue (assumption; ~$22M by year 3) |
 
 ## Decision points for leadership
 1. Confirm that "Chartis" means The Chartis Group (A1).
-2. Approve Rural and Patient Flow as the first two modules, sold as a bundle on one value ledger.
-3. Decide whether to partner or build for denials execution.
+2. Approve the two-offer structure: the health-system margin bundle and the Rural sustainability offer.
+3. Decide whether to partner or build for denials execution. This is the highest-value decision: without denials the bundle supports about $1M of annual fees, not about $2.8M.
 4. Confirm that the AI Value Office is the platform owner, aligned with Leap AI Studio.
 5. Approve the Phase 0–1 budget (about $0.8–1.2M, assumption).

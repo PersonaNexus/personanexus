@@ -28,8 +28,8 @@ def test_workforce_seed_sweep(seed):
 
 
 def test_workforce_core_quantile_is_newsvendor():
-    assert 0 < workforce.CORE_QUANTILE < 1
-    assert workforce.STAFF_RATE < workforce._GAP_RATE
+    assert 0 < workforce.core_quantile() < 1
+    assert workforce.STAFF_RATE < workforce.gap_rate()
 
 
 @pytest.mark.parametrize("seed", range(1, 11))

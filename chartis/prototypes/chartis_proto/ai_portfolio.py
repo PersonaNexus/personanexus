@@ -52,6 +52,13 @@ OVERLAP_HAIRCUT = 0.40  # on hard value of stacked revenue-cycle use cases
 SOFT_DECISION_WEIGHT = 0.5  # share of capacity value counted when ranking (not headline)
 MIN_READINESS = 2  # readiness at or below this -> Hold
 LICENSE_DISCOUNT = 0.30  # negotiated enterprise discount off catalog (list) license
+SENSITIVITY = [
+    ("Revenue-cycle overlap haircut", "OVERLAP_HAIRCUT"),
+    ("Negotiated licence discount", "LICENSE_DISCOUNT"),
+    ("Internal cost as share of licence", "INTERNAL_COST_SHARE"),
+    ("Weight of soft value in funding decisions", "SOFT_DECISION_WEIGHT"),
+    ("Discount rate", "DISCOUNT_RATE"),
+]
 LOADED_RATE = {"physician": 160.0, "nurse": 75.0, "admin": 45.0, "none": 0.0}
 
 # Use cases that claim the same coded revenue -> overlap haircut on hard value.
@@ -637,6 +644,15 @@ def run(seed: int = 42) -> dict:
     promised = sum(u["hard_benefit"] + u["soft_benefit"] for u in funded)
     realized = realized_hard + realized_soft
     leaks = [u["name"] for u in funded if u["leakage"]]
+    overlap_net: dict[str, float] = {}  # net hard value of funded items another module also claims
+    for u in funded:
+        if u["overlaps_module"]:
+            net = (
+                u["hard_benefit"] * u["realized_share"]
+                - u["run_cost"]
+                - u["one_time"] / AMORTIZE_YEARS
+            )
+            overlap_net[u["overlaps_module"]] = overlap_net.get(u["overlaps_module"], 0.0) + net
     table = [
         {
             "use_case": u["name"],
@@ -693,5 +709,6 @@ def run(seed: int = 42) -> dict:
             "realized_soft_annual": round(realized_soft),
             "run_costs_annual": round(run_costs),
             "amortized_one_time_annual": round(amortized),
+            "overlap_net_hard_by_module": {k: round(v) for k, v in sorted(overlap_net.items())},
         },
     )

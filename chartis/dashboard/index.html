@@ -4,10 +4,11 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: summary ledger (value to scale) on top, then one working panel per problem with tabs. */
+/* Layout: one-client value ledger on top (the comparable answer), then a working panel per problem. */
 :root {
   --bg: #f5f7f8; --surface: #ffffff; --ink: #14232b; --muted: #5a6b74; --line: #dbe3e7;
-  --accent: #0f6f74; --accent-soft: #e1f0f0; --warn: #a2620b; --warn-soft: #fbefdc;
+  --accent: #0f6f74; --warn: #a2620b; --warn-soft: #fbefdc;
+  --hard: #2a78d6; --soft: #eb6834; --grid: #e4e9ec; --axis: #b9c5cb;
   --font-display: "Instrument Sans", "Segoe UI", system-ui, sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
   --font-data: "IBM Plex Mono", ui-monospace, Menlo, monospace;
@@ -15,68 +16,109 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --bg: #0e171c; --surface: #15222a; --ink: #e3ecef; --muted: #93a6ae; --line: #26363f;
-  --accent: #4fb8bc; --accent-soft: #173539; --warn: #e5a54a; --warn-soft: #3a2b14; color-scheme: dark; } }
+  --accent: #4fb8bc; --warn: #e5a54a; --warn-soft: #3a2b14;
+  --hard: #3987e5; --soft: #d95926; --grid: #22323b; --axis: #3b4d57; color-scheme: dark; } }
 :root[data-theme="dark"] {
   --bg: #0e171c; --surface: #15222a; --ink: #e3ecef; --muted: #93a6ae; --line: #26363f;
-  --accent: #4fb8bc; --accent-soft: #173539; --warn: #e5a54a; --warn-soft: #3a2b14; color-scheme: dark; }
+  --accent: #4fb8bc; --warn: #e5a54a; --warn-soft: #3a2b14;
+  --hard: #3987e5; --soft: #d95926; --grid: #22323b; --axis: #3b4d57; color-scheme: dark; }
 * { box-sizing: border-box; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.55 var(--font-body); }
 .wrap { max-width: 1120px; margin: 0 auto; padding-block: 32px 64px;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
   display: grid; gap: 28px; }
 h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.2; }
-h1 { font-size: 1.9rem; } h2 { font-size: 1.35rem; } h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-p { margin: 0; max-width: 68ch; }
-.lede { color: var(--muted); }
-.banner { background: var(--warn-soft); color: var(--ink); border-left: 3px solid var(--warn); padding: 10px 14px; font-size: .9rem; }
-.ledger { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 20px; display: grid; gap: 12px; }
-.row { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 6.5rem; gap: 12px; align-items: center; }
-.row button { all: unset; cursor: pointer; font-weight: 500; }
-.row button:focus-visible, .tabs button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.bar { height: 14px; background: var(--accent-soft); overflow: hidden; border-radius: 2px; position: relative; }
-.bar span { position: absolute; inset: 0 auto 0 0; background: var(--accent); border-radius: 2px; }
-.bar em { position: absolute; top: 0; bottom: 0; background: repeating-linear-gradient(135deg, var(--accent) 0 2px, transparent 2px 6px); opacity: .55; }
-.legend { color: var(--muted); font-size: .82rem; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
-.sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; background: var(--accent); }
-.sw.softsw { background: repeating-linear-gradient(135deg, var(--accent) 0 2px, transparent 2px 6px); opacity: .55; }
-.value .soft { color: var(--muted); }
-.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; text-align: right; }
-.total { border-top: 1px solid var(--line); padding-top: 10px; font-weight: 600; }
+h1 { font-size: 1.9rem; } h2 { font-size: 1.35rem; }
+h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+p { margin: 0; max-width: 72ch; }
+.lede, .note { color: var(--muted); } .note { font-size: .86rem; }
+.banner { background: var(--warn-soft); border-left: 3px solid var(--warn); padding: 10px 14px; font-size: .9rem; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 24px; display: grid; gap: 20px; min-width: 0; }
+.stack { display: grid; gap: 8px; min-width: 0; }
+.num { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* stat tiles */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.stat { background: var(--surface); padding: 14px 16px; display: grid; gap: 4px; align-content: start; }
+.stat small { color: var(--muted); font-size: .8rem; }
+.stat b { font: 500 1.5rem var(--font-data); font-variant-numeric: tabular-nums; }
+.stat span { color: var(--muted); font-size: .82rem; }
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.metric { background: var(--surface); padding: 12px 14px; display: grid; gap: 4px; align-content: start; }
+.metric b { font: 500 1.2rem var(--font-data); font-variant-numeric: tabular-nums; }
+.metric small { color: var(--muted); font-size: .8rem; }
+
+/* charts: one shared x scale per chart, rows are label | plot | value */
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; color: var(--muted); font-size: .82rem; align-items: center; }
+.legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.sw-hard { width: 14px; height: 10px; border-radius: 2px; background: var(--hard); }
+.sw-soft { width: 14px; height: 6px; border-radius: 2px; background: var(--soft); }
+.sw-range { width: 16px; height: 8px; border-left: 2px solid var(--ink); border-right: 2px solid var(--ink);
+  background: linear-gradient(var(--ink), var(--ink)) center / 100% 2px no-repeat; }
+.sw-base { width: 2px; height: 12px; background: var(--ink); }
+.chart { display: grid; gap: 2px; }
+.crow { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr) minmax(0, 11.5rem); gap: 4px 14px; align-items: center;
+  padding: 7px 6px; border-radius: 4px; }
+.crow:hover, .crow:focus-within { background: var(--bg); }
+.crow > button { all: unset; cursor: pointer; font-weight: 500; }
+.crow > button:hover { color: var(--accent); text-decoration: underline; }
+.crow > button:focus-visible, .tabs button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.crow .val { text-align: right; font-size: .84rem; }
+.crow .val small { display: block; color: var(--muted); font-size: .76rem; }
+.plot { position: relative; height: 30px;
+  background-image: linear-gradient(to right, var(--grid) 1px, transparent 1px); background-size: var(--tick, 25%) 100%; border-right: 1px solid var(--grid); }
+.plot .zero { position: absolute; top: -4px; bottom: -4px; width: 1px; background: var(--axis); }
+.plot .hard { position: absolute; top: 5px; height: 12px; background: var(--hard); border-radius: 0 4px 4px 0; }
+.plot .hard.neg { border-radius: 4px 0 0 4px; }
+.plot .soft { position: absolute; top: 20px; height: 6px; background: var(--soft); border-radius: 0 3px 3px 0; }
+.plot .rng { position: absolute; top: 10px; height: 2px; background: var(--ink); }
+.plot .rng::before, .plot .rng::after { content: ""; position: absolute; top: -4px; width: 2px; height: 10px; background: var(--ink); }
+.plot .rng::before { left: 0; } .plot .rng::after { right: 0; }
+.plot .span { position: absolute; top: 8px; height: 12px; background: var(--hard); border-radius: 4px; min-width: 2px; }
+.plot .base { position: absolute; top: 2px; bottom: 4px; width: 2px; background: var(--ink); }
+.axis { display: grid; grid-template-columns: minmax(0, 13rem) minmax(0, 1fr) minmax(0, 11.5rem); gap: 14px; padding: 0 6px; color: var(--muted); font-size: .76rem; }
+.axis .ticks { position: relative; height: 1.2em; }
+.axis .ticks span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.axis .ticks span:first-child { transform: none; } .axis .ticks span:last-child { transform: translateX(-100%); }
+.tip { position: fixed; z-index: 20; pointer-events: none; background: var(--ink); color: var(--bg); padding: 8px 10px; border-radius: 4px;
+  font-size: .8rem; line-height: 1.45; max-width: 280px; }
+.tip b { font-family: var(--font-data); font-weight: 500; }
+
 .tabs { display: flex; flex-wrap: wrap; gap: 6px; }
 .tabs button { font: 500 .88rem var(--font-body); color: var(--ink); background: var(--surface); border: 1px solid var(--line);
   border-radius: 999px; padding: 6px 14px; cursor: pointer; }
 .tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: var(--surface); }
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 24px; display: grid; gap: 20px; min-width: 0; }
 .q { font-size: 1.05rem; }
-.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
-.metric { background: var(--surface); padding: 12px 14px; display: grid; gap: 4px; }
-.metric b { font: 500 1.25rem var(--font-data); font-variant-numeric: tabular-nums; }
-.metric small { color: var(--muted); font-size: .8rem; }
-.value { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; }
-.value b { font: 600 1.6rem var(--font-data); color: var(--accent); }
-.value small { color: var(--muted); max-width: 70ch; }
 .tablewrap { overflow-x: auto; border: 1px solid var(--line); }
 table { border-collapse: collapse; width: 100%; font-size: .84rem; }
 th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
 th { font-weight: 600; color: var(--muted); background: var(--bg); }
 td.n { font-family: var(--font-data); font-variant-numeric: tabular-nums; text-align: right; }
 ul { margin: 0; padding-left: 1.1rem; display: grid; gap: 4px; color: var(--muted); font-size: .9rem; }
+details summary { cursor: pointer; color: var(--muted); font-size: .86rem; }
+details[open] summary { margin-bottom: 8px; }
 footer { color: var(--muted); font-size: .82rem; }
-@media (max-width: 640px) { .row { grid-template-columns: minmax(0, 1fr) 5.5rem; } .row .bar { grid-column: 1 / -1; grid-row: 2; } }
+@media (max-width: 720px) {
+  .crow { grid-template-columns: minmax(0, 1fr); }
+  .crow .val { text-align: left; }
+  .crow .val small { display: inline; margin-left: 6px; }
+  .axis { grid-template-columns: minmax(0, 1fr); } .axis > div:not(.ticks) { display: none; }
+}
 </style>
 
 <div class="wrap">
-  <header style="display:grid;gap:8px">
+  <header class="stack">
     <h3>Healthcare advisory value cases</h3>
     <h1>Five problems, five working prototypes</h1>
-    <p class="lede">Each prototype runs on synthetic data for a reference client and estimates the annual value of solving one problem. Use the ledger to compare value, then open a problem to see the model output and the assumptions behind it.</p>
+    <p class="lede">Each prototype estimates the annual value of solving one problem. The ledger below puts all five on one illustrative client so they can be compared and totalled. Open a problem to see its model output, how sure the estimate is, and the assumptions behind it.</p>
   </header>
-  <p class="banner">All data here is synthetic and every benchmark is an assumption you can check. These are demonstration estimates, not client results. Headline figures are hard (P&amp;L) value only.</p>
-  <section class="ledger" aria-label="Annual value by problem" id="ledger"></section>
-  <nav class="tabs" role="tablist" id="tabs"></nav>
-  <section class="panel" id="panel" role="tabpanel"></section>
+  <p class="banner">All data here is synthetic and every benchmark is an assumption you can check. These are demonstration estimates, not client results. Hard (P&amp;L) value and soft (capacity) value are never added together.</p>
+  <section class="card" id="bundle" aria-label="One-client value ledger"></section>
+  <nav class="tabs" role="tablist" id="tabs" aria-label="Problems"></nav>
+  <section class="card" id="panel" role="tabpanel"></section>
   <footer id="foot"></footer>
 </div>
+<div class="tip" id="tip" hidden></div>
 
 <script>
 const DATA = {
@@ -123,7 +165,7 @@ const DATA = {
    "value_basis": "Full-year rolling back-test (13 x 4-week windows) of budget-grid vs forecast-driven staffing across 10 units, plus net value of retention outreach to the top-risk RN decile (replacement cost net of premium cover).",
    "assumptions": [
     "Reference client: 10 inpatient units, ~300 staffed beds of a ~500-bed hospital; ~1,100 RN headcount hospital-wide (synthetic).",
-    "Staff RN fully loaded cost $80/hr; overtime 1.5x ($120/hr); salaried float pool $90/hr paid at ~80% utilization; agency/travel/per-diem blended $105/hr (~31% premium). 2025 travel bill rates are ~13% over loaded staff cost (SIA/NATHO); the blend is an assumption to calibrate with client timekeeping data.",
+    "Staff RN fully loaded cost $80/hr; overtime 1.5x ($120/hr); salaried float pool $90/hr paid at ~80% utilization; agency/travel/per-diem blended $105/hr (~31% premium). The 2025 travel RN bill rate is $90.54/hr (SIA/NATHO); loaded staff cost is disputed ($80/hr per a vendor estimate, $94/hr per NATHO), so the premium is the key assumption to calibrate with client timekeeping data.",
     "Baseline: core fixed at 95% of prior-year mean demand; gaps filled 30% overtime / 70% agency.",
     "Forecast-driven: core flexed per 4-week window to the newsvendor-optimal quantile of forecast demand (critical ratio = 1 - staff rate / blended gap-coverage rate) (self-scheduling, flex/per-diem core); float pool covers up to 70% of residual gaps.",
     "RN turnover calibrated to 16.4%/yr (NSI 2025). Replacement cost $40K per RN, i.e. NSI's $61K net of the vacancy premium-labor cover already counted in labor savings.",
@@ -331,7 +373,83 @@ const DATA = {
      }
     ]
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 710081,
+     "p50": 908562,
+     "p90": 1097136
+    },
+    "soft": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Agency hourly rate",
+     "attr": "AGENCY_RATE",
+     "low": -708431,
+     "high": 2141584,
+     "base": 746763,
+     "spread": 2850015,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Float pool utilization",
+     "attr": "FLOAT_UTILIZATION",
+     "low": -140799,
+     "high": 1183486,
+     "base": 746763,
+     "spread": 1324286,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "RN replacement cost",
+     "attr": "REPLACEMENT_COST",
+     "low": 619884,
+     "high": 873641,
+     "base": 746763,
+     "spread": 253757,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Retention outreach effect",
+     "attr": "OUTREACH_EFFECT",
+     "low": 619884,
+     "high": 873641,
+     "base": 746763,
+     "spread": 253757,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Baseline RN turnover",
+     "attr": "TARGET_TURNOVER",
+     "low": 639845,
+     "high": 839956,
+     "base": 746763,
+     "spread": 200111,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Share of gaps covered by overtime",
+     "attr": "OT_SHARE",
+     "low": 657669,
+     "high": 835856,
+     "base": 746763,
+     "spread": 178187,
+     "soft_low": 0,
+     "soft_high": 0
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "patient_flow",
@@ -455,7 +573,73 @@ const DATA = {
     "readmission_offset": 455993,
     "extra_admissions_absorbed": 934
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 1308800,
+     "p50": 1385355,
+     "p90": 1452270
+    },
+    "soft": {
+     "p10": 2286390,
+     "p50": 2366971,
+     "p90": 2439376
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Variable cost per tail day",
+     "attr": "VAR_COST_PER_DAY",
+     "low": 819221,
+     "high": 1912261,
+     "base": 1365741,
+     "spread": 1093040,
+     "soft_low": 2334469,
+     "soft_high": 2334469
+    },
+    {
+     "assumption": "Share of freed days refilled",
+     "attr": "MONETIZE_SHARE",
+     "low": 1912261,
+     "high": 819221,
+     "base": 1365741,
+     "spread": 1093040,
+     "soft_low": 1634128,
+     "soft_high": 3034810
+    },
+    {
+     "assumption": "Intervention effect sizes",
+     "attr": "EFFECT_SCALE",
+     "low": 957700,
+     "high": 1349096,
+     "base": 1365741,
+     "spread": 391396,
+     "soft_low": 1634128,
+     "soft_high": 2311125
+    },
+    {
+     "assumption": "Added readmission risk",
+     "attr": "READMIT_RISK_ADD",
+     "low": 1502539,
+     "high": 1228943,
+     "base": 1365741,
+     "spread": 273596,
+     "soft_low": 2334469,
+     "soft_high": 2334469
+    },
+    {
+     "assumption": "Contribution margin per extra case",
+     "attr": "MARGIN_PER_CASE",
+     "low": 1365741,
+     "high": 1365741,
+     "base": 1365741,
+     "spread": 0,
+     "soft_low": 1634128,
+     "soft_high": 3034810
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "rural",
@@ -801,7 +985,73 @@ const DATA = {
     "client_option_value_full": 10537428,
     "ob_units": 66
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 1203015,
+     "p50": 1427097,
+     "p90": 1752759
+    },
+    "soft": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Realization of modeled option value",
+     "attr": "REALIZATION",
+     "low": 1106430,
+     "high": 2054798,
+     "base": 1580614,
+     "spread": 948368,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Operational improvement (expense cut)",
+     "attr": "OPS_IMPROVEMENT",
+     "low": 1156285,
+     "high": 2006744,
+     "base": 1580614,
+     "spread": 850459,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "REH facility payment",
+     "attr": "REH_FACILITY_PAYMENT",
+     "low": 1500218,
+     "high": 2185122,
+     "base": 1580614,
+     "spread": 684904,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Avoidable share of inpatient cost",
+     "attr": "IP_COST_AVOIDABLE",
+     "low": 1500218,
+     "high": 1784193,
+     "base": 1580614,
+     "spread": 283975,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Medicaid revenue cut",
+     "attr": "MEDICAID_CUT",
+     "low": 1572456,
+     "high": 1588773,
+     "base": 1580614,
+     "spread": 16317,
+     "soft_low": 0,
+     "soft_high": 0
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "denials",
@@ -1099,7 +1349,73 @@ const DATA = {
     "worklist_share_of_claims_pct": 10.0,
     "worklist_capture_of_denials_pct": 22.2
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 3910344,
+     "p50": 4355490,
+     "p90": 5017317
+    },
+    "soft": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Pre-bill fix success rates",
+     "attr": "FIX_SUCCESS",
+     "low": 2484231,
+     "high": 5988842,
+     "base": 4236537,
+     "spread": 3504611,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Write-off share of denied dollars",
+     "attr": "WRITE_OFF_SHARE",
+     "low": 2545497,
+     "high": 5927576,
+     "base": 4236537,
+     "spread": 3382078,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Pre-bill worklist capacity",
+     "attr": "WORKLIST_CAPACITY",
+     "low": 3040066,
+     "high": 4735949,
+     "base": 4236537,
+     "spread": 1695883,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Partner / technology cost",
+     "attr": "PARTNER_COST",
+     "low": 4461537,
+     "high": 4011537,
+     "base": 4236537,
+     "spread": 450000,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Rework cost per claim",
+     "attr": "REWORK_COST",
+     "low": 4431615,
+     "high": 4041458,
+     "base": 4236537,
+     "spread": 390156,
+     "soft_low": 0,
+     "soft_high": 0
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "ai_portfolio",
@@ -1560,12 +1876,216 @@ const DATA = {
     "realized_hard_annual": 11013850,
     "realized_soft_annual": 5474486,
     "run_costs_annual": 6352500,
-    "amortized_one_time_annual": 1850000
+    "amortized_one_time_annual": 1850000,
+    "overlap_net_hard_by_module": {
+     "denials": 727065,
+     "patient_flow": 582815,
+     "workforce": 407516
+    }
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 2000455,
+     "p50": 2774730,
+     "p90": 3482157
+    },
+    "soft": {
+     "p10": 5813643,
+     "p50": 6870332,
+     "p90": 7741738
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Negotiated licence discount",
+     "attr": "LICENSE_DISCOUNT",
+     "low": 1654321,
+     "high": 3654372,
+     "base": 2811350,
+     "spread": 2000051,
+     "soft_low": 5209573,
+     "soft_high": 6391306
+    },
+    {
+     "assumption": "Internal cost as share of licence",
+     "attr": "INTERNAL_COST_SHARE",
+     "low": 3464760,
+     "high": 1820821,
+     "base": 2811350,
+     "spread": 1643939,
+     "soft_low": 6228656,
+     "soft_high": 5209573
+    },
+    {
+     "assumption": "Revenue-cycle overlap haircut",
+     "attr": "OVERLAP_HAIRCUT",
+     "low": 3431230,
+     "high": 2003664,
+     "base": 2811350,
+     "spread": 1427566,
+     "soft_low": 5323035,
+     "soft_high": 5793478
+    },
+    {
+     "assumption": "Weight of soft value in funding decisions",
+     "attr": "SOFT_DECISION_WEIGHT",
+     "low": 2766134,
+     "high": 2291536,
+     "base": 2811350,
+     "spread": 474598,
+     "soft_low": 4681618,
+     "soft_high": 5831070
+    },
+    {
+     "assumption": "Discount rate",
+     "attr": "DISCOUNT_RATE",
+     "low": 2811350,
+     "high": 2811350,
+     "base": 2811350,
+     "spread": 0,
+     "soft_low": 5474486,
+     "soft_high": 5474486
+    }
+   ],
+   "swing": 0.3
   }
- ]
+ ],
+ "bundle": {
+  "client": {
+   "name": "Illustrative regional health system",
+   "net_patient_revenue": 2000000000.0,
+   "staffed_beds": 800,
+   "capacity_constrained_beds": 500,
+   "rn_headcount": 2400,
+   "affiliated_rural_hospitals": 8
+  },
+  "lines": [
+   {
+    "key": "workforce",
+    "module": "Workforce",
+    "hard_value_usd": 1875060,
+    "soft_value_usd": 0,
+    "scaling": "Labor savings x staffed beds / 298; retention value x RN headcount / 1,100"
+   },
+   {
+    "key": "patient_flow",
+    "module": "Patient flow",
+    "hard_value_usd": 1365741,
+    "soft_value_usd": 2334469,
+    "scaling": "x capacity-constrained beds / 500"
+   },
+   {
+    "key": "rural",
+    "module": "Rural sustainability",
+    "hard_value_usd": 632246,
+    "soft_value_usd": 0,
+    "scaling": "x affiliated rural hospitals / 20 (assumes affiliates resemble the most vulnerable set)"
+   },
+   {
+    "key": "denials",
+    "module": "Denials & prior auth",
+    "hard_value_usd": 8848074,
+    "soft_value_usd": 0,
+    "scaling": "Gross value x NPR / $1B; partner cost half fixed, half scaling with NPR"
+   },
+   {
+    "key": "ai_portfolio",
+    "module": "AI value",
+    "hard_value_usd": 729303,
+    "soft_value_usd": 3649657,
+    "scaling": "x NPR / $3B (budget scales too); minus funded use cases claimed by another module"
+   }
+  ],
+  "overlap_removed_usd": 1144931,
+  "hard_total_usd": 13450423,
+  "soft_total_usd": 5984126,
+  "supportable_annual_fees_usd": 2690085,
+  "roi_rule": 5.0,
+  "assumptions": [
+   "One illustrative client: $2.0B net patient revenue, 800 staffed beds (500 capacity-constrained), 2,400 RNs, 8 affiliated rural hospitals.",
+   "Module outputs scale linearly with their driver (first-order approximation; calibrate on client data).",
+   "Overlap: funded AI use cases tagged to another module are counted in that module only.",
+   "Client-ROI rule: annual fees are supportable up to hard value / 5.",
+   "Soft value (capacity, clinician time, access) is shown separately and never added to hard value."
+  ],
+  "synthetic_data": true,
+  "range": {
+   "n_seeds": 30,
+   "hard_total": {
+    "p10": 12866594,
+    "p50": 13977188,
+    "p90": 15227540
+   },
+   "soft_total": {
+    "p10": 6300376,
+    "p50": 6931422,
+    "p90": 7508234
+   },
+   "lines": {
+    "workforce": {
+     "p10": 1778676,
+     "p50": 2307664,
+     "p90": 2816362
+    },
+    "patient_flow": {
+     "p10": 1308800,
+     "p50": 1385356,
+     "p90": 1452270
+    },
+    "rural": {
+     "p10": 481206,
+     "p50": 570839,
+     "p90": 701103
+    },
+    "denials": {
+     "p10": 8195688,
+     "p50": 9085980,
+     "p90": 10409633
+    },
+    "ai_portfolio": {
+     "p10": 145814,
+     "p50": 554970,
+     "p90": 1005702
+    }
+   },
+   "soft_lines": {
+    "workforce": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    },
+    "patient_flow": {
+     "p10": 2286390,
+     "p50": 2366971,
+     "p90": 2439376
+    },
+    "rural": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    },
+    "denials": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    },
+    "ai_portfolio": {
+     "p10": 3875762,
+     "p50": 4580222,
+     "p90": 5161159
+    }
+   }
+  },
+  "supportable_annual_fees_range_usd": {
+   "p10": 2573319,
+   "p50": 2795438,
+   "p90": 3045508
+  }
+ }
 };
+const $ = id => document.getElementById(id);
 const fmtUSD = x => { const a = Math.abs(x), s = x < 0 ? "-" : "";
   return a >= 1e9 ? `${s}$${(a/1e9).toFixed(2)}B` : a >= 1e6 ? `${s}$${(a/1e6).toFixed(1)}M` : a >= 1e3 ? `${s}$${Math.round(a/1e3)}K` : `${s}$${Math.round(a)}`; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
@@ -1581,36 +2101,115 @@ const cell = v => {
   return `<td>${esc(typeof v === "object" ? JSON.stringify(v) : v)}</td>`;
 };
 
+/* One linear scale per chart: a "nice" domain that always includes zero. */
+function scale(lo, hi) {
+  lo = Math.min(0, lo); hi = Math.max(0, hi);
+  const span = (hi - lo) || 1, raw = span / 4, mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const step = [1, 2, 2.5, 5, 10].map(m => m * mag).find(s => s >= raw);
+  const d0 = Math.floor(lo / step) * step, d1 = Math.ceil(hi / step) * step;
+  const pos = v => 100 * (Math.min(d1, Math.max(d0, v)) - d0) / (d1 - d0);
+  const ticks = []; for (let t = d0; t <= d1 + step / 2; t += step) ticks.push(t);
+  return { pos, ticks, tick: 100 * step / (d1 - d0) };
+}
+const bar = (s, v, cls) => { const a = s.pos(Math.min(0, v)), b = s.pos(Math.max(0, v));
+  return `<div class="${cls}${v < 0 ? " neg" : ""}" style="left:${a.toFixed(2)}%;width:${Math.max(0, b - a).toFixed(2)}%"></div>`; };
+const axis = s => `<div class="axis" aria-hidden="true"><div></div><div class="ticks">${s.ticks.map(t => `<span style="left:${s.pos(t).toFixed(2)}%">${fmtUSD(t)}</span>`).join("")}</div><div></div></div>`;
+
+function renderBundle() {
+  const b = DATA.bundle, el = $("bundle");
+  if (!b) { el.hidden = true; return; }
+  const R = b.range, c = b.client;
+  const soft = l => R.soft_lines[l.key].p50;
+  const softTxt = l => soft(l) > 0 ? `soft ${fmtUSD(soft(l))}` : "soft value not modeled";
+  const max = Math.max(...b.lines.map(l => Math.max(R.lines[l.key].p90, soft(l))));
+  const min = Math.min(...b.lines.map(l => R.lines[l.key].p10));
+  const s = scale(min, max);
+  const rows = b.lines.map(l => { const r = R.lines[l.key];
+    const tip = `<strong>${esc(l.module)}</strong><br>Hard value: <b>${fmtUSD(r.p50)}</b> (P10 ${fmtUSD(r.p10)}, P90 ${fmtUSD(r.p90)})<br>${soft(l) > 0 ? `Soft value: <b>${fmtUSD(soft(l))}</b>` : "Soft value not modeled"}<br>Scaled: ${esc(l.scaling)}`;
+    return `<div class="crow" data-tip="${esc(tip)}"><button data-key="${esc(l.key)}">${esc(l.module)}</button>
+      <div class="plot" style="--tick:${s.tick.toFixed(3)}%"><div class="zero" style="left:${s.pos(0)}%"></div>${bar(s, r.p50, "hard")}
+        <div class="rng" style="left:${s.pos(r.p10).toFixed(2)}%;width:${(s.pos(r.p90) - s.pos(r.p10)).toFixed(2)}%"></div>${soft(l) > 0 ? bar(s, soft(l), "soft") : ""}</div>
+      <div class="val num">${fmtUSD(r.p50)}<small>${softTxt(l)}</small></div></div>`; }).join("");
+  const f = b.supportable_annual_fees_range_usd;
+  el.innerHTML = `
+    <div class="stack"><h3>One client, one value ledger</h3><h2>${esc(c.name)}</h2>
+      <p class="note">${fmtUSD(c.net_patient_revenue)} net patient revenue, ${c.staffed_beds} staffed beds (${c.capacity_constrained_beds} capacity-constrained), ${c.rn_headcount.toLocaleString()} RNs, ${c.affiliated_rural_hospitals} affiliated rural hospitals. Every module is rescaled to this client, and value two modules both claim is counted once.</p></div>
+    <div class="stats">
+      <div class="stat"><small>Hard value per year, all five modules</small><b>${fmtUSD(R.hard_total.p50)}</b><span>${fmtUSD(R.hard_total.p10)} to ${fmtUSD(R.hard_total.p90)} across ${R.n_seeds} synthetic datasets</span></div>
+      <div class="stat"><small>Soft value per year, reported separately</small><b>${fmtUSD(R.soft_total.p50)}</b><span>Beds, clinician time and access. Not cash.</span></div>
+      <div class="stat"><small>Annual fees this value supports at ${b.roi_rule}:1</small><b>${fmtUSD(f.p50)}</b><span>${fmtUSD(f.p10)} to ${fmtUSD(f.p90)}. Hard value only.</span></div>
+    </div>
+    <div class="stack">
+      <p class="legend"><span><i class="sw-hard"></i>Hard value (median)</span><span><i class="sw-range"></i>P10 to P90 of hard value</span><span><i class="sw-soft"></i>Soft value</span></p>
+      <div class="chart">${rows}</div>${axis(s)}
+      <p class="note">${fmtUSD(b.overlap_removed_usd)} of funded AI use cases is counted in the denials, patient flow and workforce lines, so it is removed from the AI line. Select a module name to open it.</p>
+    </div>
+    <details><summary>View the ledger as a table</summary><div class="tablewrap"><table>
+      <thead><tr><th>Module</th><th>Hard P10</th><th>Hard P50</th><th>Hard P90</th><th>Soft P50</th><th>How it was scaled</th></tr></thead>
+      <tbody>${b.lines.map(l => { const r = R.lines[l.key]; return `<tr><td>${esc(l.module)}</td><td class="n">${fmtUSD(r.p10)}</td><td class="n">${fmtUSD(r.p50)}</td><td class="n">${fmtUSD(r.p90)}</td><td class="n">${soft(l) > 0 ? fmtUSD(soft(l)) : "–"}</td><td>${esc(l.scaling)}</td></tr>`; }).join("")}</tbody>
+    </table></div></details>
+    <details><summary>Ledger assumptions</summary><ul>${b.assumptions.map(a => `<li>${esc(a)}</li>`).join("")}</ul></details>`;
+}
+
+function tornado(r) {
+  if (!r.tornado || !r.tornado.length) return "";
+  const vals = r.tornado.flatMap(t => [t.low, t.high, t.base]);
+  const s = scale(Math.min(...vals), Math.max(...vals));
+  const pct = Math.round((r.swing || 0.3) * 100);
+  const rows = r.tornado.map(t => { const a = Math.min(t.low, t.high), b = Math.max(t.low, t.high);
+    const softNote = t.soft_low !== t.soft_high ? `<br>Soft value: ${fmtUSD(t.soft_low)} to ${fmtUSD(t.soft_high)}` : "";
+    const tip = `<strong>${esc(t.assumption)}</strong><br>At -${pct}%: <b>${fmtUSD(t.low)}</b><br>Base: <b>${fmtUSD(t.base)}</b><br>At +${pct}%: <b>${fmtUSD(t.high)}</b>${softNote}`;
+    return `<div class="crow" data-tip="${esc(tip)}" tabindex="0"><span>${esc(t.assumption)}</span>
+      <div class="plot" style="--tick:${s.tick.toFixed(3)}%"><div class="zero" style="left:${s.pos(0)}%"></div>
+        <div class="span" style="left:${s.pos(a).toFixed(2)}%;width:${(s.pos(b) - s.pos(a)).toFixed(2)}%"></div><div class="base" style="left:calc(${s.pos(t.base).toFixed(2)}% - 1px)"></div></div>
+      <div class="val num">${fmtUSD(t.low)} / ${fmtUSD(t.high)}<small>at -${pct}% / +${pct}%</small></div></div>`; }).join("");
+  return `<div class="stack"><h3>Which assumption moves hard value most</h3>
+    <p class="legend"><span><i class="sw-hard"></i>Hard value when one assumption moves ${pct}% down or up</span><span><i class="sw-base"></i>Base case</span></p>
+    <div class="chart">${rows}</div>${axis(s)}</div>`;
+}
+
 function render(key) {
   const r = DATA.results.find(x => x.key === key) || DATA.results[0];
   document.querySelectorAll("#tabs button").forEach(b => b.setAttribute("aria-selected", b.dataset.key === r.key));
   const cols = r.table.length ? Object.keys(r.table[0]) : [];
-  document.getElementById("panel").innerHTML = `
-    <div style="display:grid;gap:6px"><h3>Problem</h3><h2>${esc(r.problem)}</h2><p class="q">${esc(r.question)}</p></div>
-    <div class="metrics">${r.headline_metrics.map(m => `<div class="metric"><small>${esc(m.label)}</small><b>${esc(m.display)}</b></div>`).join("")}</div>
-    <div class="value"><b>${fmtUSD(r.annual_value_usd)}</b><span>hard annual value</span>
-      <span class="soft">+ ${fmtUSD(r.soft_value_usd || 0)} soft / capacity value, reported separately</span>
-      <small>${esc(r.value_basis)}</small></div>
-    <div style="display:grid;gap:8px;min-width:0"><h3>${esc(r.table_title)}</h3>
+  const h = r.range ? r.range.hard : null, sf = r.range ? r.range.soft : null;
+  $("panel").innerHTML = `
+    <div class="stack"><h3>Problem, on its own reference client</h3><h2>${esc(r.problem)}</h2><p class="q">${esc(r.question)}</p></div>
+    <div class="stats">
+      <div class="stat"><small>Hard value per year</small><b>${fmtUSD(h ? h.p50 : r.annual_value_usd)}</b><span>${h ? `${fmtUSD(h.p10)} to ${fmtUSD(h.p90)} across ${r.range.n_seeds} synthetic datasets` : "single run"}</span></div>
+      <div class="stat"><small>Soft value per year, reported separately</small><b>${fmtUSD(sf ? sf.p50 : r.soft_value_usd || 0)}</b><span>${sf && sf.p90 > 0 ? `${fmtUSD(sf.p10)} to ${fmtUSD(sf.p90)}` : "Not modeled for this problem"}</span></div>
+    </div>
+    <p class="note">${esc(r.value_basis)}</p>
+    ${tornado(r)}
+    <div class="stack"><h3>Model output (seed ${DATA.seed})</h3>
+      <div class="metrics">${r.headline_metrics.map(m => `<div class="metric"><small>${esc(m.label)}</small><b>${esc(m.display)}</b></div>`).join("")}</div></div>
+    <div class="stack"><h3>${esc(r.table_title)}</h3>
       <div class="tablewrap"><table><thead><tr>${cols.map(c => `<th>${esc(c.replace(/_/g, " "))}</th>`).join("")}</tr></thead>
       <tbody>${r.table.map(row => `<tr>${cols.map(c => cell(row[c])).join("")}</tr>`).join("")}</tbody></table></div></div>
-    <div style="display:grid;gap:8px"><h3>Assumptions</h3><ul>${r.assumptions.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>`;
+    <div class="stack"><h3>Assumptions</h3><ul>${r.assumptions.map(a => `<li>${esc(a)}</li>`).join("")}</ul></div>`;
+}
+
+function tooltips() {
+  const tip = $("tip");
+  const show = (el, x, y) => { tip.innerHTML = el.dataset.tip; tip.hidden = false;
+    const w = tip.offsetWidth, hh = tip.offsetHeight;
+    tip.style.left = Math.max(8, Math.min(x + 14, innerWidth - w - 8)) + "px";
+    tip.style.top = (y + hh + 24 > innerHeight ? y - hh - 12 : y + 16) + "px"; };
+  document.addEventListener("pointermove", e => { const el = e.target.closest("[data-tip]"); el ? show(el, e.clientX, e.clientY) : (tip.hidden = true); });
+  document.addEventListener("focusin", e => { const el = e.target.closest("[data-tip]"); if (el) { const b = el.getBoundingClientRect(); show(el, b.left + 40, b.top + 10); } });
+  document.addEventListener("focusout", () => { tip.hidden = true; });
+  document.addEventListener("scroll", () => { tip.hidden = true; }, true);
 }
 
 function boot() {
-  if (!DATA) { document.getElementById("panel").textContent = "No data loaded. Run: python -m chartis_proto --dashboard out.html"; return; }
-  const rs = DATA.results;
-  const max = Math.max(1, ...rs.map(r => Math.max(0, r.annual_value_usd) + Math.max(0, r.soft_value_usd || 0)));
-  const pct = x => (100 * Math.max(0, x) / max).toFixed(1);
-  document.getElementById("ledger").innerHTML = `<h3>Estimated annual value per reference client</h3>
-    <p class="legend"><i class="sw hard"></i>Hard (P&amp;L) <i class="sw softsw"></i>Soft / capacity, not added to hard. Each problem uses a different reference client, so rows are not summed.</p>` +
-    rs.map(r => `<div class="row"><button data-key="${esc(r.key)}">${esc(SHORT[r.key] || r.key)}</button>
-      <div class="bar"><span style="width:${pct(r.annual_value_usd)}%"></span><em style="left:${pct(r.annual_value_usd)}%;width:${pct(r.soft_value_usd || 0)}%"></em></div>
-      <div class="num">${fmtUSD(r.annual_value_usd)}</div></div>`).join("");
-  document.getElementById("tabs").innerHTML = rs.map(r => `<button role="tab" data-key="${r.key}">${esc(SHORT[r.key] || r.key)}</button>`).join("");
-  document.querySelectorAll("button[data-key]").forEach(b => b.addEventListener("click", () => render(b.dataset.key)));
-  document.getElementById("foot").textContent = `Generated by chartis_proto (seed ${DATA.seed}). Re-run with a different --seed to test the stability of the estimates.`;
-  render(rs[0].key);
+  if (!DATA) { $("panel").textContent = "No data loaded. Run: python -m chartis_proto --dashboard out.html"; $("bundle").hidden = true; return; }
+  renderBundle();
+  $("tabs").innerHTML = DATA.results.map(r => `<button role="tab" data-key="${esc(r.key)}">${esc(SHORT[r.key] || r.key)}</button>`).join("");
+  document.addEventListener("click", e => { const b = e.target.closest("button[data-key]"); if (!b) return;
+    render(b.dataset.key); if (b.closest("#bundle")) $("tabs").scrollIntoView({ behavior: "smooth", block: "start" }); });
+  $("foot").textContent = `Generated by chartis_proto (seed ${DATA.seed}). Ranges come from rerunning each model on other synthetic datasets; sensitivity moves one assumption at a time.`;
+  render(DATA.results[0].key);
+  tooltips();
 }
 boot();
 </script>

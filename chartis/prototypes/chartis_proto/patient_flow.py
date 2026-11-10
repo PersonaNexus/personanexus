@@ -46,6 +46,15 @@ CAPACITY_OCC_THRESHOLD = 0.85
 VAR_COST_PER_DAY = 450
 READMIT_RISK_ADD = 0.005
 READMIT_COST = 15_000
+EFFECT_SCALE = 1.0  # multiplier on all intervention effect sizes (sensitivity lever)
+
+SENSITIVITY = [
+    ("Intervention effect sizes", "EFFECT_SCALE"),
+    ("Variable cost per tail day", "VAR_COST_PER_DAY"),
+    ("Share of freed days refilled", "MONETIZE_SHARE"),
+    ("Contribution margin per extra case", "MARGIN_PER_CASE"),
+    ("Added readmission risk", "READMIT_RISK_ADD"),
+]
 MARGIN_PER_CASE = 2_500
 MONETIZE_SHARE = 0.5
 BOARDING_HRS_PER_BED = 1_200
@@ -196,7 +205,8 @@ def run(seed: int = 42) -> dict:
             excess_by_barrier[k] += attributable * BARRIERS[k][1] / wsum
 
     rows, days_freed = [], 0.0
-    for k, (label, _, action, effect) in BARRIERS.items():
+    for k, (label, _, action, base_effect) in BARRIERS.items():
+        effect = min(1.0, base_effect * EFFECT_SCALE)
         annual_days = excess_by_barrier[k] * scale
         freed = annual_days * effect
         days_freed += freed

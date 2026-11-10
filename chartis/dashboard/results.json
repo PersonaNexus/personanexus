@@ -42,7 +42,7 @@
    "value_basis": "Full-year rolling back-test (13 x 4-week windows) of budget-grid vs forecast-driven staffing across 10 units, plus net value of retention outreach to the top-risk RN decile (replacement cost net of premium cover).",
    "assumptions": [
     "Reference client: 10 inpatient units, ~300 staffed beds of a ~500-bed hospital; ~1,100 RN headcount hospital-wide (synthetic).",
-    "Staff RN fully loaded cost $80/hr; overtime 1.5x ($120/hr); salaried float pool $90/hr paid at ~80% utilization; agency/travel/per-diem blended $105/hr (~31% premium). 2025 travel bill rates are ~13% over loaded staff cost (SIA/NATHO); the blend is an assumption to calibrate with client timekeeping data.",
+    "Staff RN fully loaded cost $80/hr; overtime 1.5x ($120/hr); salaried float pool $90/hr paid at ~80% utilization; agency/travel/per-diem blended $105/hr (~31% premium). The 2025 travel RN bill rate is $90.54/hr (SIA/NATHO); loaded staff cost is disputed ($80/hr per a vendor estimate, $94/hr per NATHO), so the premium is the key assumption to calibrate with client timekeeping data.",
     "Baseline: core fixed at 95% of prior-year mean demand; gaps filled 30% overtime / 70% agency.",
     "Forecast-driven: core flexed per 4-week window to the newsvendor-optimal quantile of forecast demand (critical ratio = 1 - staff rate / blended gap-coverage rate) (self-scheduling, flex/per-diem core); float pool covers up to 70% of residual gaps.",
     "RN turnover calibrated to 16.4%/yr (NSI 2025). Replacement cost $40K per RN, i.e. NSI's $61K net of the vacancy premium-labor cover already counted in labor savings.",
@@ -250,7 +250,83 @@
      }
     ]
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 710081,
+     "p50": 908562,
+     "p90": 1097136
+    },
+    "soft": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Agency hourly rate",
+     "attr": "AGENCY_RATE",
+     "low": -708431,
+     "high": 2141584,
+     "base": 746763,
+     "spread": 2850015,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Float pool utilization",
+     "attr": "FLOAT_UTILIZATION",
+     "low": -140799,
+     "high": 1183486,
+     "base": 746763,
+     "spread": 1324286,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "RN replacement cost",
+     "attr": "REPLACEMENT_COST",
+     "low": 619884,
+     "high": 873641,
+     "base": 746763,
+     "spread": 253757,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Retention outreach effect",
+     "attr": "OUTREACH_EFFECT",
+     "low": 619884,
+     "high": 873641,
+     "base": 746763,
+     "spread": 253757,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Baseline RN turnover",
+     "attr": "TARGET_TURNOVER",
+     "low": 639845,
+     "high": 839956,
+     "base": 746763,
+     "spread": 200111,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Share of gaps covered by overtime",
+     "attr": "OT_SHARE",
+     "low": 657669,
+     "high": 835856,
+     "base": 746763,
+     "spread": 178187,
+     "soft_low": 0,
+     "soft_high": 0
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "patient_flow",
@@ -374,7 +450,73 @@
     "readmission_offset": 455993,
     "extra_admissions_absorbed": 934
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 1308800,
+     "p50": 1385355,
+     "p90": 1452270
+    },
+    "soft": {
+     "p10": 2286390,
+     "p50": 2366971,
+     "p90": 2439376
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Variable cost per tail day",
+     "attr": "VAR_COST_PER_DAY",
+     "low": 819221,
+     "high": 1912261,
+     "base": 1365741,
+     "spread": 1093040,
+     "soft_low": 2334469,
+     "soft_high": 2334469
+    },
+    {
+     "assumption": "Share of freed days refilled",
+     "attr": "MONETIZE_SHARE",
+     "low": 1912261,
+     "high": 819221,
+     "base": 1365741,
+     "spread": 1093040,
+     "soft_low": 1634128,
+     "soft_high": 3034810
+    },
+    {
+     "assumption": "Intervention effect sizes",
+     "attr": "EFFECT_SCALE",
+     "low": 957700,
+     "high": 1349096,
+     "base": 1365741,
+     "spread": 391396,
+     "soft_low": 1634128,
+     "soft_high": 2311125
+    },
+    {
+     "assumption": "Added readmission risk",
+     "attr": "READMIT_RISK_ADD",
+     "low": 1502539,
+     "high": 1228943,
+     "base": 1365741,
+     "spread": 273596,
+     "soft_low": 2334469,
+     "soft_high": 2334469
+    },
+    {
+     "assumption": "Contribution margin per extra case",
+     "attr": "MARGIN_PER_CASE",
+     "low": 1365741,
+     "high": 1365741,
+     "base": 1365741,
+     "spread": 0,
+     "soft_low": 1634128,
+     "soft_high": 3034810
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "rural",
@@ -720,7 +862,73 @@
     "client_option_value_full": 10537428,
     "ob_units": 66
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 1203015,
+     "p50": 1427097,
+     "p90": 1752759
+    },
+    "soft": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Realization of modeled option value",
+     "attr": "REALIZATION",
+     "low": 1106430,
+     "high": 2054798,
+     "base": 1580614,
+     "spread": 948368,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Operational improvement (expense cut)",
+     "attr": "OPS_IMPROVEMENT",
+     "low": 1156285,
+     "high": 2006744,
+     "base": 1580614,
+     "spread": 850459,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "REH facility payment",
+     "attr": "REH_FACILITY_PAYMENT",
+     "low": 1500218,
+     "high": 2185122,
+     "base": 1580614,
+     "spread": 684904,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Avoidable share of inpatient cost",
+     "attr": "IP_COST_AVOIDABLE",
+     "low": 1500218,
+     "high": 1784193,
+     "base": 1580614,
+     "spread": 283975,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Medicaid revenue cut",
+     "attr": "MEDICAID_CUT",
+     "low": 1572456,
+     "high": 1588773,
+     "base": 1580614,
+     "spread": 16317,
+     "soft_low": 0,
+     "soft_high": 0
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "denials",
@@ -1018,7 +1226,73 @@
     "worklist_share_of_claims_pct": 10.0,
     "worklist_capture_of_denials_pct": 22.2
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 3910344,
+     "p50": 4355490,
+     "p90": 5017317
+    },
+    "soft": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Pre-bill fix success rates",
+     "attr": "FIX_SUCCESS",
+     "low": 2484231,
+     "high": 5988842,
+     "base": 4236537,
+     "spread": 3504611,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Write-off share of denied dollars",
+     "attr": "WRITE_OFF_SHARE",
+     "low": 2545497,
+     "high": 5927576,
+     "base": 4236537,
+     "spread": 3382078,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Pre-bill worklist capacity",
+     "attr": "WORKLIST_CAPACITY",
+     "low": 3040066,
+     "high": 4735949,
+     "base": 4236537,
+     "spread": 1695883,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Partner / technology cost",
+     "attr": "PARTNER_COST",
+     "low": 4461537,
+     "high": 4011537,
+     "base": 4236537,
+     "spread": 450000,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Rework cost per claim",
+     "attr": "REWORK_COST",
+     "low": 4431615,
+     "high": 4041458,
+     "base": 4236537,
+     "spread": 390156,
+     "soft_low": 0,
+     "soft_high": 0
+    }
+   ],
+   "swing": 0.3
   },
   {
    "key": "ai_portfolio",
@@ -1479,9 +1753,212 @@
     "realized_hard_annual": 11013850,
     "realized_soft_annual": 5474486,
     "run_costs_annual": 6352500,
-    "amortized_one_time_annual": 1850000
+    "amortized_one_time_annual": 1850000,
+    "overlap_net_hard_by_module": {
+     "denials": 727065,
+     "patient_flow": 582815,
+     "workforce": 407516
+    }
    },
-   "synthetic_data": true
+   "synthetic_data": true,
+   "range": {
+    "n_seeds": 30,
+    "hard": {
+     "p10": 2000455,
+     "p50": 2774730,
+     "p90": 3482157
+    },
+    "soft": {
+     "p10": 5813643,
+     "p50": 6870332,
+     "p90": 7741738
+    }
+   },
+   "tornado": [
+    {
+     "assumption": "Negotiated licence discount",
+     "attr": "LICENSE_DISCOUNT",
+     "low": 1654321,
+     "high": 3654372,
+     "base": 2811350,
+     "spread": 2000051,
+     "soft_low": 5209573,
+     "soft_high": 6391306
+    },
+    {
+     "assumption": "Internal cost as share of licence",
+     "attr": "INTERNAL_COST_SHARE",
+     "low": 3464760,
+     "high": 1820821,
+     "base": 2811350,
+     "spread": 1643939,
+     "soft_low": 6228656,
+     "soft_high": 5209573
+    },
+    {
+     "assumption": "Revenue-cycle overlap haircut",
+     "attr": "OVERLAP_HAIRCUT",
+     "low": 3431230,
+     "high": 2003664,
+     "base": 2811350,
+     "spread": 1427566,
+     "soft_low": 5323035,
+     "soft_high": 5793478
+    },
+    {
+     "assumption": "Weight of soft value in funding decisions",
+     "attr": "SOFT_DECISION_WEIGHT",
+     "low": 2766134,
+     "high": 2291536,
+     "base": 2811350,
+     "spread": 474598,
+     "soft_low": 4681618,
+     "soft_high": 5831070
+    },
+    {
+     "assumption": "Discount rate",
+     "attr": "DISCOUNT_RATE",
+     "low": 2811350,
+     "high": 2811350,
+     "base": 2811350,
+     "spread": 0,
+     "soft_low": 5474486,
+     "soft_high": 5474486
+    }
+   ],
+   "swing": 0.3
   }
- ]
+ ],
+ "bundle": {
+  "client": {
+   "name": "Illustrative regional health system",
+   "net_patient_revenue": 2000000000.0,
+   "staffed_beds": 800,
+   "capacity_constrained_beds": 500,
+   "rn_headcount": 2400,
+   "affiliated_rural_hospitals": 8
+  },
+  "lines": [
+   {
+    "key": "workforce",
+    "module": "Workforce",
+    "hard_value_usd": 1875060,
+    "soft_value_usd": 0,
+    "scaling": "Labor savings x staffed beds / 298; retention value x RN headcount / 1,100"
+   },
+   {
+    "key": "patient_flow",
+    "module": "Patient flow",
+    "hard_value_usd": 1365741,
+    "soft_value_usd": 2334469,
+    "scaling": "x capacity-constrained beds / 500"
+   },
+   {
+    "key": "rural",
+    "module": "Rural sustainability",
+    "hard_value_usd": 632246,
+    "soft_value_usd": 0,
+    "scaling": "x affiliated rural hospitals / 20 (assumes affiliates resemble the most vulnerable set)"
+   },
+   {
+    "key": "denials",
+    "module": "Denials & prior auth",
+    "hard_value_usd": 8848074,
+    "soft_value_usd": 0,
+    "scaling": "Gross value x NPR / $1B; partner cost half fixed, half scaling with NPR"
+   },
+   {
+    "key": "ai_portfolio",
+    "module": "AI value",
+    "hard_value_usd": 729303,
+    "soft_value_usd": 3649657,
+    "scaling": "x NPR / $3B (budget scales too); minus funded use cases claimed by another module"
+   }
+  ],
+  "overlap_removed_usd": 1144931,
+  "hard_total_usd": 13450423,
+  "soft_total_usd": 5984126,
+  "supportable_annual_fees_usd": 2690085,
+  "roi_rule": 5.0,
+  "assumptions": [
+   "One illustrative client: $2.0B net patient revenue, 800 staffed beds (500 capacity-constrained), 2,400 RNs, 8 affiliated rural hospitals.",
+   "Module outputs scale linearly with their driver (first-order approximation; calibrate on client data).",
+   "Overlap: funded AI use cases tagged to another module are counted in that module only.",
+   "Client-ROI rule: annual fees are supportable up to hard value / 5.",
+   "Soft value (capacity, clinician time, access) is shown separately and never added to hard value."
+  ],
+  "synthetic_data": true,
+  "range": {
+   "n_seeds": 30,
+   "hard_total": {
+    "p10": 12866594,
+    "p50": 13977188,
+    "p90": 15227540
+   },
+   "soft_total": {
+    "p10": 6300376,
+    "p50": 6931422,
+    "p90": 7508234
+   },
+   "lines": {
+    "workforce": {
+     "p10": 1778676,
+     "p50": 2307664,
+     "p90": 2816362
+    },
+    "patient_flow": {
+     "p10": 1308800,
+     "p50": 1385356,
+     "p90": 1452270
+    },
+    "rural": {
+     "p10": 481206,
+     "p50": 570839,
+     "p90": 701103
+    },
+    "denials": {
+     "p10": 8195688,
+     "p50": 9085980,
+     "p90": 10409633
+    },
+    "ai_portfolio": {
+     "p10": 145814,
+     "p50": 554970,
+     "p90": 1005702
+    }
+   },
+   "soft_lines": {
+    "workforce": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    },
+    "patient_flow": {
+     "p10": 2286390,
+     "p50": 2366971,
+     "p90": 2439376
+    },
+    "rural": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    },
+    "denials": {
+     "p10": 0,
+     "p50": 0,
+     "p90": 0
+    },
+    "ai_portfolio": {
+     "p10": 3875762,
+     "p50": 4580222,
+     "p90": 5161159
+    }
+   }
+  },
+  "supportable_annual_fees_range_usd": {
+   "p10": 2573319,
+   "p50": 2795438,
+   "p90": 3045508
+  }
+ }
 }

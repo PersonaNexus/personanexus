@@ -1,4 +1,4 @@
-"""CLI: python -m chartis_proto [all|<module>] [--seed N] [--json PATH] [--dashboard PATH]
+"""CLI: python -m chartis_proto [all|<module>] [--seed N] [--fast] [--json PATH] [--dashboard PATH]
 
 Runs the prototypes, prints a text summary, and optionally writes the JSON
 results and/or a self-contained dashboard HTML (data inlined).
@@ -31,7 +31,7 @@ def run_all(names: list[str], seed: int) -> list[dict]:
     return out
 
 
-def summarize(results: list[dict]) -> str:
+def summarize(results: list[dict], bundle: dict | None = None) -> str:
     lines = []
     for r in results:
         lines.append(f"\n== {r['problem']} ==")
@@ -42,6 +42,32 @@ def summarize(results: list[dict]) -> str:
         lines.append(
             f"  => Soft / capacity value (reported separately): {usd(r['soft_value_usd'])}"
         )
+        if "range" in r:
+            h = r["range"]["hard"]
+            lines.append(
+                f"  => Hard value range over {r['range']['n_seeds']} datasets: "
+                f"P10 {usd(h['p10'])} / P50 {usd(h['p50'])} / P90 {usd(h['p90'])}"
+            )
+            top = r["tornado"][0]
+            lines.append(
+                f"  => Most sensitive assumption: {top['assumption']} "
+                f"(-30%: {usd(top['low'])}, +30%: {usd(top['high'])})"
+            )
+    if bundle:
+        lines.append(f"\n== One-client value ledger: {bundle['client']['name']} ==")
+        for ln in bundle["lines"]:
+            lines.append(
+                f"  - {ln['module']}: hard {usd(ln['hard_value_usd'])}, soft {usd(ln['soft_value_usd'])}"
+            )
+        h = bundle["range"]["hard_total"]
+        lines.append(f"  (overlap removed from AI line: {usd(bundle['overlap_removed_usd'])})")
+        lines.append(
+            f"  => Bundle hard value: P10 {usd(h['p10'])} / P50 {usd(h['p50'])} / P90 {usd(h['p90'])}"
+        )
+        f = bundle["supportable_annual_fees_range_usd"]
+        lines.append(
+            f"  => Supportable annual fees at {bundle['roi_rule']:.0f}:1: {usd(f['p10'])}-{usd(f['p90'])}"
+        )
     return "\n".join(lines)
 
 
@@ -49,13 +75,24 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="chartis_proto")
     ap.add_argument("module", nargs="?", default="all", choices=["all", *MODULES])
     ap.add_argument("--seed", type=int, default=42)
+    ap.add_argument("--fast", action="store_true", help="skip ranges, sensitivity and the bundle")
     ap.add_argument("--json", type=Path)
     ap.add_argument("--dashboard", type=Path)
     a = ap.parse_args(argv)
     names = MODULES if a.module == "all" else [a.module]
     results = run_all(names, a.seed)
-    print(summarize(results))
-    payload = json.dumps({"seed": a.seed, "results": results}, indent=1, default=str)
+    bundle_ledger = None
+    if not a.fast:
+        from . import bundle, sensitivity
+
+        for r in results:
+            r.update(sensitivity.analyze(r["key"], a.seed))
+        if a.module == "all" and len(results) == len(MODULES):
+            bundle_ledger = bundle.ledger_with_range(a.seed)
+    print(summarize(results, bundle_ledger))
+    payload = json.dumps(
+        {"seed": a.seed, "results": results, "bundle": bundle_ledger}, indent=1, default=str
+    )
     if a.json:
         a.json.write_text(payload)
         print(f"\nwrote {a.json}")
