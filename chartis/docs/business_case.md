@@ -1,6 +1,6 @@
 # Business Case: Five Healthcare Problems Chartis Can Reasonably Solve
 
-_Draft v1, 2026-11-10. Built with AI research agents. Every external figure carries its source; anything marked **verify** came from secondary coverage and must be checked before client use. The dollar values for the prototypes come from **synthetic data** and show how the method works. They are not forecasts._
+_v1 (post-review), 2026-11-10. Built with AI research agents. Every external figure carries its source; anything marked **verify** came from secondary coverage and must be checked before client use. The dollar values for the prototypes come from **synthetic data** and show how the method works. They are not forecasts._
 
 ---
 
@@ -25,17 +25,19 @@ US health systems face five problems that interlock: a shrinking, burned-out wor
 
 Chartis is unusually well placed on all five. It has the leading rural health research franchise, operations and workforce practices, a growing digital and AI build capability (Healthlink, Leap AI Studio), and a communications arm (Jarrard) for change management.
 
+**Main finding after independent review:** once hard and soft value are separated and the double counting is removed, per-client hard value is **$0.7M–$4M a year**. That is real but modest. Chartis' edge is not giant ROI claims. It is **credible, measured, governed value**, which is exactly what most health systems lack today (only 4% have scaled AI with measurable ROI).
+
 **Recommendation:** package each problem as a productized **"diagnostic, then implement, then sustain"** offering with a working analytic accelerator, and put the **AI Value Office** (#5) at the center as the platform that measures value for the other four. Start with **Rural (#3)** and **Patient Flow (#2)**, which have the strongest moat and the fastest value, then **AI Value (#5)**. Build **Denials (#4)** with a partner, because Chartis is weakest there against revenue-cycle outsourcers.
 
-| # | Problem | Chartis fit | Prototype | Illustrative annual value / reference client* |
-|---|---|---|---|---|
-| 1 | Workforce shortage, burnout & premium labor | Strong (workforce practice + Jarrard) | Staffing forecast + float pool + retention risk | **$3.1M** (500-bed hospital) |
-| 2 | Capacity & patient flow (ED boarding, avoidable days) | Strong (acute care / periop throughput) | Discharge-barrier "capacity ledger" | **$8.2M** (500-bed hospital) |
-| 3 | Rural hospital distress & service-line loss | **Strongest** (Center for Rural Health) | Transparent vulnerability score + policy stress test | **$7.4M** (20-hospital rural network) |
-| 4 | Denials, prior auth & MA friction | Moderate (HealthScape, CDI/UM; RCM outsourcers compete) | Pre-bill denial-risk worklist + payer scorecard | **$11.2M** ($1B NPR system) |
-| 5 | AI spend without measurable value | **Strong and strategic** (Leap AI, KLAS IT-planning leader) | AI portfolio prioritization + value tracking | **$23.8M** ($3B system; includes capacity/"soft" value) |
+| # | Problem | Chartis fit | Prototype | Hard value / yr* | Soft value / yr* | v0 (pre-review) |
+|---|---|---|---|---|---|---|
+| 1 | Workforce shortage, burnout & premium labor | Strong (workforce practice + Jarrard) | Staffing forecast + float pool + retention risk | **$0.75M** (10 units, ~300 beds) | not modeled | $7.8M |
+| 2 | Capacity & patient flow (ED boarding, avoidable days) | Strong (acute care / periop throughput) | Discharge-barrier "capacity ledger" | **$1.4M** (500 beds, 88% occupancy) | $2.3M capacity; 22 beds; 27K boarding hrs | $8.9M |
+| 3 | Rural hospital distress & service-line loss | **Strongest** (Center for Rural Health) | Transparent vulnerability score + policy stress test | **$1.6M** (20 most vulnerable hospitals) | access preserved (unpriced) | $7.4M |
+| 4 | Denials, prior auth & MA friction | Moderate (HealthScape, CDI/UM; RCM outsourcers compete) | Pre-bill denial-risk worklist + payer scorecard | **$4.2M** ($1B NPR; 0.42% of NPR, net of partner cost) | not modeled | $11.2M |
+| 5 | AI spend without measurable value | **Strong and strategic** (Leap AI, KLAS IT-planning leader) | AI portfolio prioritization + value tracking | **$2.8M** ($3B system; realized, net of all costs) | $5.5M clinician/staff capacity | $23.8M |
 
-\*From the synthetic prototypes run with seed 42. These are demonstration figures, not client results, and they cannot be added together because the reference clients differ.
+\*From the synthetic prototypes run with seed 42. These are demonstration figures, not client results. They cannot be added together because each uses a different reference client. The "v0" column shows how much the first draft overstated value before the independent review (see `review_log.md`).
 
 ---
 
@@ -51,6 +53,7 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 | Denials / prior auth / MA | Very high | High | Medium | Very high | **In, with partner** |
 | AI value realization | High | Very high | **Very high** | Medium | **In, as platform** |
 | Ambulatory access & referral leakage | High | High | Medium-high | High | **Swap-in candidate** for academic medical centers or ambulatory-heavy clients |
+| Enterprise strategy, affiliations/M&A, cost transformation | Very high | Very high (OBBBA margin pressure) | **Very high (core franchise)** | Medium | **Adjacent:** already Chartis' core business, so not a new problem to productize. The five modules feed it with evidence. |
 | Cybersecurity resilience | High | High | Medium (Healthlink) | Medium | Out: specialist firms dominate |
 | Value-based care / MA risk | High | Medium | Medium (HealthScape) | Low-medium | Out for now; fold into #4 payer strategy |
 | Hospital-at-home / site-of-care shift | Medium | Medium | Medium | Low | Out: depends on policy timing |
@@ -77,9 +80,20 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 - Forecasts unit census with a seasonal-naive + level blend (**6.5% MAPE** on the 4-week back-test).
 - Sizes core staffing to the P60 of forecast demand, backed by an internal float pool, and compares that with reactive agency backfill.
 - Scores each RN's turnover risk. The top-risk decile leaves at about 2x the overall rate.
-- **Value: $2.3M labor + $0.8M net retention = $3.1M/yr.**
+- **v1 method (post-review):**
+  - The back-test rolls across all 13 four-week windows of a full year.
+  - The baseline is a budget grid with overtime and agency cover.
+  - The float pool is salaried, so its idle time is paid.
+  - Core staffing is set at the newsvendor-optimal quantile (about P28 at current premiums).
+  - Turnover is calibrated to 16.4%.
+- **Value: $0.49M labor + $0.26M net retention = $0.75M/yr** across 10 units. That is stable across seeds ($0.7–0.9M).
 
-**Key sensitivity:** the agency premium. The 2025 travel premium (~13%) is much lower than the 2022 peaks, so the case now rests on **overtime, turnover and burnout** more than on cutting travel nurses.
+**Key finding:** with the agency premium down to about 13–31%, **better forecasting alone saves little**. In v0, savings flipped negative when the test window moved to the seasonal trough. The workforce case should therefore be repositioned around:
+- **retention**, where each turnover point is worth about $289K/yr per hospital
+- **structurally eliminating agency reliance**
+- **cutting documentation burden** through ambient AI, linked to #5.
+
+It should not be sold as a scheduling-optimization ROI.
 
 ### Problem 2: Capacity & patient flow
 
@@ -99,9 +113,11 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 - Applies an intervention playbook to those barriers.
 - Values the freed bed-days at variable cost and as monetized capacity (50%).
 - Adds an admission-time risk score for long stays (AUC 0.62; deliberately modest).
-- **Value: about 7,500 days freed, about 21 staffed beds released, about 25K ED boarding hours avoided, $8.2M/yr.**
+- Only barrier-caused delay is attributed to barriers: min(excess, delay). Random variation stays "unexplained".
+- **Results:** about 8,100 days freed, about 22 staffed beds released and about 27K ED boarding hours avoided.
+- **Value: hard $1.4M/yr** in variable tail-day cost on beds that are not refilled, net of a $0.46M readmission offset. **Soft $2.3M/yr** comes from the margin on extra admissions in refilled beds.
 
-**Key sensitivity:** whether freed beds can be backfilled with paying cases (occupancy, demand, OR capacity).
+**Key finding:** the value of patient flow is mostly **capacity**, which is real only when the hospital is full (85% occupancy or more). Sell it as "beds without building" and less boarding, not as cost reduction.
 
 ### Problem 3: Rural hospital distress, closures & service-line loss
 
@@ -118,8 +134,13 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 - Results across 120 synthetic hospitals:
   - 30 are at risk today, and the shock pushes **20 more** into the at-risk band.
   - The shock costs **$126M/yr** across the portfolio.
-  - 21 hospitals have a strategy option that improves their margin.
-- **Value: $7.4M/yr for a 20-hospital network** (35% of shock losses avoided).
+- **v1 changes:**
+  - The REH model was rebuilt from each hospital's own cost structure, with the margin capped at 10%.
+  - **Options that create access loss are rejected** (10 rejected).
+  - An access-safe operational-improvement option is always available.
+- **Value: $1.6M/yr** = 15% realization × the best access-safe option for each of the 20 most vulnerable hospitals.
+
+**Key finding:** Chartis cannot "avoid" a Medicaid cut. Its value lies in helping boards choose **access-preserving** options early and in capturing Rural Health Transformation funds. Grant capture is not yet modeled; it is task T4.
 
 **Key sensitivity:** how Rural Health Transformation funds are distributed and when OBBBA takes effect (work requirements around 2027, provider-tax phase-down).
 
@@ -138,7 +159,12 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 - An interpretable logistic denial-risk model scores 5,000 claims (AUC 0.70; denial rate 10.8%; MA 14.4% vs 6.7% for traditional Medicare).
 - A pre-bill worklist ranks claims by expected recoverable dollars net of rework cost.
 - Root-cause mix: coding first, then authorization.
-- **Value: $11.2M/yr, about 1.1% of NPR for a $1B system.**
+- **v1 assumptions:**
+  - 22% of denied dollars are written off without intervention.
+  - Fix success varies by root cause (authorization 30%, coding 65%, eligibility 75%).
+  - Pre-bill capacity is 10% of claims.
+  - A $750K/yr partner cost is subtracted.
+- **Value: $4.2M/yr, about 0.42% of NPR for a $1B system.**
 
 ### Problem 5: AI and digital spend without measurable value
 
@@ -152,8 +178,14 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 - Scores 25 use cases on risk-adjusted 3-year NPV (adjusted for evidence, data readiness and adoption).
 - A governance gate sorts each into **Fund / Pilot / Hold**: high clinical risk with weak evidence is never funded.
 - Picks a portfolio under a $12M budget.
-- Tracks value against plan: realized value is **70%** of promised, and ambient documentation and coding assist are flagged.
-- **Value: $23.8M/yr steady-state risk-adjusted benefit.** Much of this is **capacity value** (clinician hours) and not hard P&L savings; see the sensitivity note.
+- Tracks value against plan: realized value is **75%** of promised, and 4 use cases are flagged for value leakage.
+- **v1 headline basis:**
+  - Realized hard value only.
+  - Net of licence, internal cost (50% of licence) and one-time cost amortized over 3 years.
+  - 40% overlap haircut on stacked revenue-cycle use cases.
+- **Value: hard $2.8M/yr; soft $5.5M/yr** of clinician and staff capacity.
+
+**Key finding:** on hard dollars, **ambient documentation is put on Hold**. Its licence cost exceeds its hard savings, and its value is burnout and retention (soft). That is exactly the conversation CFOs are having in 2026, and Chartis' measurement and governance discipline is the product.
 
 **Strategic role:** the AI Value Office becomes the **measurement layer for #1, #2 and #4**. Each of their models becomes a tracked AI or analytics use case with a baseline KPI.
 
@@ -169,28 +201,43 @@ Chartis is unusually well placed on all five. It has the leading rural health re
 | Denials | Write-offs prevented, rework | Staff productivity | Fewer patient billing disputes |
 | AI value | License rationalization, revenue lift | Clinician hours returned | Governed, safe AI use |
 
-**Rule for client conversations:** lead with hard dollars and present soft value separately. Never add them together.
+**Rule for client conversations:** lead with hard dollars and present soft value separately. Never add them together. The prototypes now enforce this: `annual_value_usd` is hard only and `soft_value_usd` is separate.
+
+**One value ledger per client.** The AI portfolio overlaps #1, #2 and #4 (tagged `overlaps_module`). When one client buys several modules, each dollar is attributed exactly once.
 
 ---
 
 ## 5. Commercial model for Chartis (illustrative, **assumption-heavy**)
 
-Chartis' pricing and financials are private. Every number below is an assumption to replace with Chartis data.
+Chartis' pricing and financials are private. Every number below is an assumption to replace with Chartis data. The pricing is set so that **client hard value is at least 5:1 against fees**, based on the v1 values.
 
 | Offer tier | Description | Assumed price | Duration |
 |---|---|---|---|
-| **Diagnostic** | Accelerator run on client data; value baseline + roadmap | $150K–$350K | 6–10 weeks |
-| **Implementation** | Process redesign, tech deployment, change management | $0.8M–$3M | 6–18 months |
-| **Sustain (subscription / managed analytics)** | Hosted model, value tracking, quarterly reviews | $120K–$450K / yr | Annual |
+| **Diagnostic** | Accelerator run on client data; value baseline + roadmap | $100K–$250K | 6–10 weeks |
+| **Implementation** | Process redesign, tech deployment, change management | $0.4M–$1.5M (often **multi-module per client**) | 6–18 months |
+| **Sustain (subscription / managed analytics)** | Hosted model, value ledger, quarterly reviews | $100K–$300K / yr | Annual |
 
-**Illustrative year-3 portfolio, all five offers:** 45 diagnostics (~$11M), 18 implementations (~$27M), 35 subscriptions (~$9M), giving **about $47M/yr in revenue**.
-- **Assumptions behind it:** diagnostic-to-implementation conversion of about 40%, implementation-to-subscription about 60%, plus some subscription-only rural network deals (state hospital associations).
-- **Cost to build:** about $3.5–5M over 18 months (Section 6 of the plan).
-- **Payback** is therefore likely within year 2 if conversion holds. **Validate against Chartis pipeline data.**
+**5:1 test with v1 values:**
+- **Single modules:** passes for denials. It is marginal for patient flow and AI unless soft value or a capacity-constrained client is included.
+- **Bundled:** a client buying 3 modules (about $5–8M hard value combined, after overlap) supports about $1–1.5M of annual fees.
+- **Conclusion:** sell **bundles to one client**, priced against a single value ledger.
 
-**Client ROI test:** every engagement should target at least **5:1** documented client value to fees within 12 months. The prototypes suggest that is plausible for #2, #4 and #5, but #1 and #3 depend more on assumptions.
+**Illustrative year-3 portfolio:**
 
----
+| Line | Count | Revenue |
+|---|---|---|
+| Diagnostics | 40 | ~$7M |
+| Implementations | 15 | ~$13M |
+| Subscriptions | 35 | ~$7M |
+| **Total** | | **~$27M** |
+
+- At about 35% contribution margin, that is about **$9.5M/yr of contribution**.
+- **Build cost** is about **$5–8M over 18 months**. That includes data engineering, HITRUST/SOC 2 and support for hosting PHI-bearing products.
+- **Payback on contribution is therefore about year 3**, not year 2.
+
+**Other cautions:**
+- Health-system sales cycles are 6–12 months, so 40 diagnostics by year 3 is aggressive.
+- Some revenue will **cannibalize** existing rural, workforce and AI advisory work. Count only incremental revenue.
 
 ## 6. Risks & mitigations
 
@@ -202,6 +249,12 @@ Chartis' pricing and financials are private. Every number below is an assumption
 | AI model risk / bias | Governance gate in #5; human-in-the-loop; NIST AI RMF / CHAI-aligned documentation |
 | Policy volatility (OBBBA timing, site-neutral payment, MA rules) | Keep scenarios as parameters; refresh quarterly |
 | Advisor-to-software shift strains the delivery model | Product owner per accelerator; shared platform (#5) to avoid five one-off tools |
+| False Claims Act / upcoding exposure from coding and CDI AI (DOJ is active on MA coding) | Compliance review of coding use cases; audit trails; never optimize for revenue alone |
+| Nurse risk scoring raises NLRA/union and disparate-impact issues (commute as a proxy) | Unit-level use only; bias testing; labor-relations review (Jarrard) |
+| Independence conflict when the AI Value Office measures Chartis' own implementations | Separate measurement team; client-owned value ledger; third-party audit option |
+| Payers respond with their own AI denial tools | Payer scorecard + contract strategy (HealthScape); refresh models quarterly |
+| Community backlash to OB / REH recommendations | Access-safe options first (enforced in the prototype); Jarrard community engagement |
+| Cyber / liability from hosting PHI | HITRUST/SOC 2; minimum-necessary data; client-hosted option |
 
 ---
 
@@ -209,4 +262,5 @@ Chartis' pricing and financials are private. Every number below is an assumption
 
 - **Research agent:** sourced statistics, verified that Chartis means The Chartis Group, and flagged that it could mean Chartis Research.
 - **Two builder agents and the lead:** built the five prototypes against a shared result contract.
-- **Independent reviewer agents:** challenged the logic, the numbers and the code. Their findings and the fixes made are in `docs/review_log.md`.
+- **Independent reviewer agents** (a red-team "CFO" and a code reviewer) challenged the logic, the numbers and the code. They made 18 findings. Every High finding was fixed, which cut headline value by about 70–90%. Details are in `docs/review_log.md`.
+- **Tests:** 93 automated tests, including seed sweeps and invariants for the governance gate, the REH margin and turnover calibration.

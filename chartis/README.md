@@ -5,13 +5,13 @@ Answers the question: *"What are the five biggest problems in healthcare that Ch
 > **Key assumption:** "Chartis" means **The Chartis Group**, the US healthcare advisory firm. If you meant Chartis Research (risk-tech) or another entity, see `docs/business_case.md` §0.
 > **All prototype data is synthetic.** Dollar values show how the method works; they are not forecasts.
 
-| Problem | Prototype | Illustrative annual value* |
-|---|---|---|
-| 1. Workforce shortage & premium labor | `chartis_proto/workforce.py` | see dashboard |
-| 2. Capacity & patient flow | `chartis_proto/patient_flow.py` | |
-| 3. Rural hospital distress | `chartis_proto/rural.py` | |
-| 4. Denials / prior auth / MA friction | `chartis_proto/denials.py` | |
-| 5. AI spend without measurable value | `chartis_proto/ai_portfolio.py` | |
+| Problem | Prototype | Hard value / yr* | Soft value / yr* |
+|---|---|---|---|
+| 1. Workforce shortage & premium labor | `chartis_proto/workforce.py` | $0.75M | n/a |
+| 2. Capacity & patient flow | `chartis_proto/patient_flow.py` | $1.4M | $2.3M capacity |
+| 3. Rural hospital distress | `chartis_proto/rural.py` | $1.6M | access (unpriced) |
+| 4. Denials / prior auth / MA friction | `chartis_proto/denials.py` | $4.2M | n/a |
+| 5. AI spend without measurable value | `chartis_proto/ai_portfolio.py` | $2.8M | $5.5M capacity |
 
 \*Each module uses a different reference client, so the values cannot be added together.
 

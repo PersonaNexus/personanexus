@@ -1,9 +1,10 @@
 import itertools
 
 import pytest
-from conftest import CONTRACT_KEYS
 
 from chartis_proto import common, rural
+
+from conftest import CONTRACT_KEYS
 
 
 def test_contract():
@@ -45,8 +46,9 @@ def test_reh_post_conversion_margin_bounded_across_seeds():
     for seed in range(1, 21):
         g = common.rng(seed)
         for i in range(120):
-            h = rural.apply_scenario(rural._hospital(g, i), medicaid_cut=rural.MEDICAID_CUT,
-                                     site_neutral=True)
+            h = rural.apply_scenario(
+                rural._hospital(g, i), medicaid_cut=rural.MEDICAID_CUT, site_neutral=True
+            )
             if rural.reh_eligible(h):
                 n += 1
                 assert rural.apply_scenario(h, convert_reh=True)["op_margin"] <= 0.12
@@ -62,18 +64,38 @@ def test_documented_constants():
 
 
 def test_shock_never_improves_margin():
-    h = {"npr": 20e6, "op_margin": 0.01, "medicaid_pct": 0.25, "selfpay_pct": 0.05,
-         "outpatient_heavy": True, "days_cash": 60, "births": 0, "miles_to_next": 40,
-         "beds": 20, "adc": 4, "cah": True}
+    h = {
+        "npr": 20e6,
+        "op_margin": 0.01,
+        "medicaid_pct": 0.25,
+        "selfpay_pct": 0.05,
+        "outpatient_heavy": True,
+        "days_cash": 60,
+        "births": 0,
+        "miles_to_next": 40,
+        "beds": 20,
+        "adc": 4,
+        "cah": True,
+    }
     s = rural.apply_scenario(h, medicaid_cut=0.1, site_neutral=True)
     assert s["op_margin"] < h["op_margin"] and s["annual_delta_usd"] < 0
     assert rural.score(s) >= rural.score(h)
 
 
 def test_reh_conversion_helps_tiny_hospital():
-    h = {"npr": 12e6, "op_margin": -0.08, "medicaid_pct": 0.2, "selfpay_pct": 0.05,
-         "outpatient_heavy": False, "days_cash": 30, "births": 0, "miles_to_next": 40,
-         "beds": 15, "adc": 2, "cah": True}
+    h = {
+        "npr": 12e6,
+        "op_margin": -0.08,
+        "medicaid_pct": 0.2,
+        "selfpay_pct": 0.05,
+        "outpatient_heavy": False,
+        "days_cash": 30,
+        "births": 0,
+        "miles_to_next": 40,
+        "beds": 15,
+        "adc": 2,
+        "cah": True,
+    }
     assert rural.reh_eligible(h)
     assert rural.apply_scenario(h, convert_reh=True)["annual_delta_usd"] > 0
     assert not rural.reh_eligible({**h, "op_margin": 0.03})  # healthy: not a candidate
@@ -81,9 +103,19 @@ def test_reh_conversion_helps_tiny_hospital():
 
 def test_isolated_ob_closure_is_never_recommended():
     for miles, births in itertools.product((10, 50), (120,)):
-        h = {"npr": 15e6, "op_margin": -0.05, "medicaid_pct": 0.25, "selfpay_pct": 0.05,
-             "outpatient_heavy": False, "days_cash": 30, "births": births,
-             "miles_to_next": miles, "beds": 60, "adc": 20, "cah": False}
+        h = {
+            "npr": 15e6,
+            "op_margin": -0.05,
+            "medicaid_pct": 0.25,
+            "selfpay_pct": 0.05,
+            "outpatient_heavy": False,
+            "days_cash": 30,
+            "births": births,
+            "miles_to_next": miles,
+            "beds": 60,
+            "adc": 20,
+            "cah": False,
+        }
         name, best, rejected = rural.best_option(h)
         if miles > rural.ACCESS_MILES:
             assert "Consolidate OB (low volume)" in rejected and not best["access_loss"]

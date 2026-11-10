@@ -3,6 +3,7 @@
 Runs the prototypes, prints a text summary, and optionally writes the JSON
 results and/or a self-contained dashboard HTML (data inlined).
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,7 +39,9 @@ def summarize(results: list[dict]) -> str:
         for m in r["headline_metrics"]:
             lines.append(f"  - {m['label']}: {m['display']}")
         lines.append(f"  => Hard annual value (reference client): {usd(r['annual_value_usd'])}")
-        lines.append(f"  => Soft / capacity value (reported separately): {usd(r['soft_value_usd'])}")
+        lines.append(
+            f"  => Soft / capacity value (reported separately): {usd(r['soft_value_usd'])}"
+        )
     return "\n".join(lines)
 
 
@@ -57,7 +60,9 @@ def main(argv: list[str] | None = None) -> int:
         a.json.write_text(payload)
         print(f"\nwrote {a.json}")
     if a.dashboard:
-        html = DASH_TEMPLATE.read_text().replace("/*__DATA__*/null", payload.replace("</", "<\\/").replace("<!--", "<\\!--"))
+        html = DASH_TEMPLATE.read_text().replace(
+            "/*__DATA__*/null", payload.replace("</", "<\\/").replace("<!--", "<\\!--")
+        )
         a.dashboard.write_text(html)
         print(f"wrote {a.dashboard}")
     return 0

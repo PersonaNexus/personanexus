@@ -1,7 +1,8 @@
 import pytest
-from conftest import CONTRACT_KEYS
 
 from chartis_proto import ai_portfolio
+
+from conftest import CONTRACT_KEYS
 
 SEEDS = range(1, 11)
 

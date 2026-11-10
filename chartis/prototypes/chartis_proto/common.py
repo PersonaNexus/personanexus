@@ -3,6 +3,7 @@
 ALL DATA IS SYNTHETIC. Benchmarks are illustrative assumptions, documented in
 each module's ``ASSUMPTIONS`` list and in docs/business_case.md.
 """
+
 from __future__ import annotations
 
 import math

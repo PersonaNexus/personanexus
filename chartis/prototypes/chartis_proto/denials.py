@@ -16,6 +16,7 @@ Method
 
 ALL DATA IS SYNTHETIC. Coefficients are illustrative, not fitted to real data.
 """
+
 from __future__ import annotations
 
 import math
@@ -24,7 +25,7 @@ from collections import Counter
 from .common import clamp, metric, result, rng, sigmoid, usd
 
 N_CLAIMS = 5000
-REWORK_COST = 57.0          # $ per touched claim (assumed mid-range of $25-$118)
+REWORK_COST = 57.0  # $ per touched claim (assumed mid-range of $25-$118)
 # P(pre-bill fix prevents the denial), by root cause. Missing prior auth often
 # cannot be obtained retroactively, so it is much harder to fix than coding.
 FIX_SUCCESS = {
@@ -35,11 +36,11 @@ FIX_SUCCESS = {
     "Timely filing": 0.65,
     "Payer behavior (other)": 0.30,
 }
-WRITE_OFF_SHARE = 0.22      # share of denied $ never recovered without intervention
+WRITE_OFF_SHARE = 0.22  # share of denied $ never recovered without intervention
 BACKEND_REWORK_MULTIPLIER = 2.0  # back-end appeal/rework costs ~2x a pre-bill touch
-PARTNER_COST = 750_000.0    # annual partner / technology cost to run the program
-REF_NPR = 1.0e9             # reference health system net patient revenue
-WORKLIST_CAPACITY = 0.10    # share of claims pre-bill staff can touch (assumption)
+PARTNER_COST = 750_000.0  # annual partner / technology cost to run the program
+REF_NPR = 1.0e9  # reference health system net patient revenue
+WORKLIST_CAPACITY = 0.10  # share of claims pre-bill staff can touch (assumption)
 
 PAYERS = {  # name: (share of claims, net-to-charge ratio, log-odds offset)
     "Medicare Advantage": (0.25, 0.30, 0.55),
@@ -48,19 +49,23 @@ PAYERS = {  # name: (share of claims, net-to-charge ratio, log-odds offset)
     "Medicaid": (0.20, 0.22, 0.35),
 }
 SERVICE_LINES = {  # name: (mean charge $, prior-auth likelihood)
-    "Imaging": (3_500, 0.7), "Surgery": (42_000, 0.8), "Cardiology": (28_000, 0.6),
-    "Oncology": (18_000, 0.75), "Emergency": (4_500, 0.05), "Behavioral Health": (6_000, 0.4),
+    "Imaging": (3_500, 0.7),
+    "Surgery": (42_000, 0.8),
+    "Cardiology": (28_000, 0.6),
+    "Oncology": (18_000, 0.75),
+    "Emergency": (4_500, 0.05),
+    "Behavioral Health": (6_000, 0.4),
     "Inpatient Medicine": (25_000, 0.3),
 }
 
 # Interpretable model, log-odds contributions.
 INTERCEPT = -3.65
 COEF = {
-    "missing_prior_auth": 2.2,     # auth required but not obtained
+    "missing_prior_auth": 2.2,  # auth required but not obtained
     "eligibility_unverified": 1.3,
-    "documentation_gap": 1.6,      # per unit of (1 - completeness)
+    "documentation_gap": 1.6,  # per unit of (1 - completeness)
     "high_coding_complexity": 0.7,
-    "late_submission": 0.9,        # submitted > 30 days after service
+    "late_submission": 0.9,  # submitted > 30 days after service
 }
 ROOT_CAUSE_LABEL = {
     "missing_prior_auth": "Authorization / precert",
@@ -160,8 +165,9 @@ def run(seed: int = 42) -> dict:
         c["denied"] = 1 if r.random() < sigmoid(z) else 0
         c["root_cause"] = root_cause(c)
         c["fix_success"] = FIX_SUCCESS[c["root_cause"]]
-        c["ev"] = (c["p_denial"] * c["expected_payment"] * WRITE_OFF_SHARE * c["fix_success"]
-                   - REWORK_COST)
+        c["ev"] = (
+            c["p_denial"] * c["expected_payment"] * WRITE_OFF_SHARE * c["fix_success"] - REWORK_COST
+        )
 
     n_denied = sum(c["denied"] for c in claims)
     denial_rate = n_denied / len(claims)
@@ -170,8 +176,12 @@ def run(seed: int = 42) -> dict:
     total_expected = sum(c["expected_payment"] for c in claims)
     causes = Counter(c["root_cause"] for c in claims if c["denied"])
     by_payer = {
-        p: round(100 * sum(c["denied"] for c in claims if c["payer"] == p)
-                 / max(1, sum(1 for c in claims if c["payer"] == p)), 1)
+        p: round(
+            100
+            * sum(c["denied"] for c in claims if c["payer"] == p)
+            / max(1, sum(1 for c in claims if c["payer"] == p)),
+            1,
+        )
         for p in PAYERS
     }
 
@@ -181,20 +191,29 @@ def run(seed: int = 42) -> dict:
     prevented = sum(c["expected_payment"] * c["fix_success"] for c in touched if c["denied"])
     rework = REWORK_COST * len(touched)
     # Value = write-offs avoided on prevented denials + avoided back-end rework.
-    avoided_backend_rework = sum(
-        c["fix_success"] for c in touched if c["denied"]) * REWORK_COST * BACKEND_REWORK_MULTIPLIER
+    avoided_backend_rework = (
+        sum(c["fix_success"] for c in touched if c["denied"])
+        * REWORK_COST
+        * BACKEND_REWORK_MULTIPLIER
+    )
     sample_value = prevented * WRITE_OFF_SHARE + avoided_backend_rework - rework
     scale = REF_NPR / total_expected
     gross_value = sample_value * scale
     annual_value = gross_value - PARTNER_COST
 
-    table = [{
-        "claim": c["claim_id"], "payer": c["payer"], "service_line": c["service_line"],
-        "expected_payment": usd(c["expected_payment"]),
-        "p_denial": f"{c['p_denial'] * 100:.0f}%", "root_cause": c["root_cause"],
-        "fix_success": f"{c['fix_success']:.0%}",
-        "expected_value": usd(c["ev"]),
-    } for c in worklist[:20]]
+    table = [
+        {
+            "claim": c["claim_id"],
+            "payer": c["payer"],
+            "service_line": c["service_line"],
+            "expected_payment": usd(c["expected_payment"]),
+            "p_denial": f"{c['p_denial'] * 100:.0f}%",
+            "root_cause": c["root_cause"],
+            "fix_success": f"{c['fix_success']:.0%}",
+            "expected_value": usd(c["ev"]),
+        }
+        for c in worklist[:20]
+    ]
 
     return result(
         key="denials",
@@ -203,18 +222,22 @@ def run(seed: int = 42) -> dict:
         headline_metrics=[
             metric("Claims scored", len(claims)),
             metric("Initial denial rate", denial_rate * 100, "%"),
-            metric("Denied $ share of expected payment", 100 * denied_dollars / total_expected, "%"),
+            metric(
+                "Denied $ share of expected payment", 100 * denied_dollars / total_expected, "%"
+            ),
             metric("Model AUC", model_auc, "", ".2f"),
             metric("Claims on pre-bill worklist", len(worklist)),
             metric("Medicare Advantage denial rate", by_payer["Medicare Advantage"], "%"),
         ],
         annual_value_usd=annual_value,
         soft_value_usd=0.0,
-        value_basis=(f"Sample net value {usd(sample_value)} ({WRITE_OFF_SHARE:.0%} write-off avoided on "
-                     "prevented denials, fix success by root cause, + avoided back-end rework - pre-bill "
-                     f"rework at ${REWORK_COST:.0f}/claim), scaled x{scale:,.0f} to a "
-                     f"${REF_NPR / 1e9:.0f}B NPR system ({usd(gross_value)}), minus "
-                     f"{usd(PARTNER_COST)} partner/technology cost."),
+        value_basis=(
+            f"Sample net value {usd(sample_value)} ({WRITE_OFF_SHARE:.0%} write-off avoided on "
+            "prevented denials, fix success by root cause, + avoided back-end rework - pre-bill "
+            f"rework at ${REWORK_COST:.0f}/claim), scaled x{scale:,.0f} to a "
+            f"${REF_NPR / 1e9:.0f}B NPR system ({usd(gross_value)}), minus "
+            f"{usd(PARTNER_COST)} partner/technology cost."
+        ),
         assumptions=ASSUMPTIONS,
         table_title="Top 20 pre-bill worklist claims (ranked by expected value of intervening)",
         table=table,
@@ -229,6 +252,7 @@ def run(seed: int = 42) -> dict:
             "value_pct_of_npr": round(100 * annual_value / REF_NPR, 3),
             "worklist_share_of_claims_pct": round(100 * len(worklist) / len(claims), 1),
             "worklist_capture_of_denials_pct": round(
-                100 * sum(c["denied"] for c in worklist) / max(1, n_denied), 1),
+                100 * sum(c["denied"] for c in worklist) / max(1, n_denied), 1
+            ),
         },
     )

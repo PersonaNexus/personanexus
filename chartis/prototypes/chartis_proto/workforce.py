@@ -21,6 +21,7 @@ Method
 
 Everything is synthetic; benchmark rates are listed in ASSUMPTIONS.
 """
+
 from __future__ import annotations
 
 import math
@@ -47,8 +48,9 @@ FLOAT_COVER = 0.70
 TARGET_TURNOVER = 0.164
 # Newsvendor critical ratio: staff core up to the demand quantile where an
 # extra core RN-hour (always paid) costs the same as expected gap coverage.
-_GAP_RATE = (FLOAT_COVER * FLOAT_RATE / FLOAT_UTILIZATION
-             + (1 - FLOAT_COVER) * (OT_SHARE * OT_RATE + (1 - OT_SHARE) * AGENCY_RATE))
+_GAP_RATE = FLOAT_COVER * FLOAT_RATE / FLOAT_UTILIZATION + (1 - FLOAT_COVER) * (
+    OT_SHARE * OT_RATE + (1 - OT_SHARE) * AGENCY_RATE
+)
 CORE_QUANTILE = 1 - STAFF_RATE / _GAP_RATE
 SHIFT_HOURS = 12
 REPLACEMENT_COST = 40_000
@@ -56,10 +58,15 @@ OUTREACH_COST = 1_500
 OUTREACH_EFFECT = 0.25
 
 UNITS = [
-    ("MICU", "ICU", 24, 2), ("SICU", "ICU", 20, 2), ("CVICU", "ICU", 16, 2),
-    ("4 Step-Down", "Step-down", 32, 3), ("5 Telemetry", "Step-down", 36, 3),
-    ("6 Med-Surg", "Med-surg", 40, 5), ("7 Med-Surg", "Med-surg", 40, 5),
-    ("8 Ortho", "Med-surg", 30, 5), ("9 Oncology", "Med-surg", 32, 5),
+    ("MICU", "ICU", 24, 2),
+    ("SICU", "ICU", 20, 2),
+    ("CVICU", "ICU", 16, 2),
+    ("4 Step-Down", "Step-down", 32, 3),
+    ("5 Telemetry", "Step-down", 36, 3),
+    ("6 Med-Surg", "Med-surg", 40, 5),
+    ("7 Med-Surg", "Med-surg", 40, 5),
+    ("8 Ortho", "Med-surg", 30, 5),
+    ("9 Oncology", "Med-surg", 32, 5),
     ("10 Observation", "Med-surg", 28, 5),
 ]
 
@@ -108,8 +115,12 @@ def _staffing_cost(demand: list[int], core: int, float_cover: float) -> dict:
         rest = gap - f
         ot_h += rest * OT_SHARE
         agency_h += rest * (1 - OT_SHARE)
-    cost = (staff_h * STAFF_RATE + float_h / FLOAT_UTILIZATION * FLOAT_RATE
-            + ot_h * OT_RATE + agency_h * AGENCY_RATE)
+    cost = (
+        staff_h * STAFF_RATE
+        + float_h / FLOAT_UTILIZATION * FLOAT_RATE
+        + ot_h * OT_RATE
+        + agency_h * AGENCY_RATE
+    )
     return {"cost": cost, "agency_hours": agency_h, "float_hours": float_h, "ot_hours": ot_h}
 
 
@@ -121,12 +132,24 @@ def _turnover_model(r, n: int = 1100) -> list[dict]:
         changes = r.randint(0, 8)  # last-minute schedule changes / qtr
         vacancy = r.uniform(0.02, 0.22)  # unit vacancy rate
         commute = max(5, r.gauss(25, 12))  # minutes
-        z = (0.9 * (tenure < 2) + 0.06 * ot + 0.12 * changes
-             + 4.0 * vacancy + 0.012 * (commute - 25) - 0.04 * min(tenure, 15))
-        nurses.append({
-            "rn_id": f"RN{i:04d}", "tenure_yrs": round(tenure, 1), "overtime_hrs_2wk": round(ot, 1),
-            "sched_changes_qtr": changes, "unit_vacancy": round(vacancy, 3), "_z": z,
-        })
+        z = (
+            0.9 * (tenure < 2)
+            + 0.06 * ot
+            + 0.12 * changes
+            + 4.0 * vacancy
+            + 0.012 * (commute - 25)
+            - 0.04 * min(tenure, 15)
+        )
+        nurses.append(
+            {
+                "rn_id": f"RN{i:04d}",
+                "tenure_yrs": round(tenure, 1),
+                "overtime_hrs_2wk": round(ot, 1),
+                "sched_changes_qtr": changes,
+                "unit_vacancy": round(vacancy, 3),
+                "_z": z,
+            }
+        )
     # calibrate intercept by bisection so mean risk == TARGET_TURNOVER
     lo, hi = -10.0, 5.0
     for _ in range(60):
@@ -154,7 +177,7 @@ def run(seed: int = 42) -> dict:
         for w in range(year // horizon):  # 13 rolling-origin windows in year 2
             start = year + w * horizon
             preds = _forecast(series[:start], horizon)
-            actual = series[start:start + horizon]
+            actual = series[start : start + horizon]
             abs_err += sum(abs(a - p) for a, p in zip(actual, preds))
             actual_sum += sum(actual)
             demand = [_rn_needed(c, ratio) for c in actual for _ in range(2)]
@@ -169,14 +192,19 @@ def run(seed: int = 42) -> dict:
             totals["agency_f"] += f_["agency_hours"]
         totals["base"] += u_base
         totals["fcst"] += u_fcst
-        unit_rows.append({
-            "unit": name, "type": kind, "beds": beds, "ratio": f"1:{ratio}",
-            "baseline_core_rn": base_core,
-            "forecast_core_rn_range": f"{min(f_cores)}-{max(f_cores)}",
-            "annual_cost_baseline": round(u_base),
-            "annual_cost_forecast": round(u_fcst),
-            "annual_savings": round(u_base - u_fcst),
-        })
+        unit_rows.append(
+            {
+                "unit": name,
+                "type": kind,
+                "beds": beds,
+                "ratio": f"1:{ratio}",
+                "baseline_core_rn": base_core,
+                "forecast_core_rn_range": f"{min(f_cores)}-{max(f_cores)}",
+                "annual_cost_baseline": round(u_base),
+                "annual_cost_forecast": round(u_fcst),
+                "annual_savings": round(u_base - u_fcst),
+            }
+        )
     mape = 100 * abs_err / actual_sum
     labor_savings = totals["base"] - totals["fcst"]
 
@@ -197,7 +225,12 @@ def run(seed: int = 42) -> dict:
             metric("Census forecast error (MAPE, 13 rolling 4-wk windows)", mape, "%"),
             metric("Agency hours avoided / yr", totals["agency_b"] - totals["agency_f"], "hrs"),
             metric("Labor cost savings / yr", labor_savings, "usd"),
-            metric("Turnover: top-risk decile vs overall", top_rate / base_rate if base_rate else 0, "x", ".1f"),
+            metric(
+                "Turnover: top-risk decile vs overall",
+                top_rate / base_rate if base_rate else 0,
+                "x",
+                ".1f",
+            ),
             metric("Net retention value / yr", retention_value, "usd"),
         ],
         annual_value_usd=labor_savings + retention_value,

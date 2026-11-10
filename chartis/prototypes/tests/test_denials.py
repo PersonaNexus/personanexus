@@ -1,7 +1,8 @@
 import pytest
-from conftest import CONTRACT_KEYS
 
 from chartis_proto import denials
+
+from conftest import CONTRACT_KEYS
 
 
 def _m(r, label):
@@ -34,7 +35,8 @@ def test_seed_sweep_value_share_of_npr(seed):
     pct = r["details"]["value_pct_of_npr"]
     assert 0.25 <= pct <= 0.8  # target band ~0.4-0.7% of NPR
     assert r["annual_value_usd"] == pytest.approx(
-        r["details"]["gross_value_before_partner_cost"] - denials.PARTNER_COST, abs=1)
+        r["details"]["gross_value_before_partner_cost"] - denials.PARTNER_COST, abs=1
+    )
     assert _m(r, "Model AUC") > 0.6
 
 
@@ -57,7 +59,13 @@ def test_auc_helper():
 
 
 def test_missing_auth_raises_risk():
-    base = {"payer": "Commercial", "auth_required": True, "auth_obtained": True,
-            "eligibility_verified": True, "doc_completeness": 1.0, "coding_complexity": 1,
-            "days_to_submit": 3}
+    base = {
+        "payer": "Commercial",
+        "auth_required": True,
+        "auth_obtained": True,
+        "eligibility_verified": True,
+        "doc_completeness": 1.0,
+        "coding_complexity": 1,
+        "days_to_submit": 3,
+    }
     assert denials.predict({**base, "auth_obtained": False}) > denials.predict(base)

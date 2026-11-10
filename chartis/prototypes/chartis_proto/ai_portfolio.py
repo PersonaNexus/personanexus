@@ -34,6 +34,7 @@ Method
    license, internal cost, and one-time + pilot spend amortized over 3 years.
    Soft value is reported separately (soft_value_usd) and never added.
 """
+
 from __future__ import annotations
 
 from .common import metric, result, rng
@@ -55,16 +56,23 @@ LOADED_RATE = {"physician": 160.0, "nurse": 75.0, "admin": 45.0, "none": 0.0}
 
 # Use cases that claim the same coded revenue -> overlap haircut on hard value.
 REV_CYCLE_STACK = {
-    "Prior-auth automation", "Coding assist (CAC+LLM)", "Denial appeal letter generation",
-    "Revenue integrity / charge capture", "Clinical documentation integrity (CDI) AI",
+    "Prior-auth automation",
+    "Coding assist (CAC+LLM)",
+    "Denial appeal letter generation",
+    "Revenue integrity / charge capture",
+    "Clinical documentation integrity (CDI) AI",
 }
 # Use cases whose value overlaps another prototype module (attribute once per client).
 OVERLAPS_MODULE = {
-    "Prior-auth automation": "denials", "Coding assist (CAC+LLM)": "denials",
-    "Denial appeal letter generation": "denials", "Revenue integrity / charge capture": "denials",
+    "Prior-auth automation": "denials",
+    "Coding assist (CAC+LLM)": "denials",
+    "Denial appeal letter generation": "denials",
+    "Revenue integrity / charge capture": "denials",
     "Clinical documentation integrity (CDI) AI": "denials",
-    "Capacity / discharge prediction": "patient_flow", "Readmission risk + transitions": "patient_flow",
-    "Nurse scheduling optimization": "workforce", "HR recruiting screening": "workforce",
+    "Capacity / discharge prediction": "patient_flow",
+    "Readmission risk + transitions": "patient_flow",
+    "Nurse scheduling optimization": "workforce",
+    "HR recruiting screening": "workforce",
     "Ambient clinical documentation": "workforce",
 }
 
@@ -85,8 +93,8 @@ ASSUMPTIONS = [
     "denials / patient_flow / workforce prototypes: a client value ledger must attribute each dollar once.",
     f"Headline uses REALIZED value (simulated adoption) not promised value; ranking counts soft value at "
     f"{SOFT_DECISION_WEIGHT:.0%}.",
-    f"Year-1 AI budget ${YEAR1_BUDGET/1e6:.0f}M covers one-time + license + internal cost; pilots cost "
-    f"{PILOT_COST_SHARE:.0%} of one-time from a ${PILOT_RESERVE/1e6:.1f}M reserve.",
+    f"Year-1 AI budget ${YEAR1_BUDGET / 1e6:.0f}M covers one-time + license + internal cost; pilots cost "
+    f"{PILOT_COST_SHARE:.0%} of one-time from a ${PILOT_RESERVE / 1e6:.1f}M reserve.",
     f"Catalog licenses are list prices; a {LICENSE_DISCOUNT:.0%} negotiated enterprise discount is applied.",
     f"Data readiness <= {MIN_READINESS} (of 5) -> Hold until data foundations are fixed.",
     "Governance gate is illustrative; real gate should follow the client's AI governance policy (e.g. CHAI/NIST AI RMF aligned).",
@@ -97,38 +105,429 @@ ASSUMPTIONS = [
 # name, domain, hours/yr, rate class, revenue lift, cost avoided, one-time, annual license,
 # ttv months, data readiness 1-5, clinical risk, regulatory exposure, evidence 1-5, adoption risk 0-1
 CATALOG = [
-    ("Ambient clinical documentation", "Clinical ops", 60_000, "physician", 0, 1_000_000, 900_000, 3_600_000, 4, 4, "low", "Privacy/consent", 4, 0.30),
-    ("Inbox message drafting", "Clinical ops", 45_000, "physician", 0, 300_000, 250_000, 600_000, 3, 4, "medium", "Patient safety/privacy", 3, 0.35),
-    ("Prior-auth automation", "Revenue cycle", 60_000, "admin", 1_800_000, 400_000, 700_000, 900_000, 6, 3, "low", "Payer rules", 3, 0.25),
-    ("Coding assist (CAC+LLM)", "Revenue cycle", 40_000, "admin", 4_500_000, 0, 600_000, 1_100_000, 5, 4, "low", "Compliance/upcoding", 4, 0.20),
-    ("Denial appeal letter generation", "Revenue cycle", 25_000, "admin", 3_200_000, 0, 300_000, 400_000, 3, 4, "low", "Compliance", 3, 0.20),
-    ("Sepsis early warning", "Clinical quality", 0, "none", 0, 3_500_000, 800_000, 500_000, 9, 3, "high", "FDA SaMD/bias", 2, 0.40),
-    ("Readmission risk + transitions", "Clinical quality", 8_000, "nurse", 0, 2_200_000, 400_000, 300_000, 6, 4, "medium", "Bias", 3, 0.35),
-    ("Imaging triage (stroke/PE)", "Clinical quality", 3_000, "physician", 900_000, 1_500_000, 500_000, 700_000, 6, 4, "high", "FDA-cleared SaMD", 4, 0.20),
-    ("Patient access chatbot/scheduling", "Access", 50_000, "admin", 2_000_000, 0, 500_000, 600_000, 4, 3, "low", "Privacy", 3, 0.35),
-    ("Nurse scheduling optimization", "Workforce", 20_000, "nurse", 0, 3_000_000, 600_000, 500_000, 6, 3, "low", "Labor relations", 3, 0.30),
-    ("Supply chain demand forecasting", "Operations", 6_000, "admin", 0, 2_400_000, 500_000, 350_000, 6, 3, "low", "None material", 3, 0.20),
-    ("Capacity / discharge prediction", "Operations", 15_000, "nurse", 1_500_000, 2_000_000, 700_000, 600_000, 6, 3, "medium", "Bias", 3, 0.35),
-    ("OR block utilization optimizer", "Operations", 4_000, "admin", 3_000_000, 0, 400_000, 400_000, 6, 4, "low", "None material", 3, 0.30),
-    ("Clinical trial matching", "Research", 5_000, "nurse", 600_000, 0, 300_000, 250_000, 9, 2, "low", "Privacy/IRB", 2, 0.40),
-    ("Radiology report summarization", "Clinical ops", 10_000, "physician", 0, 0, 300_000, 400_000, 6, 3, "medium", "Patient safety", 2, 0.35),
-    ("Pathology slide AI", "Clinical quality", 6_000, "physician", 0, 400_000, 1_500_000, 600_000, 12, 2, "high", "FDA SaMD", 3, 0.40),
-    ("Deterioration index (med-surg)", "Clinical quality", 0, "none", 0, 1_800_000, 300_000, 200_000, 6, 4, "high", "Bias/alert fatigue", 2, 0.45),
-    ("Patient-facing symptom triage LLM", "Access", 15_000, "nurse", 500_000, 0, 400_000, 500_000, 6, 3, "high", "Patient safety/liability", 1, 0.50),
-    ("Revenue integrity / charge capture", "Revenue cycle", 8_000, "admin", 3_800_000, 0, 500_000, 600_000, 6, 4, "low", "Compliance", 3, 0.20),
-    ("IT service desk copilot", "Corporate", 30_000, "admin", 0, 200_000, 150_000, 300_000, 3, 4, "low", "None material", 4, 0.20),
-    ("HR recruiting screening", "Workforce", 12_000, "admin", 0, 600_000, 200_000, 250_000, 4, 3, "low", "Employment bias law", 2, 0.30),
-    ("Care-gap closure outreach (VBC)", "Value-based care", 10_000, "nurse", 2_600_000, 0, 400_000, 500_000, 9, 3, "low", "Privacy", 3, 0.35),
-    ("Clinical documentation integrity (CDI) AI", "Revenue cycle", 15_000, "nurse", 5_000_000, 0, 600_000, 900_000, 6, 4, "low", "Compliance", 4, 0.25),
-    ("Medication reconciliation assist", "Clinical quality", 20_000, "nurse", 0, 700_000, 400_000, 350_000, 9, 3, "medium", "Patient safety", 2, 0.40),
-    ("Contract/payer analytics LLM", "Finance", 5_000, "admin", 2_000_000, 0, 300_000, 300_000, 6, 3, "low", "None material", 2, 0.30),
+    (
+        "Ambient clinical documentation",
+        "Clinical ops",
+        60_000,
+        "physician",
+        0,
+        1_000_000,
+        900_000,
+        3_600_000,
+        4,
+        4,
+        "low",
+        "Privacy/consent",
+        4,
+        0.30,
+    ),
+    (
+        "Inbox message drafting",
+        "Clinical ops",
+        45_000,
+        "physician",
+        0,
+        300_000,
+        250_000,
+        600_000,
+        3,
+        4,
+        "medium",
+        "Patient safety/privacy",
+        3,
+        0.35,
+    ),
+    (
+        "Prior-auth automation",
+        "Revenue cycle",
+        60_000,
+        "admin",
+        1_800_000,
+        400_000,
+        700_000,
+        900_000,
+        6,
+        3,
+        "low",
+        "Payer rules",
+        3,
+        0.25,
+    ),
+    (
+        "Coding assist (CAC+LLM)",
+        "Revenue cycle",
+        40_000,
+        "admin",
+        4_500_000,
+        0,
+        600_000,
+        1_100_000,
+        5,
+        4,
+        "low",
+        "Compliance/upcoding",
+        4,
+        0.20,
+    ),
+    (
+        "Denial appeal letter generation",
+        "Revenue cycle",
+        25_000,
+        "admin",
+        3_200_000,
+        0,
+        300_000,
+        400_000,
+        3,
+        4,
+        "low",
+        "Compliance",
+        3,
+        0.20,
+    ),
+    (
+        "Sepsis early warning",
+        "Clinical quality",
+        0,
+        "none",
+        0,
+        3_500_000,
+        800_000,
+        500_000,
+        9,
+        3,
+        "high",
+        "FDA SaMD/bias",
+        2,
+        0.40,
+    ),
+    (
+        "Readmission risk + transitions",
+        "Clinical quality",
+        8_000,
+        "nurse",
+        0,
+        2_200_000,
+        400_000,
+        300_000,
+        6,
+        4,
+        "medium",
+        "Bias",
+        3,
+        0.35,
+    ),
+    (
+        "Imaging triage (stroke/PE)",
+        "Clinical quality",
+        3_000,
+        "physician",
+        900_000,
+        1_500_000,
+        500_000,
+        700_000,
+        6,
+        4,
+        "high",
+        "FDA-cleared SaMD",
+        4,
+        0.20,
+    ),
+    (
+        "Patient access chatbot/scheduling",
+        "Access",
+        50_000,
+        "admin",
+        2_000_000,
+        0,
+        500_000,
+        600_000,
+        4,
+        3,
+        "low",
+        "Privacy",
+        3,
+        0.35,
+    ),
+    (
+        "Nurse scheduling optimization",
+        "Workforce",
+        20_000,
+        "nurse",
+        0,
+        3_000_000,
+        600_000,
+        500_000,
+        6,
+        3,
+        "low",
+        "Labor relations",
+        3,
+        0.30,
+    ),
+    (
+        "Supply chain demand forecasting",
+        "Operations",
+        6_000,
+        "admin",
+        0,
+        2_400_000,
+        500_000,
+        350_000,
+        6,
+        3,
+        "low",
+        "None material",
+        3,
+        0.20,
+    ),
+    (
+        "Capacity / discharge prediction",
+        "Operations",
+        15_000,
+        "nurse",
+        1_500_000,
+        2_000_000,
+        700_000,
+        600_000,
+        6,
+        3,
+        "medium",
+        "Bias",
+        3,
+        0.35,
+    ),
+    (
+        "OR block utilization optimizer",
+        "Operations",
+        4_000,
+        "admin",
+        3_000_000,
+        0,
+        400_000,
+        400_000,
+        6,
+        4,
+        "low",
+        "None material",
+        3,
+        0.30,
+    ),
+    (
+        "Clinical trial matching",
+        "Research",
+        5_000,
+        "nurse",
+        600_000,
+        0,
+        300_000,
+        250_000,
+        9,
+        2,
+        "low",
+        "Privacy/IRB",
+        2,
+        0.40,
+    ),
+    (
+        "Radiology report summarization",
+        "Clinical ops",
+        10_000,
+        "physician",
+        0,
+        0,
+        300_000,
+        400_000,
+        6,
+        3,
+        "medium",
+        "Patient safety",
+        2,
+        0.35,
+    ),
+    (
+        "Pathology slide AI",
+        "Clinical quality",
+        6_000,
+        "physician",
+        0,
+        400_000,
+        1_500_000,
+        600_000,
+        12,
+        2,
+        "high",
+        "FDA SaMD",
+        3,
+        0.40,
+    ),
+    (
+        "Deterioration index (med-surg)",
+        "Clinical quality",
+        0,
+        "none",
+        0,
+        1_800_000,
+        300_000,
+        200_000,
+        6,
+        4,
+        "high",
+        "Bias/alert fatigue",
+        2,
+        0.45,
+    ),
+    (
+        "Patient-facing symptom triage LLM",
+        "Access",
+        15_000,
+        "nurse",
+        500_000,
+        0,
+        400_000,
+        500_000,
+        6,
+        3,
+        "high",
+        "Patient safety/liability",
+        1,
+        0.50,
+    ),
+    (
+        "Revenue integrity / charge capture",
+        "Revenue cycle",
+        8_000,
+        "admin",
+        3_800_000,
+        0,
+        500_000,
+        600_000,
+        6,
+        4,
+        "low",
+        "Compliance",
+        3,
+        0.20,
+    ),
+    (
+        "IT service desk copilot",
+        "Corporate",
+        30_000,
+        "admin",
+        0,
+        200_000,
+        150_000,
+        300_000,
+        3,
+        4,
+        "low",
+        "None material",
+        4,
+        0.20,
+    ),
+    (
+        "HR recruiting screening",
+        "Workforce",
+        12_000,
+        "admin",
+        0,
+        600_000,
+        200_000,
+        250_000,
+        4,
+        3,
+        "low",
+        "Employment bias law",
+        2,
+        0.30,
+    ),
+    (
+        "Care-gap closure outreach (VBC)",
+        "Value-based care",
+        10_000,
+        "nurse",
+        2_600_000,
+        0,
+        400_000,
+        500_000,
+        9,
+        3,
+        "low",
+        "Privacy",
+        3,
+        0.35,
+    ),
+    (
+        "Clinical documentation integrity (CDI) AI",
+        "Revenue cycle",
+        15_000,
+        "nurse",
+        5_000_000,
+        0,
+        600_000,
+        900_000,
+        6,
+        4,
+        "low",
+        "Compliance",
+        4,
+        0.25,
+    ),
+    (
+        "Medication reconciliation assist",
+        "Clinical quality",
+        20_000,
+        "nurse",
+        0,
+        700_000,
+        400_000,
+        350_000,
+        9,
+        3,
+        "medium",
+        "Patient safety",
+        2,
+        0.40,
+    ),
+    (
+        "Contract/payer analytics LLM",
+        "Finance",
+        5_000,
+        "admin",
+        2_000_000,
+        0,
+        300_000,
+        300_000,
+        6,
+        3,
+        "low",
+        "None material",
+        2,
+        0.30,
+    ),
 ]
 
-FIELDS = ["name", "domain", "hours", "rate", "revenue", "avoided", "one_time", "license",
-          "ttv", "readiness", "risk", "regulatory", "evidence", "adoption_risk"]
+FIELDS = [
+    "name",
+    "domain",
+    "hours",
+    "rate",
+    "revenue",
+    "avoided",
+    "one_time",
+    "license",
+    "ttv",
+    "readiness",
+    "risk",
+    "regulatory",
+    "evidence",
+    "adoption_risk",
+]
 
 
-def _npv(annual_benefit: float, one_time: float, license_: float, ttv: int) -> tuple[float, float | None]:
+def _npv(
+    annual_benefit: float, one_time: float, license_: float, ttv: int
+) -> tuple[float, float | None]:
     """Monthly discounted cash flow; returns (NPV, payback month or None)."""
     r = (1 + DISCOUNT_RATE) ** (1 / 12) - 1
     npv, cum, payback = -one_time, -one_time, None
@@ -166,7 +565,9 @@ def evaluate(seed: int = 42) -> list[dict]:
     for row in CATALOG:
         u = dict(zip(FIELDS, row))
         noise = r.uniform(0.9, 1.1)
-        factor = (0.5 + 0.1 * u["evidence"]) * (0.6 + 0.08 * u["readiness"]) * (1 - u["adoption_risk"])
+        factor = (
+            (0.5 + 0.1 * u["evidence"]) * (0.6 + 0.08 * u["readiness"]) * (1 - u["adoption_risk"])
+        )
         hard = (u["revenue"] + u["avoided"]) * noise
         soft = u["hours"] * LOADED_RATE[u["rate"]] * noise
         if u["name"] in REV_CYCLE_STACK:
@@ -185,15 +586,20 @@ def evaluate(seed: int = 42) -> list[dict]:
     return out
 
 
-def select(cases: list[dict], budget: float = YEAR1_BUDGET, seed: int = 42) -> tuple[list[dict], float]:
+def select(
+    cases: list[dict], budget: float = YEAR1_BUDGET, seed: int = 42
+) -> tuple[list[dict], float]:
     """Greedy portfolio under budget; sets decision + spend. Returns (cases, spend)."""
     ranked = sorted(cases, key=lambda u: u["npv"] / u["year1_cost"], reverse=True)
     for u in ranked:
         u["decision"], u["spend"] = ("Hold", 0.0) if u["gate"] == "Hold" else (None, 0.0)
     # Pilots first, from a reserved slice, ranked by risk-adjusted upside per pilot dollar.
     pilot_spend = 0.0
-    for u in sorted((u for u in ranked if u["gate"] == "Pilot"),
-                    key=lambda u: u["decision_value"] / u["one_time"], reverse=True):
+    for u in sorted(
+        (u for u in ranked if u["gate"] == "Pilot"),
+        key=lambda u: u["decision_value"] / u["one_time"],
+        reverse=True,
+    ):
         cost = PILOT_COST_SHARE * u["one_time"]
         if pilot_spend + cost <= min(PILOT_RESERVE, budget):
             u["decision"], u["spend"] = "Pilot", cost
@@ -224,43 +630,68 @@ def run(seed: int = 42) -> dict:
     realized_hard = sum(u["hard_benefit"] * u["realized_share"] for u in funded)
     realized_soft = sum(u["soft_benefit"] * u["realized_share"] for u in funded)
     run_costs = sum(u["run_cost"] for u in funded)
-    amortized = (sum(u["one_time"] for u in funded) + sum(u["spend"] for u in pilots)) / AMORTIZE_YEARS
+    amortized = (
+        sum(u["one_time"] for u in funded) + sum(u["spend"] for u in pilots)
+    ) / AMORTIZE_YEARS
     hard_net = realized_hard - run_costs - amortized
     promised = sum(u["hard_benefit"] + u["soft_benefit"] for u in funded)
     realized = realized_hard + realized_soft
     leaks = [u["name"] for u in funded if u["leakage"]]
-    table = [{
-        "use_case": u["name"], "domain": u["domain"], "risk": u["risk"], "evidence": u["evidence"],
-        "decision": u["decision"], "reason": u["reason"],
-        "hard_benefit_yr": round(u["hard_benefit"]), "soft_benefit_yr": round(u["soft_benefit"]),
-        "risk_adj_npv_3yr": round(u["npv"]), "payback_months": u["payback"],
-        "year1_spend": round(u["spend"]),
-        "realized_vs_promised": None if u["realized_share"] is None else round(u["realized_share"], 2),
-        "overlaps_module": u["overlaps_module"],
-    } for u in cases]
+    table = [
+        {
+            "use_case": u["name"],
+            "domain": u["domain"],
+            "risk": u["risk"],
+            "evidence": u["evidence"],
+            "decision": u["decision"],
+            "reason": u["reason"],
+            "hard_benefit_yr": round(u["hard_benefit"]),
+            "soft_benefit_yr": round(u["soft_benefit"]),
+            "risk_adj_npv_3yr": round(u["npv"]),
+            "payback_months": u["payback"],
+            "year1_spend": round(u["spend"]),
+            "realized_vs_promised": None
+            if u["realized_share"] is None
+            else round(u["realized_share"], 2),
+            "overlaps_module": u["overlaps_module"],
+        }
+        for u in cases
+    ]
     return result(
         key="ai_portfolio",
         problem="AI/digital investment without measurable value",
         question="Which AI use cases should we fund, pilot or hold -- and are funded ones delivering?",
         headline_metrics=[
             metric("Use cases evaluated", len(cases)),
-            metric("Funded / piloted", len(funded), fmt=",.0f") | {"display": f"{len(funded)} / {len(pilots)}"},
-            metric("Year-1 spend vs budget", spend, "usd") | {"display": f"${spend/1e6:.1f}M / ${YEAR1_BUDGET/1e6:.0f}M"},
-            metric("Portfolio 3-yr risk-adj NPV (decision basis)", sum(u["npv"] for u in funded), "usd"),
-            metric("Realized vs promised benefit", 100 * realized / promised if promised else 0, "%"),
+            metric("Funded / piloted", len(funded), fmt=",.0f")
+            | {"display": f"{len(funded)} / {len(pilots)}"},
+            metric("Year-1 spend vs budget", spend, "usd")
+            | {"display": f"${spend / 1e6:.1f}M / ${YEAR1_BUDGET / 1e6:.0f}M"},
+            metric(
+                "Portfolio 3-yr risk-adj NPV (decision basis)", sum(u["npv"] for u in funded), "usd"
+            ),
+            metric(
+                "Realized vs promised benefit", 100 * realized / promised if promised else 0, "%"
+            ),
             metric("Use cases flagged for value leakage", len(leaks)),
             metric("Soft value (capacity, not cash) / yr", realized_soft, "usd"),
         ],
         annual_value_usd=hard_net,
         soft_value_usd=realized_soft,
         value_basis="Realized hard value (revenue lift + cost avoided, after 40% revenue-cycle overlap haircut) of "
-                    "funded use cases, minus license, internal cost, and one-time + pilot spend amortized over 3 years. "
-                    "Clinician/staff hours are soft value, reported separately.",
+        "funded use cases, minus license, internal cost, and one-time + pilot spend amortized over 3 years. "
+        "Clinician/staff hours are soft value, reported separately.",
         assumptions=ASSUMPTIONS,
         table_title="AI use-case portfolio (ranked by risk-adjusted NPV per year-1 $)",
         table=table,
-        details={"budget": YEAR1_BUDGET, "spend": round(spend), "value_leakage": leaks,
-                 "promised_hard_annual": round(promised_hard), "realized_hard_annual": round(realized_hard),
-                 "realized_soft_annual": round(realized_soft), "run_costs_annual": round(run_costs),
-                 "amortized_one_time_annual": round(amortized)},
+        details={
+            "budget": YEAR1_BUDGET,
+            "spend": round(spend),
+            "value_leakage": leaks,
+            "promised_hard_annual": round(promised_hard),
+            "realized_hard_annual": round(realized_hard),
+            "realized_soft_annual": round(realized_soft),
+            "run_costs_annual": round(run_costs),
+            "amortized_one_time_annual": round(amortized),
+        },
     )

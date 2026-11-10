@@ -15,6 +15,7 @@ Method
 
 ALL DATA IS SYNTHETIC.
 """
+
 from __future__ import annotations
 
 from .common import clamp, metric, result, rng, usd
@@ -24,35 +25,35 @@ AT_RISK = 60.0  # score threshold for "at risk"
 
 # Weights for the Transparent Rural Vulnerability Score (sum = 1.0).
 WEIGHTS = {
-    "negative_margin": 0.30,   # operating margin, -10% -> 1.0, +5% -> 0.0
-    "low_cash": 0.25,          # days cash on hand, 0 -> 1.0, 150+ -> 0.0
+    "negative_margin": 0.30,  # operating margin, -10% -> 1.0, +5% -> 0.0
+    "low_cash": 0.25,  # days cash on hand, 0 -> 1.0, 150+ -> 0.0
     "medicaid_uninsured": 0.15,  # Medicaid + self-pay share, 10% -> 0, 45% -> 1
-    "low_volume": 0.15,        # average daily census, 2 -> 1.0, 25+ -> 0.0
-    "isolation": 0.15,         # distance to next hospital: closure = access loss
+    "low_volume": 0.15,  # average daily census, 2 -> 1.0, 25+ -> 0.0
+    "isolation": 0.15,  # distance to next hospital: closure = access loss
 }
 
 # --- Named scenario / strategy constants (all assumptions; see ASSUMPTIONS) ---
-MEDICAID_CUT = 0.10            # share of Medicaid revenue lost, fully phased in
-SITE_NEUTRAL_SHARE = 0.02      # share of NPR lost for outpatient-heavy hospitals
-OB_DIRECT_COST_SAVED = 1.2e6   # direct annual cost of a low-volume OB unit
-OB_LOW_VOLUME_BIRTHS = 200     # units below this are candidates for consolidation
+MEDICAID_CUT = 0.10  # share of Medicaid revenue lost, fully phased in
+SITE_NEUTRAL_SHARE = 0.02  # share of NPR lost for outpatient-heavy hospitals
+OB_DIRECT_COST_SAVED = 1.2e6  # direct annual cost of a low-volume OB unit
+OB_LOW_VOLUME_BIRTHS = 200  # units below this are candidates for consolidation
 OB_LINKED_REVENUE_SHARE = 0.08  # share of NPR linked to OB (deliveries, peds, GYN)
 OB_LINKED_REVENUE_LOST = 0.25  # share of OB-linked revenue lost when OB closes
 OB_LINKED_REVENUE_CAP = 1.0e6  # cap on that annual loss
-ACCESS_MILES = 30.0            # closing a service beyond this distance = access loss
-REH_FACILITY_PAYMENT = 3.4e6   # annual REH facility payment (approx. 2025-26)
-REH_OPPS_UPLIFT = 0.05         # +5% on Medicare OPPS-paid outpatient services
-MEDICARE_OP_SHARE = 0.40       # Medicare share of outpatient revenue
-CAH_COST_BASED_LOSS = 0.10     # CAH loses cost-based (101% of cost) Medicare OP pay
-IP_COST_INTENSITY = 1.10       # inpatient share of cost vs its share of revenue
-IP_COST_AVOIDABLE = 0.40       # share of inpatient cost actually removed (rest fixed)
-REH_ADDED_COST = 0.75e6        # transfer agreements, 24/7 ED staffing, transport
+ACCESS_MILES = 30.0  # closing a service beyond this distance = access loss
+REH_FACILITY_PAYMENT = 3.4e6  # annual REH facility payment (approx. 2025-26)
+REH_OPPS_UPLIFT = 0.05  # +5% on Medicare OPPS-paid outpatient services
+MEDICARE_OP_SHARE = 0.40  # Medicare share of outpatient revenue
+CAH_COST_BASED_LOSS = 0.10  # CAH loses cost-based (101% of cost) Medicare OP pay
+IP_COST_INTENSITY = 1.10  # inpatient share of cost vs its share of revenue
+IP_COST_AVOIDABLE = 0.40  # share of inpatient cost actually removed (rest fixed)
+REH_ADDED_COST = 0.75e6  # transfer agreements, 24/7 ED staffing, transport
 REH_LOST_OTHER_REVENUE = 0.06  # swing-bed and 340B revenue lost on conversion (share of NPR)
-REH_MARGIN_CEILING = 0.10      # sanity bound on post-conversion margin
-REH_MAX_ADC = 5.0              # eligibility proxy: average daily census below this
-OPS_IMPROVEMENT = 0.015        # expense reduction from operational improvement
-REALIZATION = 0.15             # share of modeled option value actually realized
-TOP_N_CLIENT = 20              # reference client: 20 most vulnerable hospitals
+REH_MARGIN_CEILING = 0.10  # sanity bound on post-conversion margin
+REH_MAX_ADC = 5.0  # eligibility proxy: average daily census below this
+OPS_IMPROVEMENT = 0.015  # expense reduction from operational improvement
+REALIZATION = 0.15  # share of modeled option value actually realized
+TOP_N_CLIENT = 20  # reference client: 20 most vulnerable hospitals
 
 ASSUMPTIONS = [
     "All 120 hospitals are synthetic; distributions loosely shaped to published rural hospital data (median margin near break-even, many with <60 days cash).",
@@ -124,9 +125,14 @@ def _ip_revenue_share(h: dict) -> float:
     return clamp(0.15 + 0.5 * h["adc"] / h["beds"], 0.15, 0.45)
 
 
-def apply_scenario(h: dict, medicaid_cut: float = 0.0, site_neutral: bool = False,
-                   close_ob: bool = False, convert_reh: bool = False,
-                   ops_improvement: bool = False) -> dict:
+def apply_scenario(
+    h: dict,
+    medicaid_cut: float = 0.0,
+    site_neutral: bool = False,
+    close_ob: bool = False,
+    convert_reh: bool = False,
+    ops_improvement: bool = False,
+) -> dict:
     """Return a copy of hospital ``h`` with margin/cash recomputed under shocks."""
     s = dict(h)
     npr = h["npr"]
@@ -138,7 +144,9 @@ def apply_scenario(h: dict, medicaid_cut: float = 0.0, site_neutral: bool = Fals
     s["access_loss"] = False
     if close_ob and 0 < h["births"] < OB_LOW_VOLUME_BIRTHS:
         expenses -= OB_DIRECT_COST_SAVED
-        revenue -= min(npr * OB_LINKED_REVENUE_SHARE * OB_LINKED_REVENUE_LOST, OB_LINKED_REVENUE_CAP)
+        revenue -= min(
+            npr * OB_LINKED_REVENUE_SHARE * OB_LINKED_REVENUE_LOST, OB_LINKED_REVENUE_CAP
+        )
         s["access_loss"] = h["miles_to_next"] > ACCESS_MILES
     if convert_reh and reh_eligible(h):
         ip_share = _ip_revenue_share(h)
@@ -208,21 +216,28 @@ def run(seed: int = 42) -> dict:
         d = drivers(s)
         main = sorted(d, key=lambda k: -WEIGHTS[k] * d[k])[:2]
         name, b, rejected = plans[s["id"]]
-        table.append({
-            "hospital": s["id"], "state": s["state"], "beds": s["beds"],
-            "cah": "Y" if s["cah"] else "N",
-            "score_base": base_score[s["id"]],
-            "score_shock": s["score"],
-            "op_margin_shock": f"{s['op_margin'] * 100:.1f}%",
-            "days_cash_shock": round(s["days_cash"]),
-            "top_drivers": ", ".join(main),
-            "suggested_option": name,
-            "option_value": usd(b["annual_delta_usd"]),
-            "margin_after_option": f"{b['op_margin'] * 100:.1f}%",
-            "protects_access": "Yes" if not b["access_loss"] else "No",
-            "access_risk": ("Rejected: " + ", ".join(rejected) + f" (next hospital > {ACCESS_MILES:.0f} mi)")
-            if rejected else ("Inpatient beds lost; ED retained" if name == "Convert to REH" else "Low"),
-        })
+        table.append(
+            {
+                "hospital": s["id"],
+                "state": s["state"],
+                "beds": s["beds"],
+                "cah": "Y" if s["cah"] else "N",
+                "score_base": base_score[s["id"]],
+                "score_shock": s["score"],
+                "op_margin_shock": f"{s['op_margin'] * 100:.1f}%",
+                "days_cash_shock": round(s["days_cash"]),
+                "top_drivers": ", ".join(main),
+                "suggested_option": name,
+                "option_value": usd(b["annual_delta_usd"]),
+                "margin_after_option": f"{b['op_margin'] * 100:.1f}%",
+                "protects_access": "Yes" if not b["access_loss"] else "No",
+                "access_risk": (
+                    "Rejected: " + ", ".join(rejected) + f" (next hospital > {ACCESS_MILES:.0f} mi)"
+                )
+                if rejected
+                else ("Inpatient beds lost; ED retained" if name == "Convert to REH" else "Low"),
+            }
+        )
 
     client = ranked[:TOP_N_CLIENT]
     option_value = sum(max(0.0, plans[s["id"]][1]["annual_delta_usd"]) for s in client)
@@ -245,9 +260,11 @@ def run(seed: int = 42) -> dict:
         ],
         annual_value_usd=annual_value,
         soft_value_usd=0.0,
-        value_basis=(f"Best access-protecting option per hospital for the {TOP_N_CLIENT} most vulnerable "
-                     f"(sum {usd(option_value)}/yr) x {REALIZATION:.0%} realization (assumption). "
-                     "Access preserved is reported as counts, not dollars."),
+        value_basis=(
+            f"Best access-protecting option per hospital for the {TOP_N_CLIENT} most vulnerable "
+            f"(sum {usd(option_value)}/yr) x {REALIZATION:.0%} realization (assumption). "
+            "Access preserved is reported as counts, not dollars."
+        ),
         assumptions=ASSUMPTIONS,
         table_title="Top 15 most vulnerable hospitals after Medicaid cut + site-neutral shock, with access-safe option",
         table=table,

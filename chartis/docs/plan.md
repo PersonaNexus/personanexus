@@ -52,7 +52,7 @@ _Draft v1, 2026-11-10. Read it together with `business_case.md`. Timelines and c
 | Designer / front-end | 1 | Client-facing app |
 | Governance / compliance | 0.5 | HIPAA, AI governance |
 
-**Estimated build cost:** about $3.5–5M over 18 months, at blended internal rates (assumption).
+**Estimated build cost:** about $5–8M over 18 months, at blended internal rates, including HITRUST/SOC 2 and support (assumption).
 
 ## Milestones & KPIs
 | Milestone | Target date | KPI |
@@ -62,11 +62,11 @@ _Draft v1, 2026-11-10. Read it together with `business_case.md`. Timelines and c
 | First paid diagnostic | Month 4 | ≥ $150K fee |
 | 5 diagnostics | Month 9 | ≥ 5:1 documented client value |
 | Subscription launch | Month 9 | ≥ 60% diagnostic-to-sustain conversion (assumption) |
-| Scale | Month 18 | ~$15–20M run-rate revenue (assumption; full potential ~$47M by year 3) |
+| Scale | Month 18 | ~$10–15M run-rate revenue (assumption; ~$27M by year 3) |
 
 ## Decision points for leadership
 1. Confirm that "Chartis" means The Chartis Group (A1).
-2. Approve Rural and Patient Flow as the first two modules.
+2. Approve Rural and Patient Flow as the first two modules, sold as a bundle on one value ledger.
 3. Decide whether to partner or build for denials execution.
 4. Confirm that the AI Value Office is the platform owner, aligned with Leap AI Studio.
 5. Approve the Phase 0–1 budget (about $0.8–1.2M, assumption).

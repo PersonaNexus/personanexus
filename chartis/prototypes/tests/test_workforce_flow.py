@@ -1,7 +1,8 @@
 import pytest
-from conftest import CONTRACT_KEYS
 
 from chartis_proto import patient_flow, workforce
+
+from conftest import CONTRACT_KEYS
 
 
 @pytest.mark.parametrize("mod", [workforce, patient_flow])

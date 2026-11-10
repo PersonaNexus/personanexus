@@ -1,0 +1,10 @@
+line-length = 100
+
+[lint]
+select = ["E", "F", "I", "B", "UP"]
+# Prototypes favour readable inline assumption strings and seeded stdlib RNG.
+ignore = ["E501", "B905"]
+
+[lint.isort]
+known-first-party = ["chartis_proto"]
+known-local-folder = ["conftest"]
