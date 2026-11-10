@@ -52,18 +52,24 @@ def result(
     headline_metrics: list[dict],
     annual_value_usd: float,
     value_basis: str,
+    soft_value_usd: float = 0.0,
     assumptions: list[str],
     table_title: str,
     table: list[dict[str, Any]],
     details: dict[str, Any] | None = None,
 ) -> dict:
-    """The contract every prototype returns (consumed by CLI + dashboard)."""
+    """The contract every prototype returns (consumed by CLI + dashboard).
+
+    ``annual_value_usd`` is HARD (P&L) value only. Capacity / time / access value
+    goes in ``soft_value_usd`` and is never added to the headline.
+    """
     return {
         "key": key,
         "problem": problem,
         "question": question,
         "headline_metrics": headline_metrics,
         "annual_value_usd": round(annual_value_usd, 2),
+        "soft_value_usd": round(soft_value_usd, 2),
         "value_basis": value_basis,
         "assumptions": assumptions,
         "table_title": table_title,

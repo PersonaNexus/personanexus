@@ -20,9 +20,13 @@ def run_all(names: list[str], seed: int) -> list[dict]:
     out = []
     for n in names:
         try:
-            out.append(importlib.import_module(f"chartis_proto.{n}").run(seed=seed))
-        except ModuleNotFoundError as exc:  # allow partial builds
-            print(f"[skip] {n}: {exc}")
+            mod = importlib.import_module(f"chartis_proto.{n}")
+        except ModuleNotFoundError as exc:  # allow partial builds, but only for the module itself
+            if exc.name != f"chartis_proto.{n}":
+                raise
+            print(f"[skip] {n}: not built yet")
+            continue
+        out.append(mod.run(seed=seed))
     return out
 
 
@@ -33,7 +37,8 @@ def summarize(results: list[dict]) -> str:
         lines.append(f"Q: {r['question']}")
         for m in r["headline_metrics"]:
             lines.append(f"  - {m['label']}: {m['display']}")
-        lines.append(f"  => Annual value (reference client): {usd(r['annual_value_usd'])}")
+        lines.append(f"  => Hard annual value (reference client): {usd(r['annual_value_usd'])}")
+        lines.append(f"  => Soft / capacity value (reported separately): {usd(r['soft_value_usd'])}")
     return "\n".join(lines)
 
 
@@ -52,7 +57,7 @@ def main(argv: list[str] | None = None) -> int:
         a.json.write_text(payload)
         print(f"\nwrote {a.json}")
     if a.dashboard:
-        html = DASH_TEMPLATE.read_text().replace("/*__DATA__*/null", payload.replace("</", "<\\/"))
+        html = DASH_TEMPLATE.read_text().replace("/*__DATA__*/null", payload.replace("</", "<\\/").replace("<!--", "<\\!--"))
         a.dashboard.write_text(html)
         print(f"wrote {a.dashboard}")
     return 0

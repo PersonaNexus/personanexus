@@ -25,9 +25,21 @@ from .common import clamp, metric, result, rng, sigmoid, usd
 
 N_CLAIMS = 5000
 REWORK_COST = 57.0          # $ per touched claim (assumed mid-range of $25-$118)
-FIX_SUCCESS = 0.65          # P(pre-bill fix prevents the denial)
+# P(pre-bill fix prevents the denial), by root cause. Missing prior auth often
+# cannot be obtained retroactively, so it is much harder to fix than coding.
+FIX_SUCCESS = {
+    "Authorization / precert": 0.30,
+    "Eligibility / registration": 0.75,
+    "Medical necessity / documentation": 0.65,
+    "Coding": 0.65,
+    "Timely filing": 0.65,
+    "Payer behavior (other)": 0.30,
+}
+WRITE_OFF_SHARE = 0.22      # share of denied $ never recovered without intervention
+BACKEND_REWORK_MULTIPLIER = 2.0  # back-end appeal/rework costs ~2x a pre-bill touch
+PARTNER_COST = 750_000.0    # annual partner / technology cost to run the program
 REF_NPR = 1.0e9             # reference health system net patient revenue
-WORKLIST_CAPACITY = 0.08    # share of claims pre-bill staff can touch (assumption)
+WORKLIST_CAPACITY = 0.10    # share of claims pre-bill staff can touch (assumption)
 
 PAYERS = {  # name: (share of claims, net-to-charge ratio, log-odds offset)
     "Medicare Advantage": (0.25, 0.30, 0.55),
@@ -65,8 +77,11 @@ ASSUMPTIONS = [
     "Target initial denial rate ~10-12% of claims, in line with published industry surveys.",
     f"Rework cost ${REWORK_COST:.0f}/claim (industry estimates range ~$25-$118).",
     f"Pre-bill team capacity = top {WORKLIST_CAPACITY:.0%} of claims by expected value.",
-    f"Pre-bill intervention prevents the denial {FIX_SUCCESS:.0%} of the time.",
-    "Without intervention ~40% of denied dollars are ultimately written off (never recovered).",
+    "Pre-bill fix success by root cause: authorization 30%, eligibility 75%, coding/documentation/timely filing 65%, other payer behavior 30% (see FIX_SUCCESS).",
+    f"Without intervention ~{WRITE_OFF_SHARE:.0%} of denied dollars are ultimately written off; with a ~11% denied-dollar share this implies ~2-2.5% of NPR at risk, near the ~1-2% peer write-off benchmark plus the 2.7% median final-denial rate (Kodiak 2026).",
+    f"Back-end rework (appeal after denial) costs {BACKEND_REWORK_MULTIPLIER:.0f}x a pre-bill touch (${REWORK_COST * BACKEND_REWORK_MULTIPLIER:.0f}/claim, within the $25-$118 range).",
+    f"Partner / technology cost ${PARTNER_COST / 1e3:,.0f}K per year is subtracted from value (business case recommends delivering with an RCM partner).",
+    "Staff productivity is not counted separately (rework cost avoided is already hard value), so soft value = 0.",
     f"Annual value is scaled from the sample to a reference ${REF_NPR / 1e9:.0f}B net-patient-revenue system.",
 ]
 
@@ -143,8 +158,10 @@ def run(seed: int = 42) -> dict:
         # "Truth" = model log-odds + unobserved noise, so the model is imperfect.
         z = math.log(c["p_denial"] / (1 - c["p_denial"])) + r.gauss(0, 0.9)
         c["denied"] = 1 if r.random() < sigmoid(z) else 0
-        c["ev"] = c["p_denial"] * c["expected_payment"] * FIX_SUCCESS - REWORK_COST
         c["root_cause"] = root_cause(c)
+        c["fix_success"] = FIX_SUCCESS[c["root_cause"]]
+        c["ev"] = (c["p_denial"] * c["expected_payment"] * WRITE_OFF_SHARE * c["fix_success"]
+                   - REWORK_COST)
 
     n_denied = sum(c["denied"] for c in claims)
     denial_rate = n_denied / len(claims)
@@ -161,18 +178,21 @@ def run(seed: int = 42) -> dict:
     ranked = sorted((c for c in claims if c["ev"] > 0), key=lambda c: -c["ev"])
     worklist = ranked[: int(WORKLIST_CAPACITY * len(claims))]
     touched = worklist
-    prevented = sum(c["expected_payment"] * FIX_SUCCESS for c in touched if c["denied"])
+    prevented = sum(c["expected_payment"] * c["fix_success"] for c in touched if c["denied"])
     rework = REWORK_COST * len(touched)
-    # Value = write-offs avoided (40% of prevented denied $) + avoided back-end rework.
-    avoided_backend_rework = sum(1 for c in touched if c["denied"]) * FIX_SUCCESS * REWORK_COST * 2
-    sample_value = prevented * 0.40 + avoided_backend_rework - rework
+    # Value = write-offs avoided on prevented denials + avoided back-end rework.
+    avoided_backend_rework = sum(
+        c["fix_success"] for c in touched if c["denied"]) * REWORK_COST * BACKEND_REWORK_MULTIPLIER
+    sample_value = prevented * WRITE_OFF_SHARE + avoided_backend_rework - rework
     scale = REF_NPR / total_expected
-    annual_value = sample_value * scale
+    gross_value = sample_value * scale
+    annual_value = gross_value - PARTNER_COST
 
     table = [{
         "claim": c["claim_id"], "payer": c["payer"], "service_line": c["service_line"],
         "expected_payment": usd(c["expected_payment"]),
         "p_denial": f"{c['p_denial'] * 100:.0f}%", "root_cause": c["root_cause"],
+        "fix_success": f"{c['fix_success']:.0%}",
         "expected_value": usd(c["ev"]),
     } for c in worklist[:20]]
 
@@ -189,9 +209,12 @@ def run(seed: int = 42) -> dict:
             metric("Medicare Advantage denial rate", by_payer["Medicare Advantage"], "%"),
         ],
         annual_value_usd=annual_value,
-        value_basis=(f"Sample net value {usd(sample_value)} (40% write-off avoided on prevented denials "
-                     f"+ avoided back-end rework - pre-bill rework at ${REWORK_COST:.0f}/claim), "
-                     f"scaled x{scale:,.0f} to a ${REF_NPR / 1e9:.0f}B NPR system."),
+        soft_value_usd=0.0,
+        value_basis=(f"Sample net value {usd(sample_value)} ({WRITE_OFF_SHARE:.0%} write-off avoided on "
+                     "prevented denials, fix success by root cause, + avoided back-end rework - pre-bill "
+                     f"rework at ${REWORK_COST:.0f}/claim), scaled x{scale:,.0f} to a "
+                     f"${REF_NPR / 1e9:.0f}B NPR system ({usd(gross_value)}), minus "
+                     f"{usd(PARTNER_COST)} partner/technology cost."),
         assumptions=ASSUMPTIONS,
         table_title="Top 20 pre-bill worklist claims (ranked by expected value of intervening)",
         table=table,
@@ -202,6 +225,8 @@ def run(seed: int = 42) -> dict:
             "denial_rate_by_payer_pct": by_payer,
             "root_causes": dict(causes.most_common()),
             "worklist_size": len(worklist),
+            "gross_value_before_partner_cost": round(gross_value),
+            "value_pct_of_npr": round(100 * annual_value / REF_NPR, 3),
             "worklist_share_of_claims_pct": round(100 * len(worklist) / len(claims), 1),
             "worklist_capture_of_denials_pct": round(
                 100 * sum(c["denied"] for c in worklist) / max(1, n_denied), 1),

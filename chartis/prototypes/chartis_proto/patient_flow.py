@@ -11,9 +11,14 @@ Method
 3. Barrier playbook: each barrier has an intervention (e.g. early SNF
    referral at day 1, payer auth escalation, weekend imaging, discharge
    lounge + transport) with an assumed % of excess days removed.
-4. Translate freed bed-days into (a) variable cost avoided and (b) capacity
-   value: fewer ED boarding hours and extra admissions absorbed, using a
-   simple Little's-law approximation (beds freed = days freed / 365).
+   Only barrier-caused delay is attributed: min(excess, barrier delay); the
+   rest of the excess is random variation and stays "unexplained".
+4. Translate freed bed-days into value. A freed day is either refilled by a
+   new admission (capacity value: contribution margin, reported as SOFT value
+   because it depends on demand) or left empty (HARD value: variable cost of a
+   low-intensity tail day avoided). The two never apply to the same day.
+   Capacity value and ED boarding relief only apply when occupancy is >= 85%.
+   A readmission offset is subtracted from hard value.
 5. Predict on admission which patients are likely to exceed GMLOS by >2
    days (interpretable logistic score) so case managers start early.
 """
@@ -24,16 +29,22 @@ from collections import defaultdict
 from .common import clamp, metric, result, rng, sigmoid
 
 ASSUMPTIONS = [
-    "Reference client: ~500 staffed beds, ~6,000 sampled discharges scaled to ~28,000 annual discharges (synthetic).",
-    "Variable cost of an avoidable inpatient day: ~$800 (most hospital cost is fixed; full cost/day ~$3,000).",
-    "Capacity value: each freed bed absorbs extra admissions at ~$2,500 contribution margin per case; only 50% of freed capacity is assumed monetized.",
-    "ED boarding: each staffed bed freed reduces boarding by ~1,200 hours/yr (assumes hospital runs >90% occupancy).",
+    "Reference client: ~500 staffed beds, ~6,000 sampled discharges scaled to ~37,000 annual discharges (~88% occupancy; reported as a metric).",
+    "Variable cost of an avoidable tail day: ~$450 (~15% of ~$3,000 full cost/day; final days of a stay are low-intensity).",
+    "Capacity value (SOFT): 50% of freed days are refilled by extra admissions at ~$2,500 contribution margin per case; only if occupancy >= 85%.",
+    "Hard value applies only to the 50% of freed days NOT refilled (no double counting of cost and capacity).",
+    "Readmission offset: earlier discharge adds 0.5 pt readmission risk for patients whose stay is shortened, at ~$15,000 per readmission.",
+    "ED boarding: each staffed bed freed reduces boarding by ~1,200 hours/yr, only if occupancy >= 85%.",
     "Intervention effect sizes (share of barrier-attributed excess days removed): post-acute placement 35%, payer auth 40%, diagnostics 50%, transport/caregiver 60%, guardianship/legal 15%.",
     "Excess day = actual LOS above geometric mean LOS for the DRG-like group (GMLOS).",
 ]
 
-ANNUAL_DISCHARGES = 28_000
-VAR_COST_PER_DAY = 800
+ANNUAL_DISCHARGES = 37_000
+STAFFED_BEDS = 500
+CAPACITY_OCC_THRESHOLD = 0.85
+VAR_COST_PER_DAY = 450
+READMIT_RISK_ADD = 0.005
+READMIT_COST = 15_000
 MARGIN_PER_CASE = 2_500
 MONETIZE_SHARE = 0.5
 BOARDING_HRS_PER_BED = 1_200
@@ -79,7 +90,7 @@ def _encounters(r, n: int = 6_000) -> list[dict]:
         los = max(1.0, r.lognormvariate(0, 0.22) * gm[drg] + delay)
         out.append({"id": f"E{i:05d}", "drg": drg, "age": age, "payer": payer,
                     "lives_alone": lives_alone, "weekend_admit": weekend_admit,
-                    "gmlos": gm[drg], "los": round(los, 1), **flags})
+                    "gmlos": gm[drg], "los": round(los, 1), "barrier_delay": delay, **flags})
     return out
 
 
@@ -120,9 +131,11 @@ def run(seed: int = 42) -> dict:
         if not present:
             unexplained += excess
             continue
+        attributable = min(excess, e["barrier_delay"])
+        unexplained += excess - attributable
         wsum = sum(BARRIERS[k][1] for k in present)
         for k in present:
-            excess_by_barrier[k] += excess * BARRIERS[k][1] / wsum
+            excess_by_barrier[k] += attributable * BARRIERS[k][1] / wsum
 
     rows, days_freed = [], 0.0
     for k, (label, _, action, effect) in BARRIERS.items():
@@ -137,13 +150,21 @@ def run(seed: int = 42) -> dict:
         })
     beds_freed = days_freed / 365
     avg_los = sum(e["los"] for e in enc) / len(enc)
-    extra_cases = days_freed / avg_los * MONETIZE_SHARE
-    cost_value = days_freed * VAR_COST_PER_DAY
+    occupancy = ANNUAL_DISCHARGES * avg_los / 365 / STAFFED_BEDS
+    constrained = occupancy >= CAPACITY_OCC_THRESHOLD
+    refill = MONETIZE_SHARE if constrained else 0.0
+    extra_cases = days_freed / avg_los * refill
+    patients_shortened = sum(r_["patients_affected_yr"] * float(r_["assumed_effect"].rstrip("%")) / 100 for r_ in rows)
+    readmit_offset = patients_shortened * READMIT_RISK_ADD * READMIT_COST
+    cost_value = days_freed * (1 - refill) * VAR_COST_PER_DAY - readmit_offset
     capacity_value = extra_cases * MARGIN_PER_CASE
-    for row in rows:  # allocate capacity value proportionally to days freed
+    boarding_hours = beds_freed * BOARDING_HRS_PER_BED if constrained else 0.0
+    for row in rows:  # hard value per barrier, net of its share of readmission offset
         share = row["days_freed_yr"] / days_freed if days_freed else 0
-        row["value_yr"] = round(row["days_freed_yr"] * VAR_COST_PER_DAY + share * capacity_value)
-    rows.sort(key=lambda x: x["value_yr"], reverse=True)
+        row["hard_value_yr"] = round(share * cost_value)
+        row["soft_capacity_value_yr"] = round(share * capacity_value)
+        del row["value_yr"]
+    rows.sort(key=lambda x: x["hard_value_yr"] + x["soft_capacity_value_yr"], reverse=True)
 
     scores = [_risk_score(e) for e in enc]
     labels = [e["los"] > e["gmlos"] + 2 for e in enc]
@@ -156,22 +177,25 @@ def run(seed: int = 42) -> dict:
         problem="Hospital capacity & patient flow (ED boarding, avoidable days, discharge delays)",
         question="Which discharge barriers drive avoidable inpatient days, and what capacity and cost does a targeted barrier playbook release?",
         headline_metrics=[
+            metric("Occupancy (modeled)", 100 * occupancy, "%"),
             metric("Avg LOS vs GMLOS", avg_los - sum(e["gmlos"] for e in enc) / len(enc), "days", ".2f"),
             metric("Excess days / yr", total_excess * scale, "days"),
             metric("Days freed by playbook / yr", days_freed, "days"),
             metric("Staffed beds released", beds_freed, "beds", ".1f"),
-            metric("ED boarding hours avoided / yr", beds_freed * BOARDING_HRS_PER_BED, "hrs"),
+            metric("ED boarding hours avoided / yr", boarding_hours, "hrs"),
             metric("Admission-time delay model AUC", auc, "", ".2f"),
         ],
-        annual_value_usd=cost_value + capacity_value,
-        value_basis="Barrier-attributed excess days x intervention effect; valued at variable cost/day plus 50% of freed capacity monetized as incremental admissions.",
+        annual_value_usd=cost_value,
+        soft_value_usd=capacity_value,
+        value_basis="Hard: variable tail-day cost avoided on freed days that are not refilled, minus a readmission offset. Soft: contribution margin of extra admissions on refilled days (only at >=85% occupancy).",
         assumptions=ASSUMPTIONS,
         table_title="Discharge barrier playbook (annualized)",
         table=rows,
         details={
             "unexplained_excess_days_yr": round(unexplained * scale),
             "top_quintile_capture_of_long_stays": round(capture, 3),
-            "cost_value": round(cost_value), "capacity_value": round(capacity_value),
+            "hard_cost_value": round(cost_value), "soft_capacity_value": round(capacity_value),
+            "readmission_offset": round(readmit_offset),
             "extra_admissions_absorbed": round(extra_cases),
         },
     )
