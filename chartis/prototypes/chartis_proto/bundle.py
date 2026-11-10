@@ -9,11 +9,14 @@ Method
 ------
 1. Run each module, then rescale its output linearly to ``CLIENT`` using the
    driver documented in ``SCALING`` (beds, RN headcount, NPR, rural hospitals).
-   Linear scaling is a first-order approximation.
-2. Attribute overlapping value once: funded AI use cases that another module
+   Linear scaling is a first-order approximation. One-time AI costs are held
+   fixed rather than scaled down with a smaller client.
+2. Count overlapping value once: funded AI use cases that another module
    already claims (``overlaps_module`` in the AI portfolio) are removed from
-   the AI line when that module is in the bundle.
+   the AI line (conservative: the value is not added to the other module).
 3. Apply the client-ROI rule: supportable annual fees = hard value / 5.
+4. Report two ranges: the seed range (sampling noise only) and the assumption
+   range (every module's most sensitive assumption at its worst / best value).
 
 Hard and soft value are never added together.
 """
@@ -23,7 +26,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from . import ai_portfolio, denials, patient_flow, rural, workforce
-from .sensitivity import DEFAULT_SEEDS, summarize
+from .sensitivity import DEFAULT_SEEDS, summarize, top_drivers
 
 CLIENT = {
     "name": "Illustrative regional health system",
@@ -31,10 +34,10 @@ CLIENT = {
     "staffed_beds": 800,  # flagship 500 + community 300
     "capacity_constrained_beds": 500,  # beds in hospitals running >= 85% occupancy
     "rn_headcount": 2_400,
-    "affiliated_rural_hospitals": 8,
+    "affiliated_rural_hospitals": 8,  # affiliates; their revenue is outside the $2.0B
 }
 ROI_RULE = 5.0  # client hard value : annual fees
-WORKFORCE_MODEL_BEDS = 298  # beds in workforce.UNITS
+WORKFORCE_MODEL_BEDS = 500  # the 10 modeled units (298 beds) sit inside a 500-bed hospital
 WORKFORCE_MODEL_RNS = 1_100
 PATIENT_FLOW_MODEL_BEDS = patient_flow.STAFFED_BEDS
 AI_MODEL_NPR = 3.0e9
@@ -48,16 +51,18 @@ LABELS = {
     "ai_portfolio": "AI value",
 }
 SCALING = {
-    "workforce": "Labor savings x staffed beds / 298; retention value x RN headcount / 1,100",
-    "patient_flow": "x capacity-constrained beds / 500",
-    "rural": "x affiliated rural hospitals / 20 (assumes affiliates resemble the most vulnerable set)",
+    "workforce": "Labor savings x staffed beds / 500 (unmodeled units count as zero); retention value x RN headcount / 1,100",
+    "patient_flow": "x capacity-constrained beds / 500 (the 300 unconstrained beds are excluded; conservative)",
+    "rural": "x affiliated rural hospitals / 20 (affiliate revenue sits outside the $2.0B)",
     "denials": "Gross value x NPR / $1B; partner cost half fixed, half scaling with NPR",
-    "ai_portfolio": "x NPR / $3B (budget scales too); minus funded use cases claimed by another module",
+    "ai_portfolio": "Benefits and run costs x NPR / $3B, one-time costs fixed; funded use cases claimed by another module removed",
 }
 ASSUMPTIONS = [
     "One illustrative client: $2.0B net patient revenue, 800 staffed beds (500 capacity-constrained), 2,400 RNs, 8 affiliated rural hospitals.",
     "Module outputs scale linearly with their driver (first-order approximation; calibrate on client data).",
-    "Overlap: funded AI use cases tagged to another module are counted in that module only.",
+    "Overlap: funded AI use cases tagged to another module are removed from the AI line and not added elsewhere (conservative).",
+    "Rural affiliates are not consolidated: their operational improvement does not overlap the denials or workforce lines.",
+    "Lines are additive: no synergy between modules is assumed.",
     f"Client-ROI rule: annual fees are supportable up to hard value / {ROI_RULE:.0f}.",
     "Soft value (capacity, clinician time, access) is shown separately and never added to hard value.",
 ]
@@ -97,7 +102,9 @@ def ledger(seed: int = 42, client: dict | None = None) -> dict:
         for m, v in a["details"]["overlap_net_hard_by_module"].items()
         if m in in_bundle
     )
-    lines.append(("ai_portfolio", a["annual_value_usd"] * k - overlap, a["soft_value_usd"] * k))
+    fixed = a["details"]["amortized_one_time_annual"]  # one-time costs do not shrink with NPR
+    ai_hard = (a["annual_value_usd"] + fixed) * k - fixed - overlap
+    lines.append(("ai_portfolio", ai_hard, a["soft_value_usd"] * k))
 
     hard_total = sum(h for _, h, _ in lines)
     soft_total = sum(s for _, _, s in lines)
@@ -143,4 +150,19 @@ def ledger_with_range(seed: int = 42, seeds: Iterable[int] = DEFAULT_SEEDS) -> d
     out["supportable_annual_fees_range_usd"] = {
         k: round(max(0, v) / ROI_RULE) for k, v in out["range"]["hard_total"].items()
     }
+    out["assumption_range"] = assumption_range(seed)
     return out
+
+
+def assumption_range(seed: int = 42) -> dict:
+    """Ledger with every module's most sensitive assumption at its worst / best value."""
+    cases = {}
+    for case in ("low", "high"):
+        with top_drivers(case, seed):
+            led = ledger(seed)
+        cases[case] = {
+            "hard_total_usd": led["hard_total_usd"],
+            "supportable_annual_fees_usd": led["supportable_annual_fees_usd"],
+            "lines": {ln["key"]: ln["hard_value_usd"] for ln in led["lines"]},
+        }
+    return cases

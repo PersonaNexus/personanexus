@@ -51,7 +51,7 @@ def summarize(results: list[dict], bundle: dict | None = None) -> str:
             top = r["tornado"][0]
             lines.append(
                 f"  => Most sensitive assumption: {top['assumption']} "
-                f"(-30%: {usd(top['low'])}, +30%: {usd(top['high'])})"
+                f"({top['low_at']}: {usd(top['low'])}, {top['high_at']}: {usd(top['high'])})"
             )
     if bundle:
         lines.append(f"\n== One-client value ledger: {bundle['client']['name']} ==")
@@ -62,11 +62,18 @@ def summarize(results: list[dict], bundle: dict | None = None) -> str:
         h = bundle["range"]["hard_total"]
         lines.append(f"  (overlap removed from AI line: {usd(bundle['overlap_removed_usd'])})")
         lines.append(
-            f"  => Bundle hard value: P10 {usd(h['p10'])} / P50 {usd(h['p50'])} / P90 {usd(h['p90'])}"
+            f"  => Bundle hard value, seed range: P10 {usd(h['p10'])} / P50 {usd(h['p50'])} / P90 {usd(h['p90'])}"
+        )
+        ar = bundle["assumption_range"]
+        lines.append(
+            "  => Bundle hard value, assumption range (each module's top driver at worst / best): "
+            f"{usd(ar['low']['hard_total_usd'])} to {usd(ar['high']['hard_total_usd'])}"
         )
         f = bundle["supportable_annual_fees_range_usd"]
         lines.append(
-            f"  => Supportable annual fees at {bundle['roi_rule']:.0f}:1: {usd(f['p10'])}-{usd(f['p90'])}"
+            f"  => Supportable annual fees at {bundle['roi_rule']:.0f}:1: {usd(f['p50'])} "
+            f"(assumption range {usd(ar['low']['supportable_annual_fees_usd'])} to "
+            f"{usd(ar['high']['supportable_annual_fees_usd'])})"
         )
     return "\n".join(lines)
 

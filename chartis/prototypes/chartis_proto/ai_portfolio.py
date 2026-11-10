@@ -52,12 +52,13 @@ OVERLAP_HAIRCUT = 0.40  # on hard value of stacked revenue-cycle use cases
 SOFT_DECISION_WEIGHT = 0.5  # share of capacity value counted when ranking (not headline)
 MIN_READINESS = 2  # readiness at or below this -> Hold
 LICENSE_DISCOUNT = 0.30  # negotiated enterprise discount off catalog (list) license
+LICENSE_PRICE_SCALE = 1.0  # multiplier on all licence prices (sensitivity lever)
 SENSITIVITY = [
     ("Revenue-cycle overlap haircut", "OVERLAP_HAIRCUT"),
-    ("Negotiated licence discount", "LICENSE_DISCOUNT"),
+    ("Licence prices", "LICENSE_PRICE_SCALE"),
+    ("Year-1 AI budget", "YEAR1_BUDGET"),
     ("Internal cost as share of licence", "INTERNAL_COST_SHARE"),
     ("Weight of soft value in funding decisions", "SOFT_DECISION_WEIGHT"),
-    ("Discount rate", "DISCOUNT_RATE"),
 ]
 LOADED_RATE = {"physician": 160.0, "nurse": 75.0, "admin": 45.0, "none": 0.0}
 
@@ -583,7 +584,7 @@ def evaluate(seed: int = 42) -> list[dict]:
         u["hard_benefit"] = hard * factor
         u["soft_benefit"] = soft * factor
         u["decision_value"] = u["hard_benefit"] + SOFT_DECISION_WEIGHT * u["soft_benefit"]
-        u["license"] *= 1 - LICENSE_DISCOUNT
+        u["license"] *= (1 - LICENSE_DISCOUNT) * LICENSE_PRICE_SCALE
         u["run_cost"] = u["license"] * (1 + INTERNAL_COST_SHARE)
         u["npv"], u["payback"] = _npv(u["decision_value"], u["one_time"], u["run_cost"], u["ttv"])
         u["year1_cost"] = u["one_time"] + u["run_cost"]
@@ -594,9 +595,10 @@ def evaluate(seed: int = 42) -> list[dict]:
 
 
 def select(
-    cases: list[dict], budget: float = YEAR1_BUDGET, seed: int = 42
+    cases: list[dict], budget: float | None = None, seed: int = 42
 ) -> tuple[list[dict], float]:
     """Greedy portfolio under budget; sets decision + spend. Returns (cases, spend)."""
+    budget = YEAR1_BUDGET if budget is None else budget
     ranked = sorted(cases, key=lambda u: u["npv"] / u["year1_cost"], reverse=True)
     for u in ranked:
         u["decision"], u["spend"] = ("Hold", 0.0) if u["gate"] == "Hold" else (None, 0.0)

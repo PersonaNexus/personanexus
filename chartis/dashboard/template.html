@@ -124,7 +124,7 @@ footer { color: var(--muted); font-size: .82rem; }
 const DATA = /*__DATA__*/null;
 const $ = id => document.getElementById(id);
 const fmtUSD = x => { const a = Math.abs(x), s = x < 0 ? "-" : "";
-  return a >= 1e9 ? `${s}$${(a/1e9).toFixed(2)}B` : a >= 1e6 ? `${s}$${(a/1e6).toFixed(1)}M` : a >= 1e3 ? `${s}$${Math.round(a/1e3)}K` : `${s}$${Math.round(a)}`; };
+  return a >= 1e9 ? `${s}$${(a/1e9).toFixed(2)}B` : a >= 999500 ? `${s}$${(a/1e6).toFixed(1)}M` : a >= 1e3 ? `${s}$${Math.round(a/1e3)}K` : `${s}$${Math.round(a)}`; };
 const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const SHORT = { workforce: "Workforce", patient_flow: "Patient flow", rural: "Rural sustainability", denials: "Denials & prior auth", ai_portfolio: "AI value" };
 const cell = v => {
@@ -155,35 +155,36 @@ const axis = s => `<div class="axis" aria-hidden="true"><div></div><div class="t
 function renderBundle() {
   const b = DATA.bundle, el = $("bundle");
   if (!b) { el.hidden = true; return; }
-  const R = b.range, c = b.client;
+  const R = b.range, c = b.client, A = b.assumption_range;
   const soft = l => R.soft_lines[l.key].p50;
   const softTxt = l => soft(l) > 0 ? `soft ${fmtUSD(soft(l))}` : "soft value not modeled";
-  const max = Math.max(...b.lines.map(l => Math.max(R.lines[l.key].p90, soft(l))));
-  const min = Math.min(...b.lines.map(l => R.lines[l.key].p10));
+  const lo = l => Math.min(A.low.lines[l.key], A.high.lines[l.key]), hi = l => Math.max(A.low.lines[l.key], A.high.lines[l.key]);
+  const max = Math.max(...b.lines.map(l => Math.max(hi(l), R.lines[l.key].p50, soft(l))));
+  const min = Math.min(...b.lines.map(l => Math.min(lo(l), R.lines[l.key].p50)));
   const s = scale(min, max);
   const rows = b.lines.map(l => { const r = R.lines[l.key];
-    const tip = `<strong>${esc(l.module)}</strong><br>Hard value: <b>${fmtUSD(r.p50)}</b> (P10 ${fmtUSD(r.p10)}, P90 ${fmtUSD(r.p90)})<br>${soft(l) > 0 ? `Soft value: <b>${fmtUSD(soft(l))}</b>` : "Soft value not modeled"}<br>Scaled: ${esc(l.scaling)}`;
+    const tip = `<strong>${esc(l.module)}</strong><br>Hard value: <b>${fmtUSD(r.p50)}</b><br>Worst to best case assumption: <b>${fmtUSD(lo(l))}</b> to <b>${fmtUSD(hi(l))}</b><br>Data noise alone: ${fmtUSD(r.p10)} to ${fmtUSD(r.p90)}<br>${soft(l) > 0 ? `Soft value: <b>${fmtUSD(soft(l))}</b>` : "Soft value not modeled"}<br>Scaled: ${esc(l.scaling)}`;
     return `<div class="crow" data-tip="${esc(tip)}"><button data-key="${esc(l.key)}">${esc(l.module)}</button>
       <div class="plot" style="--tick:${s.tick.toFixed(3)}%"><div class="zero" style="left:${s.pos(0)}%"></div>${bar(s, r.p50, "hard")}
-        <div class="rng" style="left:${s.pos(r.p10).toFixed(2)}%;width:${(s.pos(r.p90) - s.pos(r.p10)).toFixed(2)}%"></div>${soft(l) > 0 ? bar(s, soft(l), "soft") : ""}</div>
+        <div class="rng" style="left:${s.pos(lo(l)).toFixed(2)}%;width:${(s.pos(hi(l)) - s.pos(lo(l))).toFixed(2)}%"></div>${soft(l) > 0 ? bar(s, soft(l), "soft") : ""}</div>
       <div class="val num">${fmtUSD(r.p50)}<small>${softTxt(l)}</small></div></div>`; }).join("");
   const f = b.supportable_annual_fees_range_usd;
   el.innerHTML = `
     <div class="stack"><h3>One client, one value ledger</h3><h2>${esc(c.name)}</h2>
       <p class="note">${fmtUSD(c.net_patient_revenue)} net patient revenue, ${c.staffed_beds} staffed beds (${c.capacity_constrained_beds} capacity-constrained), ${c.rn_headcount.toLocaleString()} RNs, ${c.affiliated_rural_hospitals} affiliated rural hospitals. Every module is rescaled to this client, and value two modules both claim is counted once.</p></div>
     <div class="stats">
-      <div class="stat"><small>Hard value per year, all five modules</small><b>${fmtUSD(R.hard_total.p50)}</b><span>${fmtUSD(R.hard_total.p10)} to ${fmtUSD(R.hard_total.p90)} across ${R.n_seeds} synthetic datasets</span></div>
+      <div class="stat"><small>Hard value per year, all five modules</small><b>${fmtUSD(R.hard_total.p50)}</b><span>${fmtUSD(A.low.hard_total_usd)} to ${fmtUSD(A.high.hard_total_usd)} if each module's most sensitive assumption is at its worst or best. Data noise alone: ${fmtUSD(R.hard_total.p10)} to ${fmtUSD(R.hard_total.p90)}.</span></div>
       <div class="stat"><small>Soft value per year, reported separately</small><b>${fmtUSD(R.soft_total.p50)}</b><span>Beds, clinician time and access. Not cash.</span></div>
-      <div class="stat"><small>Annual fees this value supports at ${b.roi_rule}:1</small><b>${fmtUSD(f.p50)}</b><span>${fmtUSD(f.p10)} to ${fmtUSD(f.p90)}. Hard value only.</span></div>
+      <div class="stat"><small>Annual fees this value supports at ${b.roi_rule}:1</small><b>${fmtUSD(f.p50)}</b><span>${fmtUSD(A.low.supportable_annual_fees_usd)} to ${fmtUSD(A.high.supportable_annual_fees_usd)} across the assumption range. Hard value only.</span></div>
     </div>
     <div class="stack">
-      <p class="legend"><span><i class="sw-hard"></i>Hard value (median)</span><span><i class="sw-range"></i>P10 to P90 of hard value</span><span><i class="sw-soft"></i>Soft value</span></p>
+      <p class="legend"><span><i class="sw-hard"></i>Hard value (median)</span><span><i class="sw-range"></i>Range if the module's most sensitive assumption is at its worst or best</span><span><i class="sw-soft"></i>Soft value</span></p>
       <div class="chart">${rows}</div>${axis(s)}
-      <p class="note">${fmtUSD(b.overlap_removed_usd)} of funded AI use cases is counted in the denials, patient flow and workforce lines, so it is removed from the AI line. Select a module name to open it.</p>
+      <p class="note">${fmtUSD(b.overlap_removed_usd)} of funded AI use cases overlaps the denials, patient flow and workforce lines, so it is removed from the AI line and not added elsewhere. Select a module name to open it.</p>
     </div>
     <details><summary>View the ledger as a table</summary><div class="tablewrap"><table>
-      <thead><tr><th>Module</th><th>Hard P10</th><th>Hard P50</th><th>Hard P90</th><th>Soft P50</th><th>How it was scaled</th></tr></thead>
-      <tbody>${b.lines.map(l => { const r = R.lines[l.key]; return `<tr><td>${esc(l.module)}</td><td class="n">${fmtUSD(r.p10)}</td><td class="n">${fmtUSD(r.p50)}</td><td class="n">${fmtUSD(r.p90)}</td><td class="n">${soft(l) > 0 ? fmtUSD(soft(l)) : "–"}</td><td>${esc(l.scaling)}</td></tr>`; }).join("")}</tbody>
+      <thead><tr><th>Module</th><th>Hard P10</th><th>Hard P50</th><th>Hard P90</th><th>Worst-case assumptions</th><th>Best-case assumptions</th><th>Soft P50</th><th>How it was scaled</th></tr></thead>
+      <tbody>${b.lines.map(l => { const r = R.lines[l.key]; return `<tr><td>${esc(l.module)}</td><td class="n">${fmtUSD(r.p10)}</td><td class="n">${fmtUSD(r.p50)}</td><td class="n">${fmtUSD(r.p90)}</td><td class="n">${fmtUSD(A.low.lines[l.key])}</td><td class="n">${fmtUSD(A.high.lines[l.key])}</td><td class="n">${soft(l) > 0 ? fmtUSD(soft(l)) : "–"}</td><td>${esc(l.scaling)}</td></tr>`; }).join("")}</tbody>
     </table></div></details>
     <details><summary>Ledger assumptions</summary><ul>${b.assumptions.map(a => `<li>${esc(a)}</li>`).join("")}</ul></details>`;
 }
@@ -192,16 +193,15 @@ function tornado(r) {
   if (!r.tornado || !r.tornado.length) return "";
   const vals = r.tornado.flatMap(t => [t.low, t.high, t.base]);
   const s = scale(Math.min(...vals), Math.max(...vals));
-  const pct = Math.round((r.swing || 0.3) * 100);
   const rows = r.tornado.map(t => { const a = Math.min(t.low, t.high), b = Math.max(t.low, t.high);
     const softNote = t.soft_low !== t.soft_high ? `<br>Soft value: ${fmtUSD(t.soft_low)} to ${fmtUSD(t.soft_high)}` : "";
-    const tip = `<strong>${esc(t.assumption)}</strong><br>At -${pct}%: <b>${fmtUSD(t.low)}</b><br>Base: <b>${fmtUSD(t.base)}</b><br>At +${pct}%: <b>${fmtUSD(t.high)}</b>${softNote}`;
+    const tip = `<strong>${esc(t.assumption)}</strong><br>At ${esc(t.low_at)}: <b>${fmtUSD(t.low)}</b><br>Base: <b>${fmtUSD(t.base)}</b><br>At ${esc(t.high_at)}: <b>${fmtUSD(t.high)}</b>${softNote}`;
     return `<div class="crow" data-tip="${esc(tip)}" tabindex="0"><span>${esc(t.assumption)}</span>
       <div class="plot" style="--tick:${s.tick.toFixed(3)}%"><div class="zero" style="left:${s.pos(0)}%"></div>
         <div class="span" style="left:${s.pos(a).toFixed(2)}%;width:${(s.pos(b) - s.pos(a)).toFixed(2)}%"></div><div class="base" style="left:calc(${s.pos(t.base).toFixed(2)}% - 1px)"></div></div>
-      <div class="val num">${fmtUSD(t.low)} / ${fmtUSD(t.high)}<small>at -${pct}% / +${pct}%</small></div></div>`; }).join("");
+      <div class="val num">${fmtUSD(t.low)} / ${fmtUSD(t.high)}<small>at ${esc(t.low_at)} / ${esc(t.high_at)}</small></div></div>`; }).join("");
   return `<div class="stack"><h3>Which assumption moves hard value most</h3>
-    <p class="legend"><span><i class="sw-hard"></i>Hard value when one assumption moves ${pct}% down or up</span><span><i class="sw-base"></i>Base case</span></p>
+    <p class="legend"><span><i class="sw-hard"></i>Hard value when one assumption moves to its low or high value, others held fixed</span><span><i class="sw-base"></i>Base case</span></p>
     <div class="chart">${rows}</div>${axis(s)}</div>`;
 }
 
@@ -213,8 +213,8 @@ function render(key) {
   $("panel").innerHTML = `
     <div class="stack"><h3>Problem, on its own reference client</h3><h2>${esc(r.problem)}</h2><p class="q">${esc(r.question)}</p></div>
     <div class="stats">
-      <div class="stat"><small>Hard value per year</small><b>${fmtUSD(h ? h.p50 : r.annual_value_usd)}</b><span>${h ? `${fmtUSD(h.p10)} to ${fmtUSD(h.p90)} across ${r.range.n_seeds} synthetic datasets` : "single run"}</span></div>
-      <div class="stat"><small>Soft value per year, reported separately</small><b>${fmtUSD(sf ? sf.p50 : r.soft_value_usd || 0)}</b><span>${sf && sf.p90 > 0 ? `${fmtUSD(sf.p10)} to ${fmtUSD(sf.p90)}` : "Not modeled for this problem"}</span></div>
+      <div class="stat"><small>Hard value per year</small><b>${fmtUSD(h ? h.p50 : r.annual_value_usd)}</b><span>${h ? `${fmtUSD(h.p10)} to ${fmtUSD(h.p90)} across ${r.range.n_seeds} synthetic datasets (data noise only; see the chart below for assumption risk)` : "single run"}</span></div>
+      <div class="stat"><small>Soft value per year, reported separately</small><b>${(sf ? sf.p90 : r.soft_value_usd) > 0 ? fmtUSD(sf ? sf.p50 : r.soft_value_usd) : "Not modeled"}</b><span>${sf && sf.p90 > 0 ? `${fmtUSD(sf.p10)} to ${fmtUSD(sf.p90)} across ${r.range.n_seeds} synthetic datasets` : "This prototype prices hard value only"}</span></div>
     </div>
     <p class="note">${esc(r.value_basis)}</p>
     ${tornado(r)}

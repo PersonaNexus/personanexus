@@ -35,6 +35,7 @@ ASSUMPTIONS = [
     "Capacity value (SOFT): 50% of freed days are refilled by extra admissions at ~$2,500 contribution margin per case; only if occupancy >= 85%.",
     "Hard value applies only to the 50% of freed days NOT refilled (no double counting of cost and capacity).",
     "Readmission offset: earlier discharge adds 0.5 pt readmission risk for patients whose stay is shortened, at ~$15,000 per readmission.",
+    "Program cost of $600K/yr (weekend imaging, discharge lounge, payer escalation desk, added case management) is subtracted from hard value.",
     "ED boarding: each staffed bed freed reduces boarding by ~1,200 hours/yr, only if occupancy >= 85%.",
     "Intervention effect sizes (share of barrier-attributed excess days removed): post-acute placement 35%, payer auth 40%, diagnostics 50%, transport/caregiver 60%, guardianship/legal 15%.",
     "Excess day = actual LOS above geometric mean LOS for the DRG-like group (GMLOS).",
@@ -47,12 +48,13 @@ VAR_COST_PER_DAY = 450
 READMIT_RISK_ADD = 0.005
 READMIT_COST = 15_000
 EFFECT_SCALE = 1.0  # multiplier on all intervention effect sizes (sensitivity lever)
+PROGRAM_COST = 600_000  # weekend imaging, discharge lounge, payer escalation desk, case mgmt
 
 SENSITIVITY = [
     ("Intervention effect sizes", "EFFECT_SCALE"),
     ("Variable cost per tail day", "VAR_COST_PER_DAY"),
     ("Share of freed days refilled", "MONETIZE_SHARE"),
-    ("Contribution margin per extra case", "MARGIN_PER_CASE"),
+    ("Annual program cost", "PROGRAM_COST"),
     ("Added readmission risk", "READMIT_RISK_ADD"),
 ]
 MARGIN_PER_CASE = 2_500
@@ -231,7 +233,7 @@ def run(seed: int = 42) -> dict:
         r_["patients_affected_yr"] * float(r_["assumed_effect"].rstrip("%")) / 100 for r_ in rows
     )
     readmit_offset = patients_shortened * READMIT_RISK_ADD * READMIT_COST
-    cost_value = days_freed * (1 - refill) * VAR_COST_PER_DAY - readmit_offset
+    cost_value = days_freed * (1 - refill) * VAR_COST_PER_DAY - readmit_offset - PROGRAM_COST
     capacity_value = extra_cases * MARGIN_PER_CASE
     boarding_hours = beds_freed * BOARDING_HRS_PER_BED if constrained else 0.0
     for row in rows:  # hard value per barrier, net of its share of readmission offset
@@ -264,7 +266,7 @@ def run(seed: int = 42) -> dict:
         ],
         annual_value_usd=cost_value,
         soft_value_usd=capacity_value,
-        value_basis="Hard: variable tail-day cost avoided on freed days that are not refilled, minus a readmission offset. Soft: contribution margin of extra admissions on refilled days (only at >=85% occupancy).",
+        value_basis="Hard: variable tail-day cost avoided on freed days that are not refilled, minus a readmission offset and $600K/yr program cost. Soft: contribution margin of extra admissions on refilled days (only at >=85% occupancy).",
         assumptions=ASSUMPTIONS,
         table_title="Discharge barrier playbook (annualized)",
         table=rows,
@@ -274,6 +276,7 @@ def run(seed: int = 42) -> dict:
             "hard_cost_value": round(cost_value),
             "soft_capacity_value": round(capacity_value),
             "readmission_offset": round(readmit_offset),
+            "program_cost": PROGRAM_COST,
             "extra_admissions_absorbed": round(extra_cases),
         },
     )

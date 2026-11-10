@@ -41,14 +41,16 @@ ASSUMPTIONS = [
 ]
 
 STAFF_RATE, FLOAT_RATE, AGENCY_RATE = 80.0, 90.0, 105.0
-OT_RATE = STAFF_RATE * 1.5
+OT_MULTIPLIER = 1.5
 OT_SHARE = 0.30
 FLOAT_UTILIZATION = 0.80
 FLOAT_COVER = 0.70
 TARGET_TURNOVER = 0.164
+# (label, attribute) swings +/-30%; (label, attribute, low, high) uses sourced values.
 SENSITIVITY = [
-    ("Agency hourly rate", "AGENCY_RATE"),
-    ("Float pool utilization", "FLOAT_UTILIZATION"),
+    ("Agency hourly rate ($90.54 sourced bill rate to $120)", "AGENCY_RATE", 90.54, 120.0),
+    ("Staff RN loaded rate ($80 vendor estimate to $94 NATHO)", "STAFF_RATE", 80.0, 94.0),
+    ("Float pool utilization (65% to 90%)", "FLOAT_UTILIZATION", 0.65, 0.90),
     ("Share of gaps covered by overtime", "OT_SHARE"),
     ("RN replacement cost", "REPLACEMENT_COST"),
     ("Retention outreach effect", "OUTREACH_EFFECT"),
@@ -59,7 +61,7 @@ SENSITIVITY = [
 def gap_rate() -> float:
     """Blended hourly cost of covering one RN-hour of gap above core."""
     return FLOAT_COVER * FLOAT_RATE / FLOAT_UTILIZATION + (1 - FLOAT_COVER) * (
-        OT_SHARE * OT_RATE + (1 - OT_SHARE) * AGENCY_RATE
+        OT_SHARE * STAFF_RATE * OT_MULTIPLIER + (1 - OT_SHARE) * AGENCY_RATE
     )
 
 
@@ -135,7 +137,7 @@ def _staffing_cost(demand: list[int], core: int, float_cover: float) -> dict:
     cost = (
         staff_h * STAFF_RATE
         + float_h / FLOAT_UTILIZATION * FLOAT_RATE
-        + ot_h * OT_RATE
+        + ot_h * STAFF_RATE * OT_MULTIPLIER
         + agency_h * AGENCY_RATE
     )
     return {"cost": cost, "agency_hours": agency_h, "float_hours": float_h, "ot_hours": ot_h}

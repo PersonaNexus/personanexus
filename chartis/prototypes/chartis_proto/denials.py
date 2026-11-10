@@ -39,6 +39,7 @@ FIX_SUCCESS = {
 WRITE_OFF_SHARE = 0.22  # share of denied $ never recovered without intervention
 BACKEND_REWORK_MULTIPLIER = 2.0  # back-end appeal/rework costs ~2x a pre-bill touch
 PARTNER_COST = 750_000.0  # annual partner / technology cost to run the program
+REALIZATION = 0.75  # share of modeled prevention actually achieved (ramp, adoption, existing work)
 REF_NPR = 1.0e9  # reference health system net patient revenue
 WORKLIST_CAPACITY = 0.10  # share of claims pre-bill staff can touch (assumption)
 
@@ -47,6 +48,7 @@ SENSITIVITY = [
     ("Pre-bill fix success rates", "FIX_SUCCESS"),
     ("Pre-bill worklist capacity", "WORKLIST_CAPACITY"),
     ("Rework cost per claim", "REWORK_COST"),
+    ("Realization of modeled prevention", "REALIZATION"),
     ("Partner / technology cost", "PARTNER_COST"),
 ]
 
@@ -95,6 +97,7 @@ ASSUMPTIONS = [
     f"Back-end rework (appeal after denial) costs {BACKEND_REWORK_MULTIPLIER:.0f}x a pre-bill touch (${REWORK_COST * BACKEND_REWORK_MULTIPLIER:.0f}/claim, within the $25-$118 range).",
     f"Partner / technology cost ${PARTNER_COST / 1e3:,.0f}K per year is subtracted from value (business case recommends delivering with an RCM partner).",
     "Staff productivity is not counted separately (rework cost avoided is already hard value), so soft value = 0.",
+    f"Only {REALIZATION:.0%} of modeled prevention is counted as realized (ramp-up, staff adoption, and prevention the client already does).",
     f"Annual value is scaled from the sample to a reference ${REF_NPR / 1e9:.0f}B net-patient-revenue system.",
 ]
 
@@ -206,7 +209,7 @@ def run(seed: int = 42) -> dict:
     )
     sample_value = prevented * WRITE_OFF_SHARE + avoided_backend_rework - rework
     scale = REF_NPR / total_expected
-    gross_value = sample_value * scale
+    gross_value = sample_value * scale * REALIZATION
     annual_value = gross_value - PARTNER_COST
 
     table = [
@@ -243,7 +246,7 @@ def run(seed: int = 42) -> dict:
             f"Sample net value {usd(sample_value)} ({WRITE_OFF_SHARE:.0%} write-off avoided on "
             "prevented denials, fix success by root cause, + avoided back-end rework - pre-bill "
             f"rework at ${REWORK_COST:.0f}/claim), scaled x{scale:,.0f} to a "
-            f"${REF_NPR / 1e9:.0f}B NPR system ({usd(gross_value)}), minus "
+            f"${REF_NPR / 1e9:.0f}B NPR system at {REALIZATION:.0%} realization ({usd(gross_value)}), minus "
             f"{usd(PARTNER_COST)} partner/technology cost."
         ),
         assumptions=ASSUMPTIONS,

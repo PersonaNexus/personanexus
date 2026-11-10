@@ -266,28 +266,54 @@
    },
    "tornado": [
     {
-     "assumption": "Agency hourly rate",
+     "assumption": "Agency hourly rate ($90.54 sourced bill rate to $120)",
      "attr": "AGENCY_RATE",
-     "low": -708431,
-     "high": 2141584,
+     "low_value": 90.54,
+     "high_value": 120.0,
+     "low_at": "90.54",
+     "high_at": "120",
+     "low": 78759,
+     "high": 1359048,
      "base": 746763,
-     "spread": 2850015,
+     "spread": 1280289,
      "soft_low": 0,
      "soft_high": 0
     },
     {
-     "assumption": "Float pool utilization",
+     "assumption": "Float pool utilization (65% to 90%)",
      "attr": "FLOAT_UTILIZATION",
-     "low": -140799,
-     "high": 1183486,
+     "low_value": 0.65,
+     "high_value": 0.9,
+     "low_at": "0.65",
+     "high_at": "0.9",
+     "low": 228945,
+     "high": 999603,
      "base": 746763,
-     "spread": 1324286,
+     "spread": 770658,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Staff RN loaded rate ($80 vendor estimate to $94 NATHO)",
+     "attr": "STAFF_RATE",
+     "low_value": 80.0,
+     "high_value": 94.0,
+     "low_at": "80",
+     "high_at": "94",
+     "low": 746763,
+     "high": 381669,
+     "base": 746763,
+     "spread": 365094,
      "soft_low": 0,
      "soft_high": 0
     },
     {
      "assumption": "RN replacement cost",
      "attr": "REPLACEMENT_COST",
+     "low_value": 28000,
+     "high_value": 52000,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 619884,
      "high": 873641,
      "base": 746763,
@@ -298,6 +324,10 @@
     {
      "assumption": "Retention outreach effect",
      "attr": "OUTREACH_EFFECT",
+     "low_value": 0.175,
+     "high_value": 0.325,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 619884,
      "high": 873641,
      "base": 746763,
@@ -308,6 +338,10 @@
     {
      "assumption": "Baseline RN turnover",
      "attr": "TARGET_TURNOVER",
+     "low_value": 0.1148,
+     "high_value": 0.21320000000000003,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 639845,
      "high": 839956,
      "base": 746763,
@@ -318,6 +352,10 @@
     {
      "assumption": "Share of gaps covered by overtime",
      "attr": "OT_SHARE",
+     "low_value": 0.21,
+     "high_value": 0.39,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 657669,
      "high": 835856,
      "base": 746763,
@@ -376,15 +414,16 @@
      "display": "0.62"
     }
    ],
-   "annual_value_usd": 1365740.91,
+   "annual_value_usd": 765740.91,
    "soft_value_usd": 2334469.23,
-   "value_basis": "Hard: variable tail-day cost avoided on freed days that are not refilled, minus a readmission offset. Soft: contribution margin of extra admissions on refilled days (only at >=85% occupancy).",
+   "value_basis": "Hard: variable tail-day cost avoided on freed days that are not refilled, minus a readmission offset and $600K/yr program cost. Soft: contribution margin of extra admissions on refilled days (only at >=85% occupancy).",
    "assumptions": [
     "Reference client: ~500 staffed beds, ~6,000 sampled discharges scaled to ~37,000 annual discharges (~88% occupancy; reported as a metric).",
     "Variable cost of an avoidable tail day: ~$450 (~15% of ~$3,000 full cost/day; final days of a stay are low-intensity).",
     "Capacity value (SOFT): 50% of freed days are refilled by extra admissions at ~$2,500 contribution margin per case; only if occupancy >= 85%.",
     "Hard value applies only to the 50% of freed days NOT refilled (no double counting of cost and capacity).",
     "Readmission offset: earlier discharge adds 0.5 pt readmission risk for patients whose stay is shortened, at ~$15,000 per readmission.",
+    "Program cost of $600K/yr (weekend imaging, discharge lounge, payer escalation desk, added case management) is subtracted from hard value.",
     "ED boarding: each staffed bed freed reduces boarding by ~1,200 hours/yr, only if occupancy >= 85%.",
     "Intervention effect sizes (share of barrier-attributed excess days removed): post-acute placement 35%, payer auth 40%, diagnostics 50%, transport/caregiver 60%, guardianship/legal 15%.",
     "Excess day = actual LOS above geometric mean LOS for the DRG-like group (GMLOS)."
@@ -398,7 +437,7 @@
      "intervention": "Day-1 post-acute referral + preferred SNF network",
      "assumed_effect": "35%",
      "days_freed_yr": 3643,
-     "hard_value_yr": 614505,
+     "hard_value_yr": 344539,
      "soft_capacity_value_yr": 1050377
     },
     {
@@ -408,7 +447,7 @@
      "intervention": "Weekend imaging + consult SLAs",
      "assumed_effect": "50%",
      "days_freed_yr": 2601,
-     "hard_value_yr": 438739,
+     "hard_value_yr": 245991,
      "soft_capacity_value_yr": 749939
     },
     {
@@ -418,7 +457,7 @@
      "intervention": "Payer escalation desk / auto-submission",
      "assumed_effect": "40%",
      "days_freed_yr": 936,
-     "hard_value_yr": 157885,
+     "hard_value_yr": 88523,
      "soft_capacity_value_yr": 269874
     },
     {
@@ -428,7 +467,7 @@
      "intervention": "Discharge lounge + ride program",
      "assumed_effect": "60%",
      "days_freed_yr": 593,
-     "hard_value_yr": 100028,
+     "hard_value_yr": 56083,
      "soft_capacity_value_yr": 170978
     },
     {
@@ -438,25 +477,26 @@
      "intervention": "Complex-discharge rounds + legal partner",
      "assumed_effect": "15%",
      "days_freed_yr": 324,
-     "hard_value_yr": 54653,
+     "hard_value_yr": 30643,
      "soft_capacity_value_yr": 93418
     }
    ],
    "details": {
     "unexplained_excess_days_yr": 13591,
     "top_quintile_capture_of_long_stays": 0.324,
-    "hard_cost_value": 1365741,
+    "hard_cost_value": 765741,
     "soft_capacity_value": 2334469,
     "readmission_offset": 455993,
+    "program_cost": 600000,
     "extra_admissions_absorbed": 934
    },
    "synthetic_data": true,
    "range": {
     "n_seeds": 30,
     "hard": {
-     "p10": 1308800,
-     "p50": 1385355,
-     "p90": 1452270
+     "p10": 708800,
+     "p50": 785355,
+     "p90": 852270
     },
     "soft": {
      "p10": 2286390,
@@ -468,9 +508,13 @@
     {
      "assumption": "Variable cost per tail day",
      "attr": "VAR_COST_PER_DAY",
-     "low": 819221,
-     "high": 1912261,
-     "base": 1365741,
+     "low_value": 315,
+     "high_value": 585,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 219221,
+     "high": 1312261,
+     "base": 765741,
      "spread": 1093040,
      "soft_low": 2334469,
      "soft_high": 2334469
@@ -478,9 +522,13 @@
     {
      "assumption": "Share of freed days refilled",
      "attr": "MONETIZE_SHARE",
-     "low": 1912261,
-     "high": 819221,
-     "base": 1365741,
+     "low_value": 0.35,
+     "high_value": 0.65,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 1312261,
+     "high": 219221,
+     "base": 765741,
      "spread": 1093040,
      "soft_low": 1634128,
      "soft_high": 3034810
@@ -488,32 +536,44 @@
     {
      "assumption": "Intervention effect sizes",
      "attr": "EFFECT_SCALE",
-     "low": 957700,
-     "high": 1349096,
-     "base": 1365741,
-     "spread": 391396,
+     "low_value": 0.7,
+     "high_value": 1.3,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 357700,
+     "high": 1176881,
+     "base": 765741,
+     "spread": 819181,
      "soft_low": 1634128,
-     "soft_high": 2311125
+     "soft_high": 3034810
     },
     {
-     "assumption": "Added readmission risk",
-     "attr": "READMIT_RISK_ADD",
-     "low": 1502539,
-     "high": 1228943,
-     "base": 1365741,
-     "spread": 273596,
+     "assumption": "Annual program cost",
+     "attr": "PROGRAM_COST",
+     "low_value": 420000,
+     "high_value": 780000,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 945741,
+     "high": 585741,
+     "base": 765741,
+     "spread": 360000,
      "soft_low": 2334469,
      "soft_high": 2334469
     },
     {
-     "assumption": "Contribution margin per extra case",
-     "attr": "MARGIN_PER_CASE",
-     "low": 1365741,
-     "high": 1365741,
-     "base": 1365741,
-     "spread": 0,
-     "soft_low": 1634128,
-     "soft_high": 3034810
+     "assumption": "Added readmission risk",
+     "attr": "READMIT_RISK_ADD",
+     "low_value": 0.0034999999999999996,
+     "high_value": 0.006500000000000001,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 902539,
+     "high": 628943,
+     "base": 765741,
+     "spread": 273596,
+     "soft_low": 2334469,
+     "soft_high": 2334469
     }
    ],
    "swing": 0.3
@@ -576,7 +636,7 @@
     "340B / site-neutral shock = 2% of net patient revenue for hospitals with an outpatient-heavy mix.",
     "OB closure (units < 200 births) saves ~$1.2M/yr direct cost; OB-linked revenue = 8% of NPR, of which 25% is lost, capped at $1M/yr. Closure is flagged as an access loss, and not recommended, if the next hospital is > 30 miles away.",
     "REH eligibility here is a PROXY (CAH or <= 50 beds, average daily census < 5), not the statutory test (CAH or rural hospital <= 50 beds as of Dec 27 2020, plus state licensure).",
-    "REH conversion: inpatient revenue removed; inpatient cost = expenses x inpatient revenue share x 1.1, of which only 50% is avoidable (the rest is fixed); adds ~$3.4M/yr facility payment and +5% on the Medicare OPPS share (40%) of outpatient revenue; CAHs lose ~10% on that Medicare outpatient revenue when cost-based payment ends; swing-bed and 340B revenue (~6% of NPR) lost; +$0.75M/yr for transfer and 24/7 ED requirements. Only loss-making hospitals are considered, and post-conversion margin is bounded at 10% as a sanity check.",
+    "REH conversion: inpatient revenue removed; inpatient cost = expenses x inpatient revenue share x 1.1, of which only 40% is avoidable (the rest is fixed); adds ~$3.4M/yr facility payment and +5% on the Medicare OPPS share (40%) of outpatient revenue; CAHs lose ~10% on that Medicare outpatient revenue when cost-based payment ends; swing-bed and 340B revenue (~6% of NPR) lost; +$0.75M/yr for transfer and 24/7 ED requirements. Only loss-making hospitals are considered, and post-conversion margin is bounded at 10% as a sanity check.",
     "Operational improvement option = 1.5% expense reduction (shared services, revenue cycle, staffing). Always available; access-neutral.",
     "Reference client = system/association with the 20 most vulnerable hospitals; annual value = 15% realization x sum of the best access-protecting option per hospital (assumption, to validate in pilot)."
    ],
@@ -880,6 +940,10 @@
     {
      "assumption": "Realization of modeled option value",
      "attr": "REALIZATION",
+     "low_value": 0.105,
+     "high_value": 0.195,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 1106430,
      "high": 2054798,
      "base": 1580614,
@@ -890,6 +954,10 @@
     {
      "assumption": "Operational improvement (expense cut)",
      "attr": "OPS_IMPROVEMENT",
+     "low_value": 0.010499999999999999,
+     "high_value": 0.0195,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 1156285,
      "high": 2006744,
      "base": 1580614,
@@ -900,6 +968,10 @@
     {
      "assumption": "REH facility payment",
      "attr": "REH_FACILITY_PAYMENT",
+     "low_value": 2380000.0,
+     "high_value": 4420000.0,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 1500218,
      "high": 2185122,
      "base": 1580614,
@@ -910,6 +982,10 @@
     {
      "assumption": "Avoidable share of inpatient cost",
      "attr": "IP_COST_AVOIDABLE",
+     "low_value": 0.27999999999999997,
+     "high_value": 0.52,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 1500218,
      "high": 1784193,
      "base": 1580614,
@@ -920,6 +996,10 @@
     {
      "assumption": "Medicaid revenue cut",
      "attr": "MEDICAID_CUT",
+     "low_value": 0.06999999999999999,
+     "high_value": 0.13,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 1572456,
      "high": 1588773,
      "base": 1580614,
@@ -972,9 +1052,9 @@
      "display": "14.4%"
     }
    ],
-   "annual_value_usd": 4236536.56,
+   "annual_value_usd": 2989902.42,
    "soft_value_usd": 0.0,
-   "value_basis": "Sample net value $166K (22% write-off avoided on prevented denials, fix success by root cause, + avoided back-end rework - pre-bill rework at $57/claim), scaled x30 to a $1B NPR system ($5.0M), minus $750K partner/technology cost.",
+   "value_basis": "Sample net value $166K (22% write-off avoided on prevented denials, fix success by root cause, + avoided back-end rework - pre-bill rework at $57/claim), scaled x30 to a $1B NPR system at 75% realization ($3.7M), minus $750K partner/technology cost.",
    "assumptions": [
     "5,000 claims are synthetic; payer mix and service-line charges are illustrative.",
     "Model coefficients are hand-set log-odds (see COEF), not trained on real data; MA carries a higher denial offset than traditional Medicare, consistent with industry reports.",
@@ -986,6 +1066,7 @@
     "Back-end rework (appeal after denial) costs 2x a pre-bill touch ($114/claim, within the $25-$118 range).",
     "Partner / technology cost $750K per year is subtracted from value (business case recommends delivering with an RCM partner).",
     "Staff productivity is not counted separately (rework cost avoided is already hard value), so soft value = 0.",
+    "Only 75% of modeled prevention is counted as realized (ramp-up, staff adoption, and prevention the client already does).",
     "Annual value is scaled from the sample to a reference $1B net-patient-revenue system."
    ],
    "table_title": "Top 20 pre-bill worklist claims (ranked by expected value of intervening)",
@@ -1221,8 +1302,8 @@
      "Timely filing": 22
     },
     "worklist_size": 500,
-    "gross_value_before_partner_cost": 4986537,
-    "value_pct_of_npr": 0.424,
+    "gross_value_before_partner_cost": 3739902,
+    "value_pct_of_npr": 0.299,
     "worklist_share_of_claims_pct": 10.0,
     "worklist_capture_of_denials_pct": 22.2
    },
@@ -1230,9 +1311,9 @@
    "range": {
     "n_seeds": 30,
     "hard": {
-     "p10": 3910344,
-     "p50": 4355490,
-     "p90": 5017317
+     "p10": 2745258,
+     "p50": 3079118,
+     "p90": 3575487
     },
     "soft": {
      "p10": 0,
@@ -1244,39 +1325,83 @@
     {
      "assumption": "Pre-bill fix success rates",
      "attr": "FIX_SUCCESS",
-     "low": 2484231,
-     "high": 5988842,
-     "base": 4236537,
-     "spread": 3504611,
+     "low_value": {
+      "Authorization / precert": 0.21,
+      "Eligibility / registration": 0.5249999999999999,
+      "Medical necessity / documentation": 0.45499999999999996,
+      "Coding": 0.45499999999999996,
+      "Timely filing": 0.45499999999999996,
+      "Payer behavior (other)": 0.21
+     },
+     "high_value": {
+      "Authorization / precert": 0.39,
+      "Eligibility / registration": 0.9750000000000001,
+      "Medical necessity / documentation": 0.8450000000000001,
+      "Coding": 0.8450000000000001,
+      "Timely filing": 0.8450000000000001,
+      "Payer behavior (other)": 0.39
+     },
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 1675673,
+     "high": 4304132,
+     "base": 2989902,
+     "spread": 2628458,
      "soft_low": 0,
      "soft_high": 0
     },
     {
      "assumption": "Write-off share of denied dollars",
      "attr": "WRITE_OFF_SHARE",
-     "low": 2545497,
-     "high": 5927576,
-     "base": 4236537,
-     "spread": 3382078,
+     "low_value": 0.154,
+     "high_value": 0.28600000000000003,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 1721623,
+     "high": 4258182,
+     "base": 2989902,
+     "spread": 2536559,
+     "soft_low": 0,
+     "soft_high": 0
+    },
+    {
+     "assumption": "Realization of modeled prevention",
+     "attr": "REALIZATION",
+     "low_value": 0.5249999999999999,
+     "high_value": 0.9750000000000001,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 1867932,
+     "high": 4111873,
+     "base": 2989902,
+     "spread": 2243941,
      "soft_low": 0,
      "soft_high": 0
     },
     {
      "assumption": "Pre-bill worklist capacity",
      "attr": "WORKLIST_CAPACITY",
-     "low": 3040066,
-     "high": 4735949,
-     "base": 4236537,
-     "spread": 1695883,
+     "low_value": 0.06999999999999999,
+     "high_value": 0.13,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 2092549,
+     "high": 3364462,
+     "base": 2989902,
+     "spread": 1271912,
      "soft_low": 0,
      "soft_high": 0
     },
     {
      "assumption": "Partner / technology cost",
      "attr": "PARTNER_COST",
-     "low": 4461537,
-     "high": 4011537,
-     "base": 4236537,
+     "low_value": 525000.0,
+     "high_value": 975000.0,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 3214902,
+     "high": 2764902,
+     "base": 2989902,
      "spread": 450000,
      "soft_low": 0,
      "soft_high": 0
@@ -1284,10 +1409,14 @@
     {
      "assumption": "Rework cost per claim",
      "attr": "REWORK_COST",
-     "low": 4431615,
-     "high": 4041458,
-     "base": 4236537,
-     "spread": 390156,
+     "low_value": 39.9,
+     "high_value": 74.10000000000001,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 3136211,
+     "high": 2843594,
+     "base": 2989902,
+     "spread": 292617,
      "soft_low": 0,
      "soft_high": 0
     }
@@ -1776,18 +1905,26 @@
    },
    "tornado": [
     {
-     "assumption": "Negotiated licence discount",
-     "attr": "LICENSE_DISCOUNT",
-     "low": 1654321,
-     "high": 3654372,
+     "assumption": "Licence prices",
+     "attr": "LICENSE_PRICE_SCALE",
+     "low_value": 0.7,
+     "high_value": 1.3,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 5645059,
+     "high": 1019222,
      "base": 2811350,
-     "spread": 2000051,
-     "soft_low": 5209573,
-     "soft_high": 6391306
+     "spread": 4625838,
+     "soft_low": 6618312,
+     "soft_high": 4377484
     },
     {
      "assumption": "Internal cost as share of licence",
      "attr": "INTERNAL_COST_SHARE",
+     "low_value": 0.35,
+     "high_value": 0.65,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 3464760,
      "high": 1820821,
      "base": 2811350,
@@ -1798,6 +1935,10 @@
     {
      "assumption": "Revenue-cycle overlap haircut",
      "attr": "OVERLAP_HAIRCUT",
+     "low_value": 0.27999999999999997,
+     "high_value": 0.52,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 3431230,
      "high": 2003664,
      "base": 2811350,
@@ -1808,6 +1949,10 @@
     {
      "assumption": "Weight of soft value in funding decisions",
      "attr": "SOFT_DECISION_WEIGHT",
+     "low_value": 0.35,
+     "high_value": 0.65,
+     "low_at": "-30%",
+     "high_at": "+30%",
      "low": 2766134,
      "high": 2291536,
      "base": 2811350,
@@ -1816,14 +1961,18 @@
      "soft_high": 5831070
     },
     {
-     "assumption": "Discount rate",
-     "attr": "DISCOUNT_RATE",
-     "low": 2811350,
-     "high": 2811350,
+     "assumption": "Year-1 AI budget",
+     "attr": "YEAR1_BUDGET",
+     "low_value": 8400000,
+     "high_value": 15600000,
+     "low_at": "-30%",
+     "high_at": "+30%",
+     "low": 2495312,
+     "high": 2890992,
      "base": 2811350,
-     "spread": 0,
-     "soft_low": 5474486,
-     "soft_high": 5474486
+     "spread": 395680,
+     "soft_low": 3978154,
+     "soft_high": 7516845
     }
    ],
    "swing": 0.3
@@ -1842,48 +1991,50 @@
    {
     "key": "workforce",
     "module": "Workforce",
-    "hard_value_usd": 1875060,
+    "hard_value_usd": 1344888,
     "soft_value_usd": 0,
-    "scaling": "Labor savings x staffed beds / 298; retention value x RN headcount / 1,100"
+    "scaling": "Labor savings x staffed beds / 500 (unmodeled units count as zero); retention value x RN headcount / 1,100"
    },
    {
     "key": "patient_flow",
     "module": "Patient flow",
-    "hard_value_usd": 1365741,
+    "hard_value_usd": 765741,
     "soft_value_usd": 2334469,
-    "scaling": "x capacity-constrained beds / 500"
+    "scaling": "x capacity-constrained beds / 500 (the 300 unconstrained beds are excluded; conservative)"
    },
    {
     "key": "rural",
     "module": "Rural sustainability",
     "hard_value_usd": 632246,
     "soft_value_usd": 0,
-    "scaling": "x affiliated rural hospitals / 20 (assumes affiliates resemble the most vulnerable set)"
+    "scaling": "x affiliated rural hospitals / 20 (affiliate revenue sits outside the $2.0B)"
    },
    {
     "key": "denials",
     "module": "Denials & prior auth",
-    "hard_value_usd": 8848074,
+    "hard_value_usd": 6354804,
     "soft_value_usd": 0,
     "scaling": "Gross value x NPR / $1B; partner cost half fixed, half scaling with NPR"
    },
    {
     "key": "ai_portfolio",
     "module": "AI value",
-    "hard_value_usd": 729303,
+    "hard_value_usd": 112636,
     "soft_value_usd": 3649657,
-    "scaling": "x NPR / $3B (budget scales too); minus funded use cases claimed by another module"
+    "scaling": "Benefits and run costs x NPR / $3B, one-time costs fixed; funded use cases claimed by another module removed"
    }
   ],
   "overlap_removed_usd": 1144931,
-  "hard_total_usd": 13450423,
+  "hard_total_usd": 9210314,
   "soft_total_usd": 5984126,
-  "supportable_annual_fees_usd": 2690085,
+  "supportable_annual_fees_usd": 1842063,
   "roi_rule": 5.0,
   "assumptions": [
    "One illustrative client: $2.0B net patient revenue, 800 staffed beds (500 capacity-constrained), 2,400 RNs, 8 affiliated rural hospitals.",
    "Module outputs scale linearly with their driver (first-order approximation; calibrate on client data).",
-   "Overlap: funded AI use cases tagged to another module are counted in that module only.",
+   "Overlap: funded AI use cases tagged to another module are removed from the AI line and not added elsewhere (conservative).",
+   "Rural affiliates are not consolidated: their operational improvement does not overlap the denials or workforce lines.",
+   "Lines are additive: no synergy between modules is assumed.",
    "Client-ROI rule: annual fees are supportable up to hard value / 5.",
    "Soft value (capacity, clinician time, access) is shown separately and never added to hard value."
   ],
@@ -1891,9 +2042,9 @@
   "range": {
    "n_seeds": 30,
    "hard_total": {
-    "p10": 12866594,
-    "p50": 13977188,
-    "p90": 15227540
+    "p10": 8739840,
+    "p50": 9424022,
+    "p90": 10566944
    },
    "soft_total": {
     "p10": 6300376,
@@ -1902,14 +2053,14 @@
    },
    "lines": {
     "workforce": {
-     "p10": 1778676,
-     "p50": 2307664,
-     "p90": 2816362
+     "p10": 1288547,
+     "p50": 1604437,
+     "p90": 1904673
     },
     "patient_flow": {
-     "p10": 1308800,
-     "p50": 1385356,
-     "p90": 1452270
+     "p10": 708800,
+     "p50": 785356,
+     "p90": 852270
     },
     "rural": {
      "p10": 481206,
@@ -1917,14 +2068,14 @@
      "p90": 701103
     },
     "denials": {
-     "p10": 8195688,
-     "p50": 9085980,
-     "p90": 10409633
+     "p10": 5865516,
+     "p50": 6533235,
+     "p90": 7525976
     },
     "ai_portfolio": {
-     "p10": 145814,
-     "p50": 554970,
-     "p90": 1005702
+     "p10": -443075,
+     "p50": -25586,
+     "p90": 411814
     }
    },
    "soft_lines": {
@@ -1956,9 +2107,33 @@
    }
   },
   "supportable_annual_fees_range_usd": {
-   "p10": 2573319,
-   "p50": 2795438,
-   "p90": 3045508
+   "p10": 1747968,
+   "p50": 1884804,
+   "p90": 2113389
+  },
+  "assumption_range": {
+   "low": {
+    "hard_total_usd": 4286678,
+    "supportable_annual_fees_usd": 857336,
+    "lines": {
+     "workforce": 276083,
+     "patient_flow": 219221,
+     "rural": 442572,
+     "denials": 3726346,
+     "ai_portfolio": -377543
+    }
+   },
+   "high": {
+    "hard_total_usd": 14041275,
+    "supportable_annual_fees_usd": 2808255,
+    "lines": {
+     "workforce": 2324545,
+     "patient_flow": 1312261,
+     "rural": 821919,
+     "denials": 8983264,
+     "ai_portfolio": 599285
+    }
+   }
   }
  }
 }

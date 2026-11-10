@@ -1,8 +1,8 @@
 # Business Case: Five Healthcare Problems Chartis Can Reasonably Solve
 
-_v2, 2026-11-10. Built and checked by AI agents (research, build, red-team, code review, fact-check). External figures carry their source. The prototype dollar values come from **synthetic data**: they show how the method works and how sensitive it is, and they are not forecasts for any client._
+_v2.1, 2026-11-10. Built and checked by AI agents (research, build, red-team, code review, fact-check). External figures carry their source. The prototype dollar values come from **synthetic data**: they show how the method works and how sensitive it is, and they are not forecasts for any client._
 
-**What changed in v2:** every value is now a range, each module has a sensitivity analysis, all five modules are rescaled to one client so they can be compared and totalled, and an independent fact-check corrected 12 claims. Details are in `review_log.md`.
+**What changed in v2:** every value is now a range, each module has a sensitivity analysis, all five modules are rescaled to one client so they can be compared and totalled, an independent fact-check led to 13 text corrections, and a second red-team review cut the combined value by about a third. Details are in `review_log.md`.
 
 ---
 
@@ -14,7 +14,7 @@ _v2, 2026-11-10. Built and checked by AI agents (research, build, red-team, code
 | A2 | The audience is Chartis leadership or a practice lead deciding which **productized offerings** to build. | Shapes the commercial model: advisory, then implementation, then subscription. | If the audience is a single client health system, read §3–4 as "client ROI" and skip §6. |
 | A3 | "Reasonably solve" means Chartis can deliver it with current or recently acquired capabilities: strategy, operations, workforce, Center for Rural Health, Digital & Technology (incl. Healthlink, Oct 2025), HealthScape (payer strategy), Jarrard (communications), Leap AI Studio (Mar 2026). It does **not** mean becoming an EHR vendor or a revenue-cycle outsourcer. | Rules out problems like drug pricing or the clinician pipeline itself. | We would add "build vs. partner" options. |
 | A4 | Prototypes use **synthetic data** and **hand-set, interpretable models**. | Keeps the work shareable without PHI. | Production needs client data, a BAA, model validation and governance. |
-| A5 | The one-client ledger (§4) uses an **illustrative regional health system**: $2.0B net patient revenue (NPR), 800 staffed beds (500 capacity-constrained), 2,400 RNs, 8 affiliated rural hospitals. Module outputs are scaled to it linearly. | It is the only place values are comparable and summed. | Change `CLIENT` in `chartis_proto/bundle.py` and rerun. |
+| A5 | The one-client ledger (§4) uses an **illustrative regional health system**: $2.0B net patient revenue (NPR), 800 staffed beds (500 capacity-constrained), 2,400 RNs, 8 affiliated rural hospitals whose revenue sits outside the $2.0B. Module outputs are scaled to it linearly and added with no synergy. | It is the only place values are comparable and summed. | Change `CLIENT` in `chartis_proto/bundle.py` and rerun. |
 | A6 | No Chartis internal data, pricing or proprietary IP was used. The rural score is deliberately **not** Chartis' INDEX. | Avoids misrepresenting proprietary products. | Swap in Chartis' real methods and data in Phase 1. |
 
 **Research limits.** chartis.com and most publisher sites could not be opened from the build environment. The fact-check therefore rests on search-result summaries of the cited pages, not on reading them in full. The Leap AI acquisition (19 Mar 2026, terms undisclosed) is confirmed from trade press only.
@@ -29,22 +29,23 @@ Chartis is well placed on all five. It has the leading rural health research fra
 
 **What the prototypes show for one illustrative $2B health system (§4):**
 
-| | P10 | P50 | P90 |
+| | Central estimate | Assumption range | Data-noise range |
 |---|---|---|---|
-| Hard (P&L) value per year, all five modules | $12.9M | **$14.0M** | $15.2M |
-| Soft value per year (beds, clinician time), reported separately | $6.3M | $6.9M | $7.5M |
-| Annual fees that hard value supports at 5:1 | $2.6M | **$2.8M** | $3.0M |
+| Hard (P&L) value per year, all five modules | **$9.4M** | $4.3M – $14.0M | $8.7M – $10.6M |
+| Annual fees that hard value supports at 5:1 | **$1.9M** | $0.9M – $2.8M | $1.7M – $2.1M |
+| Soft value per year (beds, clinician time), reported separately | $6.9M | not run | $6.3M – $7.5M |
 
-The ranges cover variation across 30 synthetic datasets only. Assumption risk is larger: single assumptions move individual modules by ±40–100% (§5).
+- **Assumption range** puts each module's most sensitive assumption at its worst, then its best, value. This is the range to plan on.
+- **Data-noise range** is P10–P90 across 30 synthetic datasets. It reflects sample size only and understates the real uncertainty.
 
 **Three findings that shape the recommendation:**
-1. **Denials carry about 65% of the bundle's hard value** ($9.1M of $14.0M), and it is the area where Chartis is weakest against revenue-cycle outsourcers. The partner-or-build decision for denials is therefore the most important commercial decision, not a side issue.
-2. **AI's own hard value is thin** ($0.6M once use cases already counted in other modules are removed). The AI Value Office earns its place as the **measurement and governance layer** for the other modules, not as a profit line.
-3. **Rural is a different sale.** Inside a health-system bundle it adds only about $0.6M. Its buyers are rural networks and state hospital associations, and its value is access preserved and funding captured, which the prototype does not price.
+1. **Denials carry about 70% of the hard value** ($6.5M of $9.4M, and more in the low case). It is also the area where Chartis is weakest against revenue-cycle outsourcers. The partner-or-build decision for denials is therefore the most important commercial decision.
+2. **AI's own hard value is about zero** (−$0.4M to +$0.4M) once use cases already counted in other modules are removed. The AI Value Office earns its place as the **measurement and governance layer**, and through soft value ($4.6M of clinician and staff capacity), not as a profit line.
+3. **Rural is a different sale.** Inside a health-system bundle it adds about $0.6M. Its buyers are rural networks and state hospital associations, and its value is access preserved and funding captured, which the prototype does not price.
 
-**Recommendation: two offers, not five.**
-- **Health-system margin bundle:** Denials (with a partner) + Patient Flow + Workforce, with the AI Value Office keeping one value ledger per client.
-- **Rural sustainability offer:** led by the Center for Rural Health for rural networks and state associations, built on the transparent stress-test.
+**Recommendation: two offers, not five.** This is a packaging judgment: the ledger adds the modules with no synergy, so the case for bundling is one buyer and one value ledger, not extra value.
+- **Health-system margin offer.** Core: Denials (with a partner) + Patient Flow. Add Workforce only where a first-week diagnostic confirms a real agency premium. The AI Value Office keeps one value ledger per client.
+- **Rural sustainability offer.** Led by the Center for Rural Health for rural networks and state associations, built on the transparent stress-test.
 
 ---
 
@@ -69,14 +70,14 @@ The ranges cover variation across 30 synthetic datasets only. Assumption risk is
 
 ## 3. The five problems
 
-Each prototype below runs on its **own** reference client. The comparable, one-client view is in §4. Values are P50 with the P10–P90 range across 30 synthetic datasets.
+Each prototype below runs on its **own** reference client. The comparable, one-client view is in §4. Values are P50 with the P10–P90 range across 30 synthetic datasets (data noise only; assumption sensitivity is given under each problem).
 
 | # | Problem | Chartis fit | Own reference client | Hard value / yr (P10–P50–P90) | Soft value / yr (P50) |
 |---|---|---|---|---|---|
 | 1 | Workforce | Strong | 10 units, ~300 beds, 1,100 RNs | $0.7M – **$0.9M** – $1.1M | not modeled |
-| 2 | Patient flow | Strong | 500 beds at 88% occupancy | $1.3M – **$1.4M** – $1.5M | $2.4M capacity |
+| 2 | Patient flow | Strong | 500 beds at 88% occupancy | $0.7M – **$0.8M** – $0.9M | $2.4M capacity |
 | 3 | Rural | **Strongest** | 20 most vulnerable of 120 hospitals | $1.2M – **$1.4M** – $1.8M | access (unpriced) |
-| 4 | Denials | Moderate; partner | $1B NPR | $3.9M – **$4.4M** – $5.0M | not modeled |
+| 4 | Denials | Moderate; partner | $1B NPR | $2.7M – **$3.1M** – $3.6M | not modeled |
 | 5 | AI value | **Strong and strategic** | $3B NPR, $12M AI budget | $2.0M – **$2.8M** – $3.5M | $6.9M capacity |
 
 ### Problem 1: Clinical workforce shortage, burnout & premium labor
@@ -99,7 +100,7 @@ Each prototype below runs on its **own** reference client. The comparable, one-c
 - Sets core staffing at the newsvendor-optimal quantile (about P28 at the assumed rates).
 - Scores RN turnover risk, calibrated to 16.4%. The top-risk decile leaves at about 2.5x the overall rate.
 
-**Sensitivity:** the agency rate dominates. At 30% below the assumed $105/hr (below staff cost, as NATHO claims), hard value is **−$0.7M**. At 30% above, it is **+$2.1M**.
+**Sensitivity:** the agency rate dominates. The model assumes a blended $105/hr. At the only sourced figure, the $90.54 travel bill rate, hard value falls to **$0.1M**. At $120/hr it is **$1.4M**. If loaded staff cost is $94/hr, as NATHO claims, it is $0.4M.
 
 **Key finding:** better scheduling pays only where a real agency premium exists. Establish the client's true premium in the first week of a diagnostic. Otherwise position the work on **retention** and **documentation burden**, not on scheduling ROI.
 
@@ -117,10 +118,10 @@ Each prototype below runs on its **own** reference client. The comparable, one-c
 **Prototype (`patient_flow.py`)**
 - Attributes each patient's barrier-caused delay to discharge barriers: post-acute placement, payer authorization, diagnostics, transport, guardianship. Random variation stays "unexplained".
 - Applies an intervention playbook and frees about 8,100 bed-days (about 22 staffed beds, about 27K ED boarding hours).
-- **Hard value** is the variable cost of tail days on beds that are not refilled, net of a readmission offset. **Soft value** is the margin on extra admissions in refilled beds, counted only at 85% occupancy or above.
+- **Hard value** is the variable cost of tail days on beds that are not refilled, net of a readmission offset and a $600K/yr program cost (weekend imaging, discharge lounge, payer escalation desk). **Soft value** is the margin on extra admissions in refilled beds, counted only at 85% occupancy or above.
 - Adds an admission-time long-stay risk score (AUC 0.62; deliberately modest).
 
-**Sensitivity:** the variable cost of a tail day and the share of freed beds that are refilled each move hard value between **$0.8M and $1.9M**.
+**Sensitivity:** the variable cost of a tail day and the share of freed beds that are refilled each move hard value between **$0.2M and $1.3M**.
 
 **Key finding:** the value of patient flow is mostly **capacity**, and it is real only when the hospital is full. Sell it as "beds without building" and less boarding, not as cost reduction.
 
@@ -139,7 +140,7 @@ Each prototype below runs on its **own** reference client. The comparable, one-c
 - Evaluates options per hospital: operational improvement, OB consolidation and conversion to a Rural Emergency Hospital (REH). **Options that create access loss are rejected** (10 rejected at seed 42).
 - Hard value is 15% realization of the best access-safe option for the 20 most vulnerable hospitals.
 
-**Sensitivity:** the realization rate and the size of operational improvement move value between **$1.1M and $2.1M**. The size of the Medicaid cut barely moves it, because the options do not depend on the cut.
+**Sensitivity:** the realization rate and the size of operational improvement move value between **$1.1M and $2.1M**, and a 30% higher REH facility payment lifts it to $2.2M. The size of the Medicaid cut barely moves it, because the options do not depend on the cut.
 
 **Key finding:** Chartis cannot "avoid" a Medicaid cut. Its value lies in helping boards choose **access-preserving** options early and in capturing Rural Health Transformation funds. Grant capture and access are not yet priced (hand-off task T4), so the prototype understates this offer.
 
@@ -157,9 +158,10 @@ Each prototype below runs on its **own** reference client. The comparable, one-c
 **Prototype (`denials.py`)**
 - An interpretable logistic model scores 5,000 claims (AUC 0.70; denial rate 10.8%; MA 14.4% vs 6.7% for traditional Medicare).
 - A pre-bill worklist ranks claims by expected recoverable dollars, net of rework cost and of how fixable each root cause is (authorization 30%, coding 65%, eligibility 75%).
-- Hard value is net of a $750K/yr partner cost and equals about **0.44% of NPR**.
+- Only **75%** of modeled prevention is counted as realized, to allow for ramp-up, adoption and prevention the client already does.
+- Hard value is net of a $750K/yr partner cost, paid by the client, and equals about **0.31% of NPR**.
 
-**Sensitivity:** pre-bill fix success and the write-off share each move value between **$2.5M and $6.0M**.
+**Sensitivity:** pre-bill fix success and the write-off share each move value between **$1.7M and $4.3M**.
 
 **Key finding:** this is the largest and most measurable hard-dollar pool, and the one where Chartis most needs a partner. See §6.
 
@@ -176,7 +178,7 @@ Each prototype below runs on its **own** reference client. The comparable, one-c
 - Picks a portfolio under a $12M budget and tracks realized against promised value (about 75% realized; 4 use cases flagged).
 - Hard value is realized, net of licence, internal cost and amortized one-time cost, after a 40% haircut on overlapping revenue-cycle use cases.
 
-**Sensitivity:** licence pricing and internal cost move hard value between **$1.7M and $3.7M**.
+**Sensitivity:** licence prices dominate. At 30% lower prices hard value is **$5.6M**; at 30% higher it is **$1.0M**.
 
 **Key finding:** on hard dollars, **ambient documentation is put on Hold**. Its licence cost exceeds its hard savings, and its value is burnout and retention (soft). That is the conversation CFOs are having in 2026, and measurement and governance discipline is the product.
 
@@ -186,38 +188,44 @@ Each prototype below runs on its **own** reference client. The comparable, one-c
 
 `chartis_proto/bundle.py` rescales every module to the illustrative client in A5 and counts overlapping value once.
 
-| Module | Hard value / yr (P10–P50–P90) | Soft value / yr (P50) | How it was scaled |
-|---|---|---|---|
-| Denials & prior auth | $8.2M – **$9.1M** – $10.4M | not modeled | Gross value × NPR; partner cost half fixed |
-| Workforce | $1.8M – **$2.3M** – $2.8M | not modeled | Labor savings × beds; retention × RN headcount |
-| Patient flow | $1.3M – **$1.4M** – $1.5M | $2.4M | × capacity-constrained beds |
-| Rural sustainability | $0.5M – **$0.6M** – $0.7M | access (unpriced) | × 8 affiliated rural hospitals |
-| AI value (after overlap) | $0.1M – **$0.6M** – $1.0M | $4.6M | × NPR; $1.1M of funded use cases moved to other lines |
-| **Total** | $12.9M – **$14.0M** – $15.2M | **$6.9M** | |
+| Module | Hard value / yr (central) | Worst-case assumptions | Best-case assumptions | Soft value / yr | How it was scaled |
+|---|---|---|---|---|---|
+| Denials & prior auth | **$6.5M** | $3.7M | $9.0M | not modeled | Gross value × NPR; partner cost half fixed |
+| Workforce | **$1.6M** | $0.3M | $2.3M | not modeled | Labor savings × beds / 500 (unmodeled units count as zero); retention × RN headcount |
+| Patient flow | **$0.8M** | $0.2M | $1.3M | $2.4M | × capacity-constrained beds; the 300 unconstrained beds are excluded |
+| Rural sustainability | **$0.6M** | $0.4M | $0.8M | access (unpriced) | × 8 affiliated rural hospitals |
+| AI value (after overlap) | **$0.0M** | −$0.4M | $0.6M | $4.6M | Benefits and run costs × NPR; one-time costs fixed |
+| **Total** | **$9.4M** | **$4.3M** | **$14.0M** | **$6.9M** | |
 
-- Hard value is about **0.7% of NPR**.
-- At a 5:1 client-ROI rule, it supports about **$2.8M of annual fees** ($2.6M–$3.0M).
-- **Limits:** scaling is linear, the client is invented, and the ranges cover data variation only. Treat the total as an order of magnitude until it is calibrated on a real client.
+- Central hard value is about **0.47% of NPR**.
+- At a 5:1 client-ROI rule it supports about **$1.9M of annual fees**, and **$0.9M** in the worst case.
+- About $1.1M of funded AI use cases overlaps other modules. It is removed from the AI line and not added elsewhere, which is conservative.
+
+**Limits**
+- Scaling is linear, the client is invented and the lines are added with no synergy.
+- Worst and best cases move one assumption per module. Two bad assumptions in the same module would go lower.
+- Central values are P50 across 30 synthetic datasets; the worst and best cases are run at seed 42.
+- Treat the total as an order of magnitude until it is calibrated on a real client.
 
 **Rules the ledger enforces**
 - Hard and soft value are never added together.
-- Each dollar is attributed to one module. Funded AI use cases that a module already claims are removed from the AI line.
+- Each dollar is counted once. Funded AI use cases that a module already claims are removed from the AI line.
 
 ---
 
 ## 5. What moves the numbers
 
-Each assumption below was moved ±30% on its own, holding the rest fixed (`chartis_proto/sensitivity.py`). Values are for each module's own reference client.
+Each assumption below was moved on its own, holding the rest fixed (`chartis_proto/sensitivity.py`). Moves are ±30%, or sourced low and high values where they exist. Values are for each module's own reference client at seed 42, so the base can differ slightly from the P50 in §3.
 
-| Module | Most sensitive assumption | Hard value at −30% | Base | At +30% |
+| Module | Most sensitive assumption | Low case | Base | High case |
 |---|---|---|---|---|
-| Workforce | Agency hourly rate | −$0.7M | $0.7M | $2.1M |
-| Patient flow | Variable cost per tail day | $0.8M | $1.4M | $1.9M |
-| Rural | Realization of option value | $1.1M | $1.6M | $2.1M |
-| Denials | Pre-bill fix success rates | $2.5M | $4.2M | $6.0M |
-| AI value | Negotiated licence discount | $1.7M | $2.8M | $3.7M |
+| Workforce | Agency hourly rate ($90.54 sourced to $120) | $0.1M | $0.7M (at $105) | $1.4M |
+| Patient flow | Variable cost per tail day (±30%) | $0.2M | $0.8M | $1.3M |
+| Rural | Realization of option value (±30%) | $1.1M | $1.6M | $2.1M |
+| Denials | Pre-bill fix success rates (±30%) | $1.7M | $3.0M | $4.3M |
+| AI value | Licence prices (±30%) | $1.0M (prices up) | $2.8M | $5.6M (prices down) |
 
-**Reading:** assumption risk is several times larger than data variation. The first job of any diagnostic is to replace these five assumptions with the client's own numbers.
+**Reading:** one assumption moves a module's value by 30% to 100%, several times more than data noise. The first job of any diagnostic is to replace these five assumptions with the client's own numbers.
 
 ---
 
@@ -225,36 +233,41 @@ Each assumption below was moved ±30% on its own, holding the rest fixed (`chart
 
 Chartis' pricing and financials are private. Every number below is an assumption to replace with Chartis data.
 
-**Two offers**
+**Two offers, priced to pass 5:1 even in the worst case**
 
-| Offer | Buyer | Contents | Assumed price |
-|---|---|---|---|
-| **Health-system margin bundle** | CFO / COO of a $1–5B system | Denials (with partner) + Patient Flow + Workforce, one value ledger run by the AI Value Office | Diagnostic $250–400K, then $1.0–1.5M/yr |
-| **Rural sustainability offer** | Rural networks, state hospital associations | Stress-test, access-safe options, Rural Health Transformation funding support | $300–600K/yr per network |
+| Offer | Buyer | Contents | Modeled hard value | Assumed price |
+|---|---|---|---|---|
+| **Health-system margin offer** | CFO / COO of a $1–5B system | Denials (with partner) + Patient Flow, Workforce where the premium is confirmed; one value ledger | $8.9M central; $4.2M worst case (for a $2B system) | Diagnostic $200–300K, then **$0.6–0.9M/yr** |
+| **Rural sustainability offer** | Rural networks, state hospital associations | Stress-test, access-safe options, Rural Health Transformation funding support | $1.4M for a 20-hospital network | **$200–300K/yr** per network |
 
-- The bundle's supportable fee is about $2.8M/yr at 5:1. Pricing at **$1.0–1.5M/yr** leaves the client roughly 9–14:1 on modeled hard value, which gives room for the model to be wrong by half.
-- Standalone diagnostics ($100–250K each) remain the entry point.
+- At $0.6–0.9M/yr the margin offer gives the client about 5–7:1 in the worst case and 10–15:1 in the central case.
+- The rural price passes 5:1 on modeled value alone. A higher price would have to rest on grant capture, which is not modeled.
+- The denials partner's cost ($1.1M/yr for a $2B client) is already subtracted from the client's value. The client pays the partner; Chartis' fee is separate.
 
 **Illustrative year-3 revenue**
 
-| Line | Count | Revenue |
-|---|---|---|
-| Bundle clients | 10 | ~$13M |
-| Rural network deals | 10 | ~$4.5M |
-| Standalone diagnostics | 30 | ~$5M |
-| **Total** | | **~$22M** |
+| Line | Count | Unit price | Revenue |
+|---|---|---|---|
+| Margin-offer subscriptions | 10 | $0.75M | $7.5M |
+| Implementation projects (one-time) | 8 | $1.0M | $8.0M |
+| Rural network deals | 10 | $0.25M | $2.5M |
+| Standalone diagnostics | 30 | $0.2M | $6.0M |
+| **Total** | | | **$24.0M** |
 
-- At about 35% contribution margin, that is about **$8M/yr of contribution**.
-- **Build cost** is about **$5–8M over 18 months**, including data engineering, HITRUST/SOC 2 and support for hosting PHI-bearing products.
-- **Payback on contribution is about year 3.**
+- At about 35% contribution margin, that is about **$8.4M/yr of contribution** in year 3.
+- **Build cost** is about **$5–8M over 18 months**, plus about **$2M/yr** to run the platform (hosting, HITRUST/SOC 2, support).
+- **Payback is in year 3 to 4**, assuming contribution ramps from about $1M in year 1 to $4M in year 2 and $8.4M in year 3 ($13.4M cumulative, against $11–14M of build and run cost).
 
 **The denials decision**
-- Denials are about 65% of bundle value, so the bundle does not work without them.
-- **Options:** partner with a revenue-cycle operator (fastest; shares margin), build a pre-bill prevention layer only (keeps Chartis in strategy and AI, where it is credible), or leave denials out (bundle value falls to about $5M and supportable fees to about $1M).
+- Denials are about 70% of modeled value, so the margin offer does not work without them.
+- **Options:**
+  - Partner with a revenue-cycle operator: fastest, and the client pays the partner.
+  - Build a pre-bill prevention layer only: keeps Chartis in strategy and AI, where it is credible.
+  - Leave denials out: client value falls to about $3.4M and supportable fees to about $0.7M.
 - **Recommended:** partner for execution, and own the payer strategy, the model and the value ledger.
 
 **Cautions**
-- Health-system sales cycles are 6–12 months, so 10 bundle clients by year 3 is ambitious.
+- Health-system sales cycles are 6–12 months, so 10 subscription clients by year 3 is ambitious.
 - Some revenue will **cannibalize** existing rural, workforce and AI advisory work. Count only incremental revenue.
 
 ---
@@ -263,9 +276,9 @@ Chartis' pricing and financials are private. Every number below is an assumption
 
 | Risk | Mitigation |
 |---|---|
-| Synthetic results over-promise | Calibrate on 2–3 design-partner clients before marketing any number; publish ranges, never point estimates |
+| Synthetic results over-promise | Calibrate on 2–3 design-partner clients before marketing any number; publish assumption ranges, never point estimates or data-noise ranges alone |
 | Bundle depends on denials, Chartis' weakest area | Decide partner vs build in Phase 0; without a partner, lead with Patient Flow + Workforce and price accordingly |
-| Workforce value disappears where agency carries no premium | Measure the client's real premium first; fall back to retention and documentation burden |
+| Workforce value disappears where agency carries no premium | Measure the client's real premium in week one; sell Workforce only where it is confirmed, otherwise fall back to retention and documentation burden |
 | Competition (Kaufman Hall/Vizient, Huron, Advisory Board, Big 4, RCM outsourcers) | Lead with moats (rural data, AI build + governance, communications); partner on RCM |
 | PHI / data access delays | Standard data request + BAA templates; start with public data (HCRIS, CMS) where possible |
 | AI model risk / bias | Governance gate in the AI module; human in the loop; NIST AI RMF / CHAI-aligned documentation |
@@ -285,5 +298,5 @@ Chartis' pricing and financials are private. Every number below is an assumption
 - **Builder agents and the lead:** built the five prototypes against a shared result contract.
 - **Red-team ("ex-health-system CFO") and code-review agents, pass 1:** 18 findings. Every High finding was fixed, which cut headline values by about 70–90%.
 - **Fact-check agent, pass 2:** checked 27 claims; 13 text corrections were applied in this version (for example, CBO's uninsured estimate for the enacted law is 10M, not 11.8M).
-- **Red-team, pass 2:** reviewed the one-client ledger, the sensitivity analysis and this document. Findings and fixes are in `review_log.md`.
+- **Red-team, pass 2:** reviewed the one-client ledger, the sensitivity analysis and this document. It made 14 findings, and the fixes cut the combined hard value from $14.0M to $9.4M. Findings and fixes are in `review_log.md`.
 - **Tests:** automated tests cover seed sweeps, the governance gate, the REH margin bound, turnover calibration, the sensitivity patching and the ledger arithmetic.
